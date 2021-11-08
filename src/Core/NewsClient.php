@@ -169,13 +169,10 @@
 						$oMessage = MetaModel::NewObject('ThirdPartyNewsroomMessage', [
 							'thirdparty_name' => self::GetThirdPartyName,
 							'thirdparty_message_id' => $aMessage['id'],
-							'text' => $aMessage['text'],
-							'url' => $aMessage['url'],
 							'start_date' => $aMessage['start_date'],
 							'end_date' => $aMessage['end_date'],
 							'priority' => $aMessage['priority'],
-							'image' => $aMessage['image'],
-							'language' => $aMessage['language']
+							'image' => $aMessage['image']
 						]);
 						$oMessage->AllowWrite(true);
 						$oMessage->DBInsert();

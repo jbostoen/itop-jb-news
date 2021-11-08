@@ -12,6 +12,7 @@ namespace jb_itop_extensions\NewsClient\Common\Helper;
 
 use \DBObjectSearch;
 use \DBObjectSet;
+use \Dict;
 use \Exception;
 use \MetaModel;
 use \User;
@@ -48,7 +49,7 @@ class NewsRoomHelper {
 	 */
 	protected static function GetAllMessages() {
 		
-		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsroomMessage WHERE start_date <= NOW() AND (ISNULL(end_date) OR end_date >= NOW()) AND finalclass = "ThirdPartyNewsroomMessage"');
+		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsroomMessage WHERE start_date <= NOW() AND (ISNULL(end_date) OR end_date >= NOW())');
 		$oSet = new DBObjectSet($oSearch);
 
 		$aMessages = [];
@@ -98,10 +99,12 @@ class NewsRoomHelper {
 			// Prepare url redirection
 			$sUrl = utils::GetAbsoluteUrlExecPage().'?exec_module='.static::MODULE_CODE.'&exec_page=index.php&operation=redirect&message_id='.$oMessage->GetKey().'&user='.$oUser->GetKey();
 
+			$oTranslation = self::GetTranslation($oMessage);
+
 			$aMessages[] = array(
 				'id' => $oMessage->GetKey(),
-				'text' => $oMessage->Get('text'),
-				'url' => $sUrl,
+				'text' => $oTranslation->Get('text'),
+				'url' => $oCurrentTranslation->Get('url'),
 				'start_date' => $oMessage->Get('start_date'),
 				'priority' => $oMessage->Get('priority'),
 				'image' => $sIconUrl,
@@ -202,16 +205,18 @@ class NewsRoomHelper {
 			else {
 				$sIconUrl = MetaModel::GetAttributeDef($sMessageClass, $sMessageIconAttCode)->Get('default_image');
 			}
+			
+			$oTranslation = self::GetTranslation($oMessage);
 
 			$sMessagesHtml .=
 				<<<HTML
 <div class="jbnewsclient-message">
-			<a href="{$oMessage->Get('url')}" target="_blank">
+			<a href="{$oTranslation->Get('url')}" target="_blank">
 				<div class="jbnewsclient-m-icon">
 					<img src="{$sIconUrl}" alt="Message icon" />
 				</div>
 				<div class="jbnewsclient-m-content">
-					<div class="jbnewsclient-m-text">{$oMessage->Get('text')}</div>
+					<div class="jbnewsclient-m-text">{$oTranslation->Get('text')}</div>
 					<div class="jbnewsclient-m-date">{$oMessage->Get('start_date')}</div>
 				</div>
 			</a>
@@ -237,5 +242,48 @@ HTML
 		);
 	}
 
+	/**
+	 * Gets translation for current user
+	 *
+	 * @param \ThirdPartyNewsroomMessage $oMessage Third party newsroom message
+	 *
+	 * @return \ThirdPartyNewsroomMessageTranslation
+	 */
+	protected static function GetTranslation($oMessage) {
+		
+		$oSetTranslations = $oMessage->Get('translations_list');
+		
+		$oTranslation = null;
+		$iLanguage = 0; // 0: nothing found; 1: English found; 2: localized version found
+		
+		while($oCurrentTranslation = $oSetTranslations->Fetch()) {
+			
+			switch(true) {
+				
+				// Matches user language
+				case ($oCurrentTranslation->Get('language') == UserRights::GetUserLanguage()):
+					$iLanguage = 2;
+					
+				// Text is empty, but English string has been found
+				case ($oCurrentTranslation->Get('language') == 'EN US'):
+					$iLanguage = 1;
+				
+				// Take anything if English or user language hasn't been found yet
+				case $iLanguage == 0:
+					
+					$oTranslation = $oCurrentTranslation;
+					break;
+					
+			}
+			
+			if($iLanguage == 2) {
+				break;
+			}
+			
+		}
+		
+		return $oTranslation;
+		
+	}
 
 }

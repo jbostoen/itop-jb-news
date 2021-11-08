@@ -17,6 +17,7 @@
 						<attribute id="title"/>
 					</attributes>
 				</reconciliation>
+				<db_final_class_field>finalclass</db_final_class_field>
 			</properties>
 			<fields>
 				<field id="thirdparty_name" xsi:type="AttributeString">
@@ -49,14 +50,6 @@
 					<width/>
 					<height/>
 					<tracking_level>all</tracking_level>
-				</field>
-				<field id="url" xsi:type="AttributeURL">
-					<sql>url</sql>
-					<default_value/>
-					<is_null_allowed>false</is_null_allowed>
-					<validation_pattern/>
-					<tracking_level>all</tracking_level>
-					<target/>
 				</field>
 				<field id="start_date" xsi:type="AttributeDateTime">
 					<sql>start_date</sql>
@@ -93,10 +86,15 @@
 					<default_image>img/messages-default-images.svg</default_image>
 					<is_null_allowed>true</is_null_allowed>
 				</field>
-				<field id="language" xsi:type="AttributeApplicationLanguage">
-					<sql>language</sql>
-					<is_null_allowed>false</is_null_allowed>
+				<field id="target_profiles" xsi:type="AttributeString">
+					<sql>target_profiles</sql>
 					<default_value/>
+					<is_null_allowed>true</is_null_allowed>
+				</field>
+				<field id="translations_list" xsi:type="AttributeLinkedSet">
+					<linked_class>ThirdPartyNewsroomMessageTranslation</linked_class>
+					<ext_key_to_me>message_id</ext_key_to_me>
+					<edit_mode>actions</edit_mode>
 				</field>
 			</fields>
 			<methods>
@@ -147,9 +145,6 @@
 						<item id="priority">
 							<rank>40</rank>
 						</item>
-						<item id="language">
-							<rank>41</rank>
-						</item>
 					</items>
 				</list>
 				<details>
@@ -165,15 +160,6 @@
 										</item>
 										<item id="thirdparty_message_id">
 											<rank>2</rank>
-										</item>
-										<item id="title">
-											<rank>10</rank>
-										</item>
-										<item id="text">
-											<rank>20</rank>
-										</item>
-										<item id="url">
-											<rank>30</rank>
 										</item>
 									</items>
 								</item>
@@ -196,28 +182,142 @@
 										<item id="icon">
 											<rank>40</rank>
 										</item>
-										<item id="language">
-											<rank>41</rank>
+										<item id="target_profiles">
+											<rank>50</rank>
 										</item>
 									</items>
 								</item>
 							</items>
 						</item>
+						<item id="translations_list">
+							<rank>901</rank>
+						</item>
 					</items>
 				</details>
 				<default_search>
 					<items>
+						<item id="start_date">
+							<rank>40</rank>
+						</item>
+						<item id="priority">
+							<rank>50</rank>
+						</item>
+					</items>
+				</default_search>
+			</presentation>
+		</class>
+		<class id="ThirdPartyNewsroomMessageTranslation" _delta="define">
+			<parent>cmdbAbstractObject</parent>
+			<properties>
+				<category>bizmodel,searchable</category>
+				<abstract>false</abstract>
+				<db_table>thirdparty_newsroommessage_translation</db_table>
+				<naming>
+					<attributes>
+						<attribute id="title"/>
+					</attributes>
+				</naming>
+				<reconciliation>
+					<attributes>
+						<attribute id="title"/>
+					</attributes>
+				</reconciliation>
+			</properties>
+			<fields>
+				<field id="message_id" xsi:type="AttributeExternalKey">
+					<sql>message_id</sql>
+					<target_class>ThirdPartyNewsroomMessage</target_class>
+					<is_null_allowed>false</is_null_allowed>
+					<on_target_delete>DEL_MANUAL</on_target_delete>
+					<display_style>list</display_style>
+					<allow_target_creation>true</allow_target_creation>
+				</field>
+				<field id="title" xsi:type="AttributeString">
+					<sql>title</sql>
+					<default_value/>
+					<is_null_allowed>false</is_null_allowed>
+					<validation_pattern/>
+					<tracking_level>all</tracking_level>
+				</field>
+				<field id="text" xsi:type="AttributeText">
+					<sql>text</sql>
+					<default_value/>
+					<is_null_allowed>false</is_null_allowed>
+					<validation_pattern/>
+					<width/>
+					<height/>
+					<tracking_level>all</tracking_level>
+				</field>
+				<field id="language" xsi:type="AttributeApplicationLanguage">
+					<sql>language</sql>
+					<is_null_allowed>false</is_null_allowed>
+					<default_value/>
+				</field>
+				<field id="url" xsi:type="AttributeURL">
+					<sql>url</sql>
+					<default_value/>
+					<is_null_allowed>false</is_null_allowed>
+					<validation_pattern/>
+					<tracking_level>all</tracking_level>
+					<target/>
+				</field>
+			</fields>
+			<methods/>
+			<presentation>
+				<list>
+					<items>
+						<item id="message_id">
+							<rank>1</rank>
+						</item>
 						<item id="title">
 							<rank>10</rank>
 						</item>
 						<item id="text">
 							<rank>20</rank>
 						</item>
-						<item id="start_date">
+						<item id="language">
+							<rank>30</rank>
+						</item>
+						<item id="url">
 							<rank>40</rank>
 						</item>
-						<item id="priority">
-							<rank>50</rank>
+					</items>
+				</list>
+				<details>
+					<items>
+						<item id="message_id">
+							<rank>1</rank>
+						</item>
+						<item id="title">
+							<rank>10</rank>
+						</item>
+						<item id="text">
+							<rank>20</rank>
+						</item>
+						<item id="language">
+							<rank>30</rank>
+						</item>
+						<item id="url">
+							<rank>40</rank>
+						</item>
+					</items>
+				</details>
+				<default_search>
+					<items>
+						<item id="message_id">
+							<rank>1</rank>
+						</item>
+						<item id="title">
+							<rank>10</rank>
+						</item>
+						<item id="text">
+							<rank>20</rank>
+						</item>
+						<item id="language">
+							<rank>30</rank>
+						</item>
+						<item id="url">
+							<rank>40</rank>
 						</item>
 					</items>
 				</default_search>
