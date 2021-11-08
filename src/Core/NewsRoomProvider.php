@@ -1,28 +1,34 @@
 <?php
+
 /**
- * Copyright (c) 2015 - 2019 Molkobain.
+ * @copyright   Copyright (C) 2019-2020 Jeffrey Bostoen
+ * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
+ * @version     2020-11-04 15:45:48
  *
- * This file is part of licensed extension.
- *
- * Use of this extension is bound by the license you purchased. A license grants you a non-exclusive and non-transferable right to use and incorporate the item in your personal or commercial projects. There are several licenses available (see https://www.molkobain.com/usage-licenses/ for more informations)
+ * Definition of NewsRoomProvider.
  */
 
-namespace jb_itop_extensions\NewsRoomProvider;
+namespace jb_itop_extensions\NewsClient;
+
+// iTop internals
+use \MetaModel;
+use \UserRights;
+use \utils;
 
 // iTop classes
 use \NewsroomProviderBase;
 use \User;
-use \UserRights;
-use \utils;
 
 // Protection for iTop older than 2.6.0 when the extension is packaged with another.
+
 if(class_exists('NewsroomProviderBase')) {
 	/**
-	 * Class MolkobainNewsroomProvider
+	 * Class JBNewsroomProvider
 	 *
 	 * Note: This is greatly inspired by the itop-hub-connector module.
 	 */
 	class JBNewsroomProvider extends NewsroomProviderBase {
+		
 		/**
 		 * @inheritDoc
 		 */
@@ -35,6 +41,8 @@ if(class_exists('NewsroomProviderBase')) {
 		 * @inheritDoc
 		 */
 		public function IsApplicable(User $oUser = null) {
+			
+			// @todo review rights here!
 			if(utils::GetCurrentModuleSetting('enabled', false) == false) {
 				return false;
 			}
@@ -84,23 +92,19 @@ if(class_exists('NewsroomProviderBase')) {
 			$aPlaceholders = array();
 
 			$oUser = UserRights::GetUserObject();
-			if($oUser !== null)
-			{
+			if($oUser !== null) {
 				$aPlaceholders['%user_login%'] = $oUser->Get('login');
-				$aPlaceholders['%user_hash%'] = self::GetUserHash();
 			}
 
 			$oContact = UserRights::GetContactObject();
-			if($oContact !== null)
-			{
+			if($oContact !== null) {
 				$aPlaceholders['%contact_firstname%'] = $oContact->Get('first_name');
 				$aPlaceholders['%contact_lastname%'] = $oContact->Get('name');
 				$aPlaceholders['%contact_email%'] = $oContact->Get('email');
 				$aPlaceholders['%contact_organization%'] = $oContact->Get('org_id_friendlyname');
 				$aPlaceholders['%contact_location%'] = $oContact->Get('location_id_friendlyname');
 			}
-			else
-			{
+			else {
 				$aPlaceholders['%contact_firstname%'] = '';
 				$aPlaceholders['%contact_lastname%'] = '';
 				$aPlaceholders['%contact_email%'] = '';
@@ -127,40 +131,13 @@ if(class_exists('NewsroomProviderBase')) {
 		 */
 		private function MakeUrl($sOperation) {
 			
-			$sApp = defined('ITOP_APPLICATION') ? ITOP_APPLICATION : 'unknown';
-			$sVersion = defined('ITOP_VERSION') ? ITOP_VERSION : 'unknown';
-			
-			return 'http://127.0.0.1:8181/test-newsroom/news.php?'
+			return utils::GetAbsoluteUrlExecPage().'?'
+				.'&exec_module='.utils::GetCurrentModuleName()
+				.'&exec_page=index.php'
+				.'&exec_env='.MetaModel::GetEnvironment()
 				.'&operation='.$sOperation
-				.'&version=1.0'
-				.'&user='.urlencode(self::GetUserHash())
-				.'&instance='.urlencode(self::GetInstanceHash())
-				.'&app-name='.urlencode($sApp)
-				.'&app-version='.urlencode($sVersion);
+				.'&version=1.0';
 		}
 		
-		/**
-		 * Returns hash of user
-		 */
-		private function GetUserHash() {
-		
-			$sUserId = UserRights::GetUserId();
-			$sUserHash = hash('fnv1a64', $sUserId);
-			
-		}
-		
-		/**
-		 * Returns hash of instance
-		 */
-		private function GetInstanceHash() {
-		
-			// Note: not retrieving DB UUID for now as it is not of any use for now.
-			$sITopUUID = (string) trim(@file_get_contents(APPROOT . 'data/instance.txt'), "{} \n");
-
-			// Prepare a unique hash to identify users and instances across all iTops in order to be able for them 
-			// to tell which news they have already read.
-			$sInstanceId = hash('fnv1a64', $sITopUUID);
-			
-		}
 	}
 }

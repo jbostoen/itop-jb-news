@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<itop_design xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.6">
+	<classes>
+		<class id="ThirdPartyNewsroomMessage" _delta="define">
+			<parent>cmdbAbstractObject</parent>
+			<properties>
+				<category>bizmodel,searchable</category>
+				<abstract>false</abstract>
+				<db_table>thirdparty_newsroommessage</db_table>
+				<naming>
+					<attributes>
+						<attribute id="title"/>
+					</attributes>
+				</naming>
+				<reconciliation>
+					<attributes>
+						<attribute id="title"/>
+					</attributes>
+				</reconciliation>
+			</properties>
+			<fields>
+				<field id="thirdparty_name" xsi:type="AttributeString">
+					<sql>thirdparty_name</sql>
+					<default_value/>
+					<is_null_allowed>false</is_null_allowed>
+					<validation_pattern/>
+					<tracking_level>all</tracking_level>
+				</field>
+				<!-- Deliberately a string -->
+				<field id="thirdparty_message_id" xsi:type="AttributeString">
+					<sql>thirdparty_message_id</sql>
+					<default_value/>
+					<is_null_allowed>false</is_null_allowed>
+					<validation_pattern/>
+					<tracking_level>all</tracking_level>
+				</field>
+				<field id="title" xsi:type="AttributeString">
+					<sql>title</sql>
+					<default_value/>
+					<is_null_allowed>false</is_null_allowed>
+					<validation_pattern/>
+					<tracking_level>all</tracking_level>
+				</field>
+				<field id="text" xsi:type="AttributeText">
+					<sql>text</sql>
+					<default_value/>
+					<is_null_allowed>false</is_null_allowed>
+					<validation_pattern/>
+					<width/>
+					<height/>
+					<tracking_level>all</tracking_level>
+				</field>
+				<field id="url" xsi:type="AttributeURL">
+					<sql>url</sql>
+					<default_value/>
+					<is_null_allowed>false</is_null_allowed>
+					<validation_pattern/>
+					<tracking_level>all</tracking_level>
+					<target/>
+				</field>
+				<field id="start_date" xsi:type="AttributeDateTime">
+					<sql>start_date</sql>
+					<default_value/>
+					<is_null_allowed>false</is_null_allowed>
+					<tracking_level>all</tracking_level>
+				</field>
+				<field id="end_date" xsi:type="AttributeDateTime">
+					<sql>end_date</sql>
+					<default_value/>
+					<is_null_allowed>true</is_null_allowed>
+					<tracking_level>all</tracking_level>
+				</field>
+				<field id="priority" xsi:type="AttributeEnum">
+					<sql>priority</sql>
+					<values>
+						<value id="1">1</value>
+						<value id="2">2</value>
+						<value id="3">3</value>
+						<value id="4">4</value>
+					</values>
+					<default_value>1</default_value>
+					<is_null_allowed>false</is_null_allowed>
+					<display_style/>
+					<dependencies/>
+					<tracking_level>all</tracking_level>
+				</field>
+				<field id="icon" xsi:type="AttributeImage">
+					<sql>icon</sql>
+					<display_max_width>96</display_max_width>
+					<display_max_height>96</display_max_height>
+					<storage_max_width>128</storage_max_width>
+					<storage_max_height>128</storage_max_height>
+					<default_image>img/messages-default-images.svg</default_image>
+					<is_null_allowed>true</is_null_allowed>
+				</field>
+				<field id="language" xsi:type="AttributeApplicationLanguage">
+					<sql>language</sql>
+					<is_null_allowed>false</is_null_allowed>
+					<default_value/>
+				</field>
+			</fields>
+			<methods>
+				<method id="GenerateUnreadMessages">
+					<comment>/**
+	* Note: This should be refactored into a background task if there's ever an instance with lots of users.
+	* Otherwise we might crash the server by retrieving all users at once.
+	*
+	* @author Guillaume Lajarige
+	* @author Jeffrey Bostoen
+	*/</comment>
+					<static>false</static>
+					<access>protected</access>
+					<code><![CDATA[
+					
+	protected function GenerateUnreadMessages() {
+	
+		// Create a record for each user
+		$oUserSearch = DBObjectSearch::FromOQL('SELECT User');
+		$oUserSet = new DBObjectSet($oUserSearch);
+		$oUserSet->OptimizeColumnLoad(array());
+
+		while($oUser = $oUserSet->Fetch()) {
+			$oUnreadMessage = MetaModel::NewObject('ThirdPartyUnreadMessageToUser', array(
+				'user_id' => $oUser->GetKey(),
+				'message_id' => $this->GetKey(),
+			));
+			$oUnreadMessage->DBInsert();
+		}
+		
+	}
+						]]></code>
+					<arguments/>
+				</method>
+			</methods>
+			<presentation>
+				<list>
+					<items>
+						<item id="title">
+							<rank>10</rank>
+						</item>
+						<item id="start_date">
+							<rank>30</rank>
+						</item>
+						<item id="end_date">
+							<rank>31</rank>
+						</item>
+						<item id="priority">
+							<rank>40</rank>
+						</item>
+						<item id="language">
+							<rank>41</rank>
+						</item>
+					</items>
+				</list>
+				<details>
+					<items>
+						<item id="col:col0">
+							<rank>10</rank>
+							<items>
+								<item id="fieldset:NewsroomMessage:baseinfo">
+									<rank>10</rank>
+									<items>
+										<item id="thirdparty_name">
+											<rank>1</rank>
+										</item>
+										<item id="thirdparty_message_id">
+											<rank>2</rank>
+										</item>
+										<item id="title">
+											<rank>10</rank>
+										</item>
+										<item id="text">
+											<rank>20</rank>
+										</item>
+										<item id="url">
+											<rank>30</rank>
+										</item>
+									</items>
+								</item>
+							</items>
+						</item>
+						<item id="col:col1">
+							<rank>20</rank>
+							<items>
+								<item id="fieldset:NewsroomMessage:moreinfo">
+									<items>
+										<item id="start_date">
+											<rank>20</rank>
+										</item>
+										<item id="end_date">
+											<rank>21</rank>
+										</item>
+										<item id="priority">
+											<rank>30</rank>
+										</item>
+										<item id="icon">
+											<rank>40</rank>
+										</item>
+										<item id="language">
+											<rank>41</rank>
+										</item>
+									</items>
+								</item>
+							</items>
+						</item>
+					</items>
+				</details>
+				<default_search>
+					<items>
+						<item id="title">
+							<rank>10</rank>
+						</item>
+						<item id="text">
+							<rank>20</rank>
+						</item>
+						<item id="start_date">
+							<rank>40</rank>
+						</item>
+						<item id="priority">
+							<rank>50</rank>
+						</item>
+					</items>
+				</default_search>
+			</presentation>
+		</class>
+		<class id="ThirdPartyUnreadMessageToUser" _delta="define">
+			<parent>cmdbAbstractObject</parent>
+			<properties>
+				<category>bizmodel,searchable</category>
+				<abstract>false</abstract>
+				<db_table>thirdparty_unreadmessagetouser</db_table>
+				<naming>
+					<attributes>
+						<attribute id="user_id"/>
+						<attribute id="message_id"/>
+					</attributes>
+				</naming>
+				<reconciliation>
+					<attributes>
+						<attribute id="user_id"/>
+						<attribute id="message_id"/>
+					</attributes>
+				</reconciliation>
+			</properties>
+			<fields>
+				<field id="user_id" xsi:type="AttributeExternalKey">
+					<sql>user_id</sql>
+					<filter/>
+					<dependencies/>
+					<default_value/>
+					<is_null_allowed>false</is_null_allowed>
+					<target_class>User</target_class>
+					<on_target_delete>DEL_AUTO</on_target_delete>
+					<tracking_level>none</tracking_level>
+				</field>
+				<field id="message_id" xsi:type="AttributeExternalKey">
+					<sql>message_id</sql>
+					<filter/>
+					<dependencies/>
+					<default_value/>
+					<is_null_allowed>false</is_null_allowed>
+					<target_class>ThirdPartyNewsroomMessage</target_class>
+					<on_target_delete>DEL_AUTO</on_target_delete>
+					<tracking_level>none</tracking_level>
+				</field>
+			</fields>
+			<methods/>
+			<presentation>
+				<details>
+					<items>
+						<item id="user_id">
+							<rank>10</rank>
+						</item>
+						<item id="message_id">
+							<rank>20</rank>
+						</item>
+					</items>
+				</details>
+				<list>
+					<items>
+						<item id="user_id">
+							<rank>10</rank>
+						</item>
+						<item id="message_id">
+							<rank>20</rank>
+						</item>
+					</items>
+				</list>
+				<default_search>
+					<items>
+						<item id="user_id">
+							<rank>10</rank>
+						</item>
+						<item id="message_id">
+							<rank>20</rank>
+						</item>
+					</items>
+				</default_search>
+			</presentation>
+		</class>
+	</classes>
+</itop_design>

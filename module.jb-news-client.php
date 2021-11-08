@@ -8,11 +8,11 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'jb-news-client/1.1.0',
+	'jb-news-client/1.0.0',
 	array(
 		// Identification
 		//
-		'label' => 'Jeffrey Bostoen - Newsroom provider',
+		'label' => 'Jeffrey Bostoen - News client',
 		'category' => 'tools',
 
 		// Setup
@@ -26,6 +26,10 @@ SetupWebPage::AddModule(
 		// Components
 		//
 		'datamodel' => array(
+			'model.jb-news-client.php',
+			// 'src/Core/BackgroundProcess.php',
+			'src/Core/NewsClient.php',
+			'src/Core/NewsRoomHelper.php',
 			'src/Core/NewsRoomProvider.php',
 		),
 		'webservice' => array(),
