@@ -40,6 +40,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Class:ThirdPartyNewsroomMessageTranslation/Attribute:url+' => 'Users will visit this web page upon clicking the message.',
 	'Class:ThirdPartyNewsroomMessageTranslation/Attribute:language' => 'Language',
 	'Class:ThirdPartyNewsroomMessageTranslation/Attribute:language+' => 'Targeted user language',
+	'Class:ThirdPartyNewsroomMessageTranslation/UniquenessRule:unique_language' => 'Language for this translation must be unique for each message.',
 	
 	'Class:ThirdPartyUnreadMessageToUser' => 'Third party Unread Newsroom Message to User',
 	'Class:ThirdPartyUnreadMessageToUser/Attribute:user_id' => 'User ID',

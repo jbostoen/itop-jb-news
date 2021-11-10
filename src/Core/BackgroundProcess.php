@@ -45,11 +45,10 @@ class ScheduledProcessThirdPartyNews extends ScheduledProcess implements iSchedu
 		
 		$this->Trace(self::MODULE_CODE.' - Processing News ...');
 		
-		// Ignore time limit, it should run nightly and it will take some time.
 		try {
 			
-			NewsClient::GetMessages();
-			NewsClient::PostReadMessageStatus();
+			NewsClient::GetMessages($this);
+			// NewsClient::PostMessageReadStatus();
 			
 		}
 		catch(Exception $e) {

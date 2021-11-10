@@ -27,7 +27,7 @@
 					<validation_pattern/>
 					<tracking_level>all</tracking_level>
 				</field>
-				<!-- Deliberately a string -->
+				<!-- Deliberately a string to allow very flexible options in the future -->
 				<field id="thirdparty_message_id" xsi:type="AttributeString">
 					<sql>thirdparty_message_id</sql>
 					<default_value/>
@@ -40,15 +40,6 @@
 					<default_value/>
 					<is_null_allowed>false</is_null_allowed>
 					<validation_pattern/>
-					<tracking_level>all</tracking_level>
-				</field>
-				<field id="text" xsi:type="AttributeText">
-					<sql>text</sql>
-					<default_value/>
-					<is_null_allowed>false</is_null_allowed>
-					<validation_pattern/>
-					<width/>
-					<height/>
 					<tracking_level>all</tracking_level>
 				</field>
 				<field id="start_date" xsi:type="AttributeDateTime">
@@ -222,13 +213,21 @@
 						<attribute id="title"/>
 					</attributes>
 				</reconciliation>
+				<uniqueness_rules>
+					<rule id="unique_language">
+						<attributes>
+							<attribute id="language"/>
+						</attributes>
+					</rule>
+				</uniqueness_rules>
 			</properties>
 			<fields>
+				<!-- Note: this refers to the message_id that has been created by the client; it's NOT the third party message ID -->
 				<field id="message_id" xsi:type="AttributeExternalKey">
 					<sql>message_id</sql>
 					<target_class>ThirdPartyNewsroomMessage</target_class>
 					<is_null_allowed>false</is_null_allowed>
-					<on_target_delete>DEL_MANUAL</on_target_delete>
+					<on_target_delete>DEL_AUTO</on_target_delete>
 					<display_style>list</display_style>
 					<allow_target_creation>true</allow_target_creation>
 				</field>

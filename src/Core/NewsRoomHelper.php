@@ -5,7 +5,6 @@
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
  * @version     2020-11-04 15:45:48
  *
- * Definition of NewsRoomHelper.
  */
 
 namespace jb_itop_extensions\NewsClient\Common\Helper;
@@ -21,7 +20,7 @@ use \utils;
 use \WebPage;
 
 /**
- * Class NewsRoomHelper. 
+ * Class NewsRoomHelper. Contains a lot of functions to assist in AJAX requests.
  */
 class NewsRoomHelper {
 	
@@ -104,7 +103,7 @@ class NewsRoomHelper {
 			$aMessages[] = array(
 				'id' => $oMessage->GetKey(),
 				'text' => $oTranslation->Get('text'),
-				'url' => $oCurrentTranslation->Get('url'),
+				'url' => $oTranslation->Get('url'),
 				'start_date' => $oMessage->Get('start_date'),
 				'priority' => $oMessage->Get('priority'),
 				'image' => $sIconUrl,
@@ -253,8 +252,10 @@ HTML
 		
 		$oSetTranslations = $oMessage->Get('translations_list');
 		
+		/**
+		 * @var \ThirdPartyNewsroomMessageTranslation $oTranslation Third Party Newsroom Message Translation
+		 */
 		$oTranslation = null;
-		$iLanguage = 0; // 0: nothing found; 1: English found; 2: localized version found
 		
 		while($oCurrentTranslation = $oSetTranslations->Fetch()) {
 			
@@ -262,22 +263,17 @@ HTML
 				
 				// Matches user language
 				case ($oCurrentTranslation->Get('language') == UserRights::GetUserLanguage()):
-					$iLanguage = 2;
+					return $oTranslation;
 					
 				// Text is empty, but English string has been found
 				case ($oCurrentTranslation->Get('language') == 'EN US'):
-					$iLanguage = 1;
+					$oTranslation = $oCurrentTranslation;
 				
-				// Take anything if English or user language hasn't been found yet
-				case $iLanguage == 0:
-					
+				// Take first available language if English or user language hasn't been found yet
+				case $oTranslation == null:
 					$oTranslation = $oCurrentTranslation;
 					break;
 					
-			}
-			
-			if($iLanguage == 2) {
-				break;
 			}
 			
 		}

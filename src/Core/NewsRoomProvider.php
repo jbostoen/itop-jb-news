@@ -34,7 +34,7 @@ if(class_exists('NewsroomProviderBase')) {
 		 */
 		public function GetTTL() {
 			// Update every hour
-			return 60 * 60;
+			return 60 /** 60*/;
 		}
 
 		/**
@@ -86,10 +86,10 @@ if(class_exists('NewsroomProviderBase')) {
 		/**
 		 * @inheritDoc
 		 *
-		 * Note: Placeholders are only used in the news' URL
+		 * Note: Placeholders are only used in the news URL
 		 */
 		public function GetPlaceholders() {
-			$aPlaceholders = array();
+			$aPlaceholders = [];
 
 			$oUser = UserRights::GetUserObject();
 			if($oUser !== null) {

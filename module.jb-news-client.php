@@ -27,7 +27,7 @@ SetupWebPage::AddModule(
 		//
 		'datamodel' => array(
 			'model.jb-news-client.php',
-			// 'src/Core/BackgroundProcess.php',
+			'src/Core/BackgroundProcess.php',
 			'src/Core/NewsClient.php',
 			'src/Core/NewsRoomHelper.php',
 			'src/Core/NewsRoomProvider.php',
@@ -48,6 +48,7 @@ SetupWebPage::AddModule(
 		'settings' => array(
 			// Module specific settings go here, if any
 			'enabled' => true,
+			'time' => '15:06',
 		),
 	)
 );
