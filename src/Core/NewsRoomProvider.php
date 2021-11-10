@@ -47,7 +47,7 @@ if(class_exists('NewsroomProviderBase')) {
 				return false;
 			}
 			elseif($oUser !== null) {
-				return UserRights::IsAdministrator($oUser);
+				return true;
 			}
 			else {
 				return false;

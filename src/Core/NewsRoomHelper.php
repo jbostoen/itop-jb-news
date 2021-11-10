@@ -37,7 +37,7 @@ class NewsRoomHelper {
 	const DEFAULT_APP_VERSION = 'unknown';
 
 	/**
-	 * Returns all published messages until now (not those planned for further publication)
+	 * Returns all published messages until now (not those planned for further publication) for this user
 	 *
 	 * @return \ThirdPartyNewsroomMessage[] Set of messages
 	 *
@@ -51,9 +51,16 @@ class NewsRoomHelper {
 		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsroomMessage WHERE start_date <= NOW() AND (ISNULL(end_date) OR end_date >= NOW())');
 		$oSet = new DBObjectSet($oSearch);
 
+		$aProfiles = UserRights::ListProfiles();
 		$aMessages = [];
 		while($oMessage = $oSet->Fetch()) {
-			$aMessages[] = $oMessage;
+			
+			$aTargetProfiles = explode(',', $oMessage->Get('target_profiles');
+			
+			if(count($aTargetProfiles) == 0 || count(array_intersect($aTargetProfiles, $aProfiles) > 0) {
+				$aMessages[] = $oMessage;
+			}
+			
 		}
 
 		return $aMessages;
@@ -83,7 +90,16 @@ class NewsRoomHelper {
 		$oSet->SetLimit(50); // Limit messages count to avoid server crash
 
 		$aMessages = [];
+		$aProfiles = UserRights::ListProfiles();
+		
 		while($oMessage = $oSet->Fetch()) {
+			
+			$aTargetProfiles = explode(',', $oMessage->Get('target_profiles');
+			
+			if(count($aTargetProfiles) > 0 && count(array_intersect($aTargetProfiles, $aProfiles) == 0) {	
+				// Current user should not see this message
+				continue;
+			}
 			
 			// Prepare icon URL
 			/** @var \ormDocument $oIcon */
@@ -99,15 +115,20 @@ class NewsRoomHelper {
 			$sUrl = utils::GetAbsoluteUrlExecPage().'?exec_module='.static::MODULE_CODE.'&exec_page=index.php&operation=redirect&message_id='.$oMessage->GetKey().'&user='.$oUser->GetKey();
 
 			$oTranslation = self::GetTranslation($oMessage);
+			
+			if($oTranslation !== null) {
 
-			$aMessages[] = array(
-				'id' => $oMessage->GetKey(),
-				'text' => $oTranslation->Get('text'),
-				'url' => $oTranslation->Get('url'),
-				'start_date' => $oMessage->Get('start_date'),
-				'priority' => $oMessage->Get('priority'),
-				'image' => $sIconUrl,
-			);
+				$aMessages[] = array(
+					'id' => $oMessage->GetKey(),
+					'text' => $oTranslation->Get('text'),
+					'url' => $oTranslation->Get('url'),
+					'start_date' => $oMessage->Get('start_date'),
+					'priority' => $oMessage->Get('priority'),
+					'image' => $sIconUrl,
+				);
+				
+			}
+			
 		}
 
 		return $aMessages;
@@ -207,8 +228,10 @@ class NewsRoomHelper {
 			
 			$oTranslation = self::GetTranslation($oMessage);
 
-			$sMessagesHtml .=
-				<<<HTML
+			if($oTranslation !== null) {
+				
+				$sMessagesHtml .=
+					<<<HTML
 <div class="jbnewsclient-message">
 			<a href="{$oTranslation->Get('url')}" target="_blank">
 				<div class="jbnewsclient-m-icon">
@@ -221,7 +244,10 @@ class NewsRoomHelper {
 			</a>
 		</div>
 HTML
-			;
+				;
+			
+			}
+			
 		}
 
 		// Add style
@@ -267,7 +293,6 @@ HTML
 					
 				// Text is empty, but English string has been found
 				case ($oCurrentTranslation->Get('language') == 'EN US'):
-					$oTranslation = $oCurrentTranslation;
 				
 				// Take first available language if English or user language hasn't been found yet
 				case $oTranslation == null:
