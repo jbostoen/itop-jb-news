@@ -9,6 +9,7 @@
 
 namespace jb_itop_extensions\NewsClient\Common\Helper;
 
+// iTop internals
 use \DBObjectSearch;
 use \DBObjectSet;
 use \Dict;
@@ -18,6 +19,11 @@ use \User;
 use \UserRights;
 use \utils;
 use \WebPage;
+
+// iTop classes
+use \ThirdPartyNewsroomMessage;
+use \ThirdPartyNewsroomMessageTranslation;
+use \ThirdPartyUnreadMessageToUser;
 
 /**
  * Class NewsRoomHelper. Contains a lot of functions to assist in AJAX requests.
@@ -50,14 +56,11 @@ class NewsRoomHelper {
 		
 		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsroomMessage WHERE start_date <= NOW() AND (ISNULL(end_date) OR end_date >= NOW())');
 		$oSet = new DBObjectSet($oSearch);
-
-		$aProfiles = UserRights::ListProfiles();
+		
 		$aMessages = [];
 		while($oMessage = $oSet->Fetch()) {
 			
-			$aTargetProfiles = explode(',', $oMessage->Get('target_profiles');
-			
-			if(count($aTargetProfiles) == 0 || count(array_intersect($aTargetProfiles, $aProfiles) > 0) {
+			if(static::MessageIsApplicable($oMessage) == true) {
 				$aMessages[] = $oMessage;
 			}
 			
@@ -94,9 +97,7 @@ class NewsRoomHelper {
 		
 		while($oMessage = $oSet->Fetch()) {
 			
-			$aTargetProfiles = explode(',', $oMessage->Get('target_profiles');
-			
-			if(count($aTargetProfiles) > 0 && count(array_intersect($aTargetProfiles, $aProfiles) == 0) {	
+			if(static::MessageIsApplicable($oMessage) == false) {	
 				// Current user should not see this message
 				continue;
 			}
@@ -253,6 +254,9 @@ HTML
 		// Add style
 		$oPage->add_saas('env-'.utils::GetCurrentEnvironment().'/'.static::MODULE_CODE.'/css/default.scss');
 		$sLabel = Dict::S('UI:News:AllMessages');
+		
+		// Add library for MarkDown
+		$oPage->add_linked_script(utils::GetAbsoluteUrlAppRoot().'js/showdown.min.js');
 
 		// Build markup
 		$oPage->add(
@@ -276,6 +280,7 @@ HTML
 	 */
 	protected static function GetTranslation($oMessage) {
 		
+		/** @var \ormLinkSet $oSetTranslations */
 		$oSetTranslations = $oMessage->Get('translations_list');
 		
 		/**
@@ -289,7 +294,7 @@ HTML
 				
 				// Matches user language
 				case ($oCurrentTranslation->Get('language') == UserRights::GetUserLanguage()):
-					return $oTranslation;
+					return $oCurrentTranslation;
 					
 				// Text is empty, but English string has been found
 				case ($oCurrentTranslation->Get('language') == 'EN US'):
@@ -305,6 +310,35 @@ HTML
 		
 		return $oTranslation;
 		
+	}
+	
+	/**
+	 * Checks whether current user falls under target profiles scope
+	 *
+	 * @param \ThirdPartyNewsroomMessage $oMessage Third party newsroom message
+	 * @param \User $oUser Optional user
+	 *
+	 * @return \Boolean
+	 */
+	protected static function MessageIsApplicable(ThirdPartyNewsroomMessage $oMessage, User $oUser = null) {
+		
+		$aTargetProfiles = explode(',', $oMessage->Get('target_profiles'));
+		$aUserProfiles = UserRights::ListProfiles($oUser);
+		$aOverlap = array_intersect($aTargetProfiles, $aUserProfiles);
+		
+		return ($oMessage->Get('target_profiles') == '' || count($aOverlap) > 0);
+		
+	}
+	
+	/**
+	 * Creates record to keep track of unread messages for user
+	 *
+	 * @param \ThirdPartyNewsroomMessage $oMessage Third party newsroom message
+	 *
+	 * @return \void
+	 */
+	public static function GenerateUnreadMessagesForUsers($oMessage) {
+		// @todo
 	}
 
 }

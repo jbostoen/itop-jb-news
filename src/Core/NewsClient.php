@@ -233,10 +233,23 @@
 														
 														$oTranslation->AllowWrite(true);
 														$oTranslation->DBUpdate();
+														continue; // Continue translations
 												
 													}
 												
 												}
+												
+												// Translation was added later
+												$oTranslation = MetaModel::NewObject('ThirdPartyNewsroomMessageTranslation', [
+													'message_id' => $iInstanceMsgId, // Remap
+													'language' => $aTranslation['language'],
+													'title' => $aTranslation['title'],
+													'text' => $aTranslation['text'],
+													'url' => $aTranslation['url']
+												]);
+												$oTranslation->AllowWrite(true);
+												$oTranslation->DBInsert();
+											
 												
 											}
 											
