@@ -13,6 +13,7 @@ require_once(APPROOT.'/application/loginwebpage.class.inc.php');
 require_once(APPROOT.'/application/ajaxwebpage.class.inc.php');
 require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news-client/src/Core/NewsRoomWebPage.php');
 
+use \jb_itop_extensions\NewsClient\NewsRoomWebPage;
 
 try {
 	
@@ -26,9 +27,9 @@ try {
 
 	// Retrieve global parameters
 	$sOperation = utils::ReadParam('operation', '');
-	$sVersion = utils::ReadParam('version', NewsroomHelper::DEFAULT_API_VERSION);
-	$sAppName = utils::ReadParam('app-name', NewsroomHelper::DEFAULT_APP_NAME, false, 'raw_data');
-	$sAppVersion = utils::ReadParam('app-version', NewsroomHelper::DEFAULT_APP_VERSION, false, 'raw_data');
+	$sVersion = utils::ReadParam('api_version', NewsroomHelper::DEFAULT_API_VERSION);
+	$sAppName = utils::ReadParam('app_name', NewsroomHelper::DEFAULT_APP_NAME, false, 'raw_data');
+	$sAppVersion = utils::ReadParam('app_version', NewsroomHelper::DEFAULT_APP_VERSION, false, 'raw_data');
 
 	// Check global parameters
 	if(empty($sOperation) || empty($sVersion)) {
@@ -39,7 +40,8 @@ try {
 	switch($sOperation) {
 		
 		case 'fetch':
-		case 'mark_all_as_read':
+		case 'fetch_for_instance':
+		case 'get_messages_for_instance':
 		
 			$sCallback = utils::ReadParam('callback', '');
 
@@ -99,7 +101,8 @@ try {
 			break;
 
 		case 'view_all':
-			$oPage = new \jb_itop_extensions\NewsClient\NewsRoomWebPage('All messages');
+		
+			$oPage = NewsRoomWebPage('All messages');
 			NewsroomHelper::MakeAllMessagesPage($oPage);
 			break;
 
@@ -112,7 +115,20 @@ try {
 			$oMessage = MetaModel::GetObject('ThirdPartyNewsroomMessage', $iMessageId, true, true);
 			header('Location: ' . $oMessage->Get('url'));
 			break;
+			
+		case 'get_messages_for_instance':
+		
+			// Retrieve messages
+			$aMessages = NewsServer::GetMessagesForInstance();
+			$sMessagesJSON = json_encode($aMessages);
 
+			// Prepare response
+			$sOutput = $sCallback . '(' . $sMessagesJSON . ')';
+
+			$oPage->SetContentType('application/jsonp');
+			echo $sOutput;
+			break;
+			
 		default:
 			$oPage->p('Invalid query.');
 			break;

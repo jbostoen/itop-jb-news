@@ -43,7 +43,7 @@ if(class_exists('NewsroomProviderBase')) {
 		public function IsApplicable(User $oUser = null) {
 			
 			// @todo review rights here!
-			if(utils::GetCurrentModuleSetting('enabled', false) == false) {
+			if(utils::GetCurrentModuleSetting('enabled', false) == false || utils::GetCurrentModuleSetting('client', false) == false) {
 				return false;
 			}
 			elseif($oUser !== null) {

@@ -31,6 +31,7 @@ SetupWebPage::AddModule(
 			'src/Core/NewsRoomHelper.php',
 			'src/Core/NewsRoomProvider.php',
 			'src/Core/NewsRoomWebPage.php',
+			'src/Core/NewsServer.php',
 			'src/Core/ProcessThirdPartyNews.php',
 		),
 		'webservice' => array(),
@@ -49,8 +50,10 @@ SetupWebPage::AddModule(
 		'settings' => array(
 			// Module specific settings go here, if any
 			'enabled' => true,
-			'time' => '15:06',
-			'url' => 'https://127.0.0.1:8182/test-newsroom/demo.php',
+			'client' => true,
+			'frequency' => 60,
+			'server' => true,
+			'source_url' => 'https://127.0.0.1:8182/test-newsroom/demo.php',
 		),
 	)
 );

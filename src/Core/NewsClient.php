@@ -13,6 +13,7 @@
 	use \DBObjectSearch;
 	use \DBObjectSet;
 	use \MetaModel;
+	use \UserRights;
 	use \utils;
 	
 	// Common
@@ -56,7 +57,7 @@
 		 */
 		protected static function GetNewsUrl() {
 			
-			$sUrl = utils::GetCurrentModuleSetting('url', null);
+			$sUrl = utils::GetCurrentModuleSetting('source_url', null);
 			
 			if($sUrl === null) {
 				throw Exception('News URL not defined');
@@ -84,6 +85,7 @@
 		
 			$sUserId = UserRights::GetUserId();
 			$sUserHash = hash('fnv1a64', $sUserId);
+			return $sUserHash;
 			
 		}
 		
@@ -126,7 +128,7 @@
 				// It may be necessary to retract/delete some messages at some point.
 				$aPostRequestData = array(
 					'operation' => 'get_messages_for_instance',
-					'version' => $sApiVersion,
+					'api_version' => $sApiVersion,
 					'instance_hash' => self::GetInstanceHash(),
 					'app_name' => $sApp,
 					'app_version' => $sVersion
