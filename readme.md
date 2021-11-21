@@ -1,4 +1,4 @@
-# jb-map
+# jb-news-client
 
 Copyright (C) 2019-2021 Jeffrey Bostoen
 
