@@ -10,34 +10,31 @@
 
 namespace jb_itop_extensions\NewsClient;
 
-// jb-jb_itop_extensions
-use \jb_itop_extensions\components\ScheduledProcess;
-
 // iTop internals
 use \CoreUnexpectedValue;
-use \iScheduledProcess;
+use \iBackgroundProcess;
 use \MetaModel;
 use \utils;
 
 /**
  * Class ScheduledProcessThirdPartyNews
  */
-class ScheduledProcessThirdPartyNews extends ScheduledProcess implements iScheduledProcess {
+class ProcessThirdPartyNews implements iBackgroundProcess {
 	
 	/**
 	 * @var \String Module code
 	 */
 	public const MODULE_CODE = 'jb-news-client';
-
+	
 	/**
-	 * Constructor.
+	 * @inheritdoc
 	 */
-	public function __construct() {
+	public function GetPeriodicity() {
 		
-		parent::__construct();
-
+		return (Int)MetaModel::GetModuleSetting(self::MODULE_CODE, 'frequency', 30 * 60); // minutes
+		
 	}
-
+	
 	/**
 	 * @inheritdoc
 	 */
@@ -47,16 +44,30 @@ class ScheduledProcessThirdPartyNews extends ScheduledProcess implements iSchedu
 		
 		try {
 			
-			NewsClient::GetMessages($this);
-			// NewsClient::PostMessageReadStatus();
+			NewsClient::RetrieveFromRemoteServer($this);
+			NewsClient::PostToRemoteServer();
 			
 		}
 		catch(Exception $e) {
 			$this->Trace($e->GetMessage());
 		}
 		
-		$this->Trace(self::MODULE_CODE.' - Finished processing News from Jeffrey Bostoen.');
+		$this->Trace(self::MODULE_CODE.' - Finished processing.');
 		
+	}
+	
+	/**
+	 * Could be used for debugging.
+	 *
+	 * @param \String $sMessage Message to put in the trace log (CRON output)
+	 * @param \String $sType Type of message. Possible values: info, error
+	 *
+	 * @return void
+	 */
+	public function Trace($sMessage, $sType = 'info') {
+		
+		// Nothing
+				
 	}
 	
 }

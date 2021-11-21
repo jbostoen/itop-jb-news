@@ -27,10 +27,11 @@ SetupWebPage::AddModule(
 		//
 		'datamodel' => array(
 			'model.jb-news-client.php',
-			'src/Core/BackgroundProcess.php',
 			'src/Core/NewsClient.php',
 			'src/Core/NewsRoomHelper.php',
 			'src/Core/NewsRoomProvider.php',
+			'src/Core/NewsRoomWebPage.php',
+			'src/Core/ProcessThirdPartyNews.php',
 		),
 		'webservice' => array(),
 		'data.struct' => array(// add your 'structure' definition XML files here,
@@ -49,6 +50,7 @@ SetupWebPage::AddModule(
 			// Module specific settings go here, if any
 			'enabled' => true,
 			'time' => '15:06',
+			'url' => 'https://127.0.0.1:8182/test-newsroom/demo.php',
 		),
 	)
 );

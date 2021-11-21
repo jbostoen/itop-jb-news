@@ -9,13 +9,17 @@
 
 	namespace jb_itop_extensions\NewsClient;
 
-	// jb-framework;
-	use \jb_itop_extensions\components\ScheduledProcess;
-
 	// iTop classes
 	use \DBObjectSearch;
 	use \DBObjectSet;
 	use \MetaModel;
+	use \utils;
+	
+	// Common
+	use \Exception;
+
+	// Custom classes
+	use \jb_itop_extensions\NewsClient\ProcessThirdPartyNews;
 
 	/**
 	 * Class NewsClient. An actual news client which retrieves messages from a third party (non Combodo) news source (person/organization).
@@ -28,12 +32,6 @@
 		private static $sApiVersion = '1.0';
 		
 		/**
-		 * @var \String $sNewsUrl News URL
-		 */
-		// private static $sNewsUrl = 'https://news.jeffreybostoen.be/test.php';
-		private static $sNewsUrl = 'https://127.0.0.1:8182/test-newsroom/demo.php';
-		
-		/**
 		 * @var \String $sThirdPartyName Third party name of person/organization publishing news messages
 		 */
 		private static $sThirdPartyName = 'jeffreybostoen';
@@ -41,7 +39,7 @@
 		/**
 		 * Gets News URL
 		 *
-		 * @return string
+		 * @return \String
 		 */
 		protected static function GetApiVersion() {
 			
@@ -52,18 +50,26 @@
 		/**
 		 * Gets News URL
 		 *
-		 * @return string
+		 * @return \String
+		 *
+		 * @throws \Exception
 		 */
 		protected static function GetNewsUrl() {
 			
-			return self::$sNewsUrl;
+			$sUrl = utils::GetCurrentModuleSetting('url', null);
+			
+			if($sUrl === null) {
+				throw Exception('News URL not defined');
+			}
+			
+			return $sUrl;
 			
 		}
 		
 		/**
 		 * Gets third party name
 		 *
-		 * @return string
+		 * @return \String
 		 */
 		protected static function GetThirdPartyName() {
 			
@@ -98,11 +104,11 @@
 		/**
 		 * Gets all the relevant messages for this instance
 		 *
-		 * @var \jb_itop_extensions\components\ScheduledProcess $oProcess Scheduled background process
+		 * @param \ProcessThirdPartyNews $oProcess Scheduled background process
 		 *
 		 * @return void
 		 */
-		public static function GetMessages(ScheduledProcess $oProcess) {
+		public static function RetrieveFromRemoteServer(ProcessThirdPartyNews $oProcess) {
 			
 			$sNewsUrl = self::GetNewsUrl();
 			$sThirdPartyName = self::GetThirdPartyName();
@@ -290,13 +296,15 @@
 		}
 		
 		/**
-		 * Send the info back to the news server
+		 * Send the info back to the news server.
 		 *
-		 * @var \jb_itop_extensions\components\ScheduledProcess $oProcess Scheduled background process
+		 * @param \ProcessThirdPartyNews $oProcess Scheduled background process
 		 *
 		 * @return void
+		 *
+		 * @details This could be used to post statistics to the server.
 		 */
-		public static function PostMessageReadStatus(ScheduledProcess $oProcess) {
+		public static function PostToRemoteServer(ProcessThirdPartyNews $oProcess) {
 			
 			// @todo Check whether this can be grouped without sending too much data in one call
 			return;

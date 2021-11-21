@@ -25,6 +25,9 @@ use \ThirdPartyNewsroomMessage;
 use \ThirdPartyNewsroomMessageTranslation;
 use \ThirdPartyUnreadMessageToUser;
 
+// Custom classes
+use \jb_itop_extensions\NewsClient\NewsRoomWebPage;
+
 /**
  * Class NewsRoomHelper. Contains a lot of functions to assist in AJAX requests.
  */
@@ -197,9 +200,9 @@ class NewsRoomHelper {
 	}
 
 	/**
-	 * Makes a web page displaying all messages
+	 * Makes a newsroom web page displaying all messages
 	 *
-	 * @param \WebPage $oPage
+	 * @param \NewsRoomWebPage $oPage
 	 *
 	 * @throws \CoreException
 	 * @throws \CoreUnexpectedValue
@@ -207,13 +210,13 @@ class NewsRoomHelper {
 	 * @throws \OQLException
 	 * @throws \Exception
 	 */
-	public static function MakeAllMessagesPage(WebPage &$oPage) {
+	public static function MakeAllMessagesPage(NewsRoomWebPage &$oPage) {
 		
 		$sMessageClass = 'ThirdPartyNewsroomMessage';
 		$sMessageIconAttCode = 'icon';
 
 		// Retrieve messages
-		$sMessagesHtml = '';
+		$aJsonMessages = [];
 		$aMessages = static::GetAllMessages();
 		foreach($aMessages as $oMessage) {
 			
@@ -231,21 +234,13 @@ class NewsRoomHelper {
 
 			if($oTranslation !== null) {
 				
-				$sMessagesHtml .=
-					<<<HTML
-<div class="jbnewsclient-message">
-			<a href="{$oTranslation->Get('url')}" target="_blank">
-				<div class="jbnewsclient-m-icon">
-					<img src="{$sIconUrl}" alt="Message icon" />
-				</div>
-				<div class="jbnewsclient-m-content">
-					<div class="jbnewsclient-m-text">{$oTranslation->Get('text')}</div>
-					<div class="jbnewsclient-m-date">{$oMessage->Get('start_date')}</div>
-				</div>
-			</a>
-		</div>
-HTML
-				;
+				$aJsonMessages[] = [
+					'url' => $oTranslation->Get('url'),
+					'icon' => $sIconUrl,
+					'start_date' => $oMessage->Get('start_date'),
+					'title' => $oTranslation->Get('title'),
+					'text' => $oTranslation->Get('text')
+				];
 			
 			}
 			
@@ -255,7 +250,8 @@ HTML
 		$oPage->add_saas('env-'.utils::GetCurrentEnvironment().'/'.static::MODULE_CODE.'/css/default.scss');
 		$sLabel = Dict::S('UI:News:AllMessages');
 		
-		// Add library for MarkDown
+		// Add libraries
+		$oPage->add_linked_script(utils::GetAbsoluteUrlAppRoot().'js/jquery.min.js');
 		$oPage->add_linked_script(utils::GetAbsoluteUrlAppRoot().'js/showdown.min.js');
 
 		// Build markup
@@ -264,11 +260,50 @@ HTML
 <div class="jbnewsclient-all-messages">
 	<h2>{$sLabel}</h2>
 	<div class="jbnewsclient-messages">
-		{$sMessagesHtml}
 	</div>
 </div>
+
 HTML
 		);
+		
+		$sJsonMessages = json_encode($aJsonMessages);
+		
+		$oPage->add_ready_script(
+<<<JS
+
+			var aThirdPartyNewsRoomMessages = {$sJsonMessages};
+
+			oShownDownConverter = new showdown.Converter(),
+			
+			$.each(aThirdPartyNewsRoomMessages, function(i) {
+				
+				var msg = aThirdPartyNewsRoomMessages[i];
+				var sTitle = oShownDownConverter.makeHtml(msg.title);
+				var sText = oShownDownConverter.makeHtml(msg.text);
+				
+				$('.jbnewsclient-messages').append(
+					'<div class="jbnewsclient-message">' +
+					'	<a href="' + msg.url + '" target="_blank">' +
+					'		<div class="jbnewsclient-m-icon">' +
+					'			<img src="' + msg.icon + '" alt="Message icon" />' +
+					'		</div>' +
+					'		<div class="jbnewsclient-m-content">' +
+					'			<div class="jbnewsclient-m-title">' + sTitle + '</div>' +
+					'			<div class="jbnewsclient-m-text">' + sText + '</div>' +
+					'			<div class="jbnewsclient-m-date">' + msg.start_date + '</div>' +
+					'		</div>' +
+					'	</a>' +
+					'</div>'
+				);
+				
+			});
+			
+			
+JS
+		);
+		
+		
+		
 	}
 
 	/**

@@ -23,18 +23,18 @@ use \User;
 
 if(class_exists('NewsroomProviderBase')) {
 	/**
-	 * Class JBNewsroomProvider
+	 * Class NewsRoomProvider
 	 *
 	 * Note: This is greatly inspired by the itop-hub-connector module.
 	 */
-	class JBNewsroomProvider extends NewsroomProviderBase {
+	class NewsRoomProvider extends NewsroomProviderBase {
 		
 		/**
 		 * @inheritDoc
 		 */
 		public function GetTTL() {
 			// Update every hour
-			return 60 /** 60*/;
+			return 60 * 60;
 		}
 
 		/**

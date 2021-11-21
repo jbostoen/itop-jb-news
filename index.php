@@ -6,11 +6,13 @@ use \jb_itop_extensions\NewsClient\Common\Helper\NewsroomHelper;
 @include_once '../approot.inc.php';
 @include_once '../../approot.inc.php';
 @include_once '../../../approot.inc.php';
-require_once APPROOT . 'application/application.inc.php';
-require_once APPROOT . 'application/webpage.class.inc.php';
+require_once APPROOT.'/application/application.inc.php';
+require_once APPROOT.'/application/webpage.class.inc.php';
 require_once(APPROOT.'/application/itopwebpage.class.inc.php');
 require_once(APPROOT.'/application/loginwebpage.class.inc.php');
-require_once APPROOT . 'application/ajaxwebpage.class.inc.php';
+require_once(APPROOT.'/application/ajaxwebpage.class.inc.php');
+require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news-client/src/Core/NewsRoomWebPage.php');
+
 
 try {
 	
@@ -97,7 +99,7 @@ try {
 			break;
 
 		case 'view_all':
-			$oPage = new WebPage('All messages');
+			$oPage = new \jb_itop_extensions\NewsClient\NewsRoomWebPage('All messages');
 			NewsroomHelper::MakeAllMessagesPage($oPage);
 			break;
 
