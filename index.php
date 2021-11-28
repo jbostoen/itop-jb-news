@@ -12,8 +12,10 @@ require_once(APPROOT.'/application/itopwebpage.class.inc.php');
 require_once(APPROOT.'/application/loginwebpage.class.inc.php');
 require_once(APPROOT.'/application/ajaxwebpage.class.inc.php');
 require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news-client/src/Core/NewsRoomWebPage.php');
+require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news-client/src/Core/NewsServer.php');
 
 use \jb_itop_extensions\NewsClient\NewsRoomWebPage;
+use \jb_itop_extensions\NewsClient\NewsServer;
 
 try {
 	
@@ -22,7 +24,7 @@ try {
 	// Check user rights and prompt if needed
 	$sLoginMessage = LoginWebPage::DoLogin();
 
-	$oPage = new ajax_page("");
+	$oPage = new ajax_page('');
 	$oPage->no_cache();
 
 	// Retrieve global parameters
@@ -40,8 +42,6 @@ try {
 	switch($sOperation) {
 		
 		case 'fetch':
-		case 'fetch_for_instance':
-		case 'get_messages_for_instance':
 		
 			$sCallback = utils::ReadParam('callback', '');
 
@@ -102,7 +102,7 @@ try {
 
 		case 'view_all':
 		
-			$oPage = NewsRoomWebPage('All messages');
+			$oPage = new NewsRoomWebPage('All messages');
 			NewsroomHelper::MakeAllMessagesPage($oPage);
 			break;
 
@@ -123,7 +123,7 @@ try {
 			$sMessagesJSON = json_encode($aMessages);
 
 			// Prepare response
-			$sOutput = $sCallback . '(' . $sMessagesJSON . ')';
+			$sOutput = $sMessagesJSON;
 
 			$oPage->SetContentType('application/jsonp');
 			echo $sOutput;

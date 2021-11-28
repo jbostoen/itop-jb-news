@@ -146,11 +146,14 @@
 								<item id="fieldset:NewsroomMessage:baseinfo">
 									<rank>10</rank>
 									<items>
-										<item id="thirdparty_name">
+										<item id="title">
 											<rank>1</rank>
 										</item>
+										<item id="thirdparty_name">
+											<rank>11</rank>
+										</item>
 										<item id="thirdparty_message_id">
-											<rank>2</rank>
+											<rank>12</rank>
 										</item>
 									</items>
 								</item>
@@ -216,6 +219,7 @@
 				<uniqueness_rules>
 					<rule id="unique_language">
 						<attributes>
+							<attribute id="message_id"/>
 							<attribute id="language"/>
 						</attributes>
 					</rule>

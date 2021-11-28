@@ -56,7 +56,7 @@
 		/**
 		 * Gets all the relevant messages for an instance
 		 *
-		 * @return void
+		 * @return \Array
 		 */
 		public static function GetMessagesForInstance() {
 			
@@ -65,10 +65,53 @@
 			$sInstanceId = self::GetInstanceHash();
 			
 			// Output all messages with their translations
-			// Theoretically additional filtering could be applied to reduce JSON size
+			// Theoretically additional filtering could be applied to reduce JSON size;
+			// for instance to only return messages if certain extensions are installed
 			// Or logging could be added
 			
+			$oFilterMessages = new DBObjectSearch('ThirdPartyNewsroomMessage');
+			
+			// Some publications might still be hidden (surprise announcement, promo, limited offer, ...)
+			$sNow = date('Y-m-d H:i:s');
+			$sOQL = 'SELECT ThirdPartyNewsroomMessage WHERE start_date <= "'.$sNow.'" AND (ISNULL(end_date) OR end_date >= "'.$sNow.'")';
+			$oSetMessages = new DBObjectSet(DBObjectSearch::FromOQL($sOQL));
+			
+			$aObjects = [];
+			
+			while($oMessage = $oSetMessages->Fetch()) {
 				
+				// Unfortunately in iTop 2.7 there's no native function to output all field info of an object
+				
+				$aTranslations = [];
+				
+				/** @var \ormLinkSet $oSetTranslations Translations of a message */
+				$oSetTranslations = $oMessage->Get('translations_list');
+				
+				while($oTranslation = $oSetTranslations->Fetch()) {
+					
+					$aTranslations[] = [
+						'language' => $oTranslation->Get('language'),
+						'title' => $oTranslation->Get('title'),
+						'text' => $oTranslation->Get('text'),
+						'url' => $oTranslation->Get('url')
+					];
+					
+				}
+				
+				$aObjects[] = [
+					'id' => $oMessage->Get('thirdparty_message_id'),
+					'title' => $oMessage->Get('title'),
+					'icon' => $oMessage->Get('icon'),
+					'start_date' => $oMessage->Get('start_date'),
+					'end_date' => $oMessage->Get('end_date'),
+					'priority' => $oMessage->Get('priority'),
+					'target_profiles' => $oMessage->Get('target_profiles'),
+					'translations_list' => $aTranslations
+				];
+				
+			}
+			
+			return $aObjects;
 				
 		}
 		

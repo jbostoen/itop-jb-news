@@ -138,10 +138,9 @@
 				curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, $aPostRequestData);
 				curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
 				
-				// Only here to test on local installations.
-				// @todo Remove this!
-				curl_setopt($cURLConnection, CURLOPT_SSL_VERIFYPEER, false);
-				curl_setopt($cURLConnection, CURLOPT_SSL_VERIFYHOST, false);
+				// Only here to test on local installations. Not meant to be enforced!
+				// curl_setopt($cURLConnection, CURLOPT_SSL_VERIFYPEER, false);
+				// curl_setopt($cURLConnection, CURLOPT_SSL_VERIFYHOST, false);
 
 				$sApiResponse = curl_exec($cURLConnection);
 				
@@ -151,7 +150,7 @@
 					
 					$oProcess->Trace('. Error: cURL connection to '.$sNewsUrl.' failed: '.$sErrorMessage);
 					
-					// Abort
+					// Abort. Otherwise messages might just get deleted while they shouldn't.
 					return;
 					
 				}
@@ -163,7 +162,7 @@
 				// (except for one to recommend to upgrade the extension)
 				$aMessages = json_decode($sApiResponse, true);
 				
-				// Get messages currently in database
+				// Get messages currently in database for this third party source
 				$oFilterMessages = new DBObjectSearch('ThirdPartyNewsroomMessage');
 				$oFilterMessages->AddCondition('thirdparty_name', self::GetThirdPartyName(), '=');
 				$oSetMessages = new DBObjectSet($oFilterMessages);
@@ -227,6 +226,7 @@
 											
 											foreach($aMessage['translations_list'] as $aTranslation) {
 												
+												// Looping through this set a couple of times
 												$oSetTranslations->Rewind();
 												
 												while($oTranslation = $oSetTranslations->Fetch()) {
@@ -241,13 +241,13 @@
 														
 														$oTranslation->AllowWrite(true);
 														$oTranslation->DBUpdate();
-														continue; // Continue translations
+														continue; // Continue processing translations since this one has been updated (= is not new)
 												
 													}
 												
 												}
 												
-												// Translation was added later
+												// Translation is new
 												$oTranslation = MetaModel::NewObject('ThirdPartyNewsroomMessageTranslation', [
 													'message_id' => $iInstanceMsgId, // Remap
 													'language' => $aTranslation['language'],
