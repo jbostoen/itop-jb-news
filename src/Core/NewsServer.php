@@ -99,7 +99,7 @@
 				}
 				
 				$aObjects[] = [
-					'id' => $oMessage->Get('thirdparty_message_id'),
+					'thirdparty_message_id' => $oMessage->Get('thirdparty_message_id'),
 					'title' => $oMessage->Get('title'),
 					'icon' => $oMessage->Get('icon'),
 					'start_date' => $oMessage->Get('start_date'),

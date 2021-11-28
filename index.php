@@ -22,8 +22,17 @@ try {
 	require_once APPROOT . '/application/startup.inc.php';
 	
 	// Check user rights and prompt if needed
-	$sLoginMessage = LoginWebPage::DoLogin();
-
+	$sOperation = utils::ReadParam('operation', '');
+	
+	switch($sOperation) {
+		case 'get_messages_for_instance':
+			// No authentication needed
+			break;
+			
+		default:
+			$sLoginMessage = LoginWebPage::DoLogin();
+	}
+	
 	$oPage = new ajax_page('');
 	$oPage->no_cache();
 
@@ -125,7 +134,8 @@ try {
 			// Prepare response
 			$sOutput = $sMessagesJSON;
 
-			$oPage->SetContentType('application/jsonp');
+			// Regular JSON here, not JSONP
+			$oPage->SetContentType('application/json');
 			echo $sOutput;
 			break;
 			

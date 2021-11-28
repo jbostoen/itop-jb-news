@@ -126,13 +126,24 @@
 			
 				// All messages will be requested.
 				// It may be necessary to retract/delete some messages at some point.
-				$aPostRequestData = array(
+				$aPostRequestData = [
 					'operation' => 'get_messages_for_instance',
 					'api_version' => $sApiVersion,
 					'instance_hash' => self::GetInstanceHash(),
 					'app_name' => $sApp,
 					'app_version' => $sVersion
-				);
+				];
+				
+				if(strpos($sNewsUrl, '?') !== false) {
+					$sParameters = explode('?', $sNewsUrl)[1];
+					parse_str($sParameters, $aParameters);
+					
+					// Meant to get parameters from a URL, for instance if a news URL uses this extension as a client and uses a configured URL like
+					// https://127.0.0.1:8182/iTop-clients/web/pages/exec.php?&exec_module=jb-news-client&exec_page=index.php&exec_env=production-news&operation=get_messages_for_instance&version=1.0
+					$aPostRequestData = array_merge($aPostRequestData, $aParameters);
+					
+					
+				}
 
 				$cURLConnection = curl_init($sNewsUrl);
 				curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, $aPostRequestData);
@@ -156,6 +167,8 @@
 				}
 
 				curl_close($cURLConnection);
+				
+				$oProcess->Trace('. Response: '.$sApiResponse);
 
 				// Assume these messages are in the correct format.
 				// If the format has changed in a backwards not compatible way, the API should simply not return any more messages

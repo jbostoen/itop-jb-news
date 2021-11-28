@@ -31,7 +31,7 @@ class ProcessThirdPartyNews implements iBackgroundProcess {
 	 */
 	public function GetPeriodicity() {
 		
-		return (Int)MetaModel::GetModuleSetting(self::MODULE_CODE, 'frequency', 30 * 60); // minutes
+		return (Int)MetaModel::GetModuleSetting(self::MODULE_CODE, 'frequency', 1 * 60); // minutes
 		
 	}
 	
@@ -45,7 +45,7 @@ class ProcessThirdPartyNews implements iBackgroundProcess {
 		try {
 			
 			NewsClient::RetrieveFromRemoteServer($this);
-			NewsClient::PostToRemoteServer();
+			NewsClient::PostToRemoteServer($this);
 			
 		}
 		catch(Exception $e) {
@@ -67,6 +67,7 @@ class ProcessThirdPartyNews implements iBackgroundProcess {
 	public function Trace($sMessage, $sType = 'info') {
 		
 		// Nothing
+		// echo $sMessage;
 				
 	}
 	

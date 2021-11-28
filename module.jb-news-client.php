@@ -53,7 +53,7 @@ SetupWebPage::AddModule(
 			'client' => true,
 			'frequency' => 60,
 			'server' => true,
-			'source_url' => 'https://127.0.0.1:8182/test-newsroom/demo.php',
+			'source_url' => 'https://news.jeffreybostoen.be/pages/exec.php?&exec_module=jb-news-client&exec_page=index.php&exec_env=production-news',
 		),
 	)
 );
