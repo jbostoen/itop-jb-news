@@ -357,6 +357,7 @@ JS
 	 */
 	protected static function MessageIsApplicable(ThirdPartyNewsroomMessage $oMessage, User $oUser = null) {
 		
+		$sTargetProfiles = $oMessage->Get('target_profiles');
 		$sTargetProfiles = preg_replace('/[\s]{1,},[\s]{1,}/', '', $sTargetProfiles);
 		$aTargetProfiles = explode(',', $sTargetProfiles);
 		$aUserProfiles = UserRights::ListProfiles($oUser);

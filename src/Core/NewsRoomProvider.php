@@ -46,11 +46,11 @@ if(class_exists('NewsroomProviderBase')) {
 			if(utils::GetCurrentModuleSetting('enabled', false) == false || utils::GetCurrentModuleSetting('client', false) == false) {
 				return false;
 			}
-			elseif($oUser !== null) {
-				return true;
+			elseif($oUser === null) {
+				return false;
 			}
 			else {
-				return false;
+				return true;
 			}
 
 		}
