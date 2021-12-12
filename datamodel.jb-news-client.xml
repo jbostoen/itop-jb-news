@@ -88,39 +88,7 @@
 					<edit_mode>actions</edit_mode>
 				</field>
 			</fields>
-			<methods>
-				<method id="GenerateUnreadMessages">
-					<comment>/**
-	* Note: This should be refactored into a background task if there's ever an instance with lots of users.
-	* Otherwise we might crash the server by retrieving all users at once.
-	*
-	* @author Guillaume Lajarige
-	* @author Jeffrey Bostoen
-	*/</comment>
-					<static>false</static>
-					<access>protected</access>
-					<code><![CDATA[
-					
-	protected function GenerateUnreadMessages() {
-	
-		// Create a record for each user
-		$oUserSearch = DBObjectSearch::FromOQL('SELECT User');
-		$oUserSet = new DBObjectSet($oUserSearch);
-		$oUserSet->OptimizeColumnLoad(array());
-
-		while($oUser = $oUserSet->Fetch()) {
-			$oUnreadMessage = MetaModel::NewObject('ThirdPartyUnreadMessageToUser', array(
-				'user_id' => $oUser->GetKey(),
-				'message_id' => $this->GetKey(),
-			));
-			$oUnreadMessage->DBInsert();
-		}
-		
-	}
-						]]></code>
-					<arguments/>
-				</method>
-			</methods>
+			<methods/>
 			<presentation>
 				<list>
 					<items>

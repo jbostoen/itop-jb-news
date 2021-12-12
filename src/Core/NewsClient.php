@@ -1,9 +1,9 @@
 <?php
 
 /**
- * @copyright   Copyright (C) 2019-2020 Jeffrey Bostoen
+ * @copyright   Copyright (c) 2019-2021 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2020-11-04 15:45:48
+ * @version     2.7.211212
  *
  */
 
@@ -220,6 +220,8 @@
 						
 						}
 						
+						NewsRoomHelper::GenerateUnreadMessagesForUsers($oMessage);
+						
 						
 					}
 					else {
@@ -228,6 +230,8 @@
 						while($oMessage = $oSetMessages->Fetch()) {
 							
 							if($oMessage->Get('thirdparty_message_id') == $aMessage['thirdparty_message_id']) {
+								
+								$iInstanceMsgId = $oMessage->GetKey();
 								
 								foreach($aMessage as $sAttCode => $sValue) {
 									
@@ -249,15 +253,16 @@
 													
 													if($oTranslation->Get('language') == $aTranslation['language']) {
 														
-														foreach($aTranslation as $sAttCode => $sValue) {
+														// message_id and language won't change.
+														foreach(['text', 'title', 'url'] as $sAttCode) {
 															
-															$oTranslation->Set($sAttCode, $sValue);
+															$oTranslation->Set($sAttCode, $aTranslation[$sAttCode]);
 															
 														}
 														
 														$oTranslation->AllowWrite(true);
 														$oTranslation->DBUpdate();
-														continue; // Continue processing translations since this one has been updated (= is not new)
+														continue 2; // Continue processing translations_list since this one has been updated (it existed)
 												
 													}
 												

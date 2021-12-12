@@ -1,13 +1,13 @@
 <?php
 
 /**
- * @copyright   Copyright (C) 2019-2020 Jeffrey Bostoen
+ * @copyright   Copyright (c) 2019-2021 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2020-11-04 15:45:48
+ * @version     2.7.211212
  *
  */
 
-namespace jb_itop_extensions\NewsClient\Common\Helper;
+namespace jb_itop_extensions\NewsClient;
 
 // iTop internals
 use \DBObjectSearch;
@@ -357,7 +357,8 @@ JS
 	 */
 	protected static function MessageIsApplicable(ThirdPartyNewsroomMessage $oMessage, User $oUser = null) {
 		
-		$aTargetProfiles = explode(',', $oMessage->Get('target_profiles'));
+		$sTargetProfiles = preg_replace('/[\s]{1,},[\s]{1,}/', '', $sTargetProfiles);
+		$aTargetProfiles = explode(',', $sTargetProfiles);
 		$aUserProfiles = UserRights::ListProfiles($oUser);
 		$aOverlap = array_intersect($aTargetProfiles, $aUserProfiles);
 		
@@ -373,7 +374,23 @@ JS
 	 * @return \void
 	 */
 	public static function GenerateUnreadMessagesForUsers($oMessage) {
-		// @todo
+
+		// @todo For now this method is only called when the message is created. There's no track record of (un)read messages. Hence, there's a record for each user, even if it's not the target user.
+
+		// Create a record for each user
+		$oUserSearch = DBObjectSearch::FromOQL('SELECT User');
+		$oUserSet = new DBObjectSet($oUserSearch);
+		$oUserSet->OptimizeColumnLoad(array());
+
+		while($oUser = $oUserSet->Fetch()) {
+						
+			$oUnreadMessage = MetaModel::NewObject('ThirdPartyUnreadMessageToUser', array(
+				'user_id' => $oUser->GetKey(),
+				'message_id' => $oMessage->GetKey(),
+			));
+			$oUnreadMessage->DBInsert();
+		}
+		
 	}
 
 }

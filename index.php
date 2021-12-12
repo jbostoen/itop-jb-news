@@ -1,14 +1,13 @@
 <?php
 
 /**
- * @copyright   Copyright (C) 2019-2020 Jeffrey Bostoen
+ * @copyright   Copyright (c) 2019-2021 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2020-11-04 15:45:48
+ * @version     2.7.211212
  *
  */
 
 
-use \jb_itop_extensions\NewsClient\Common\Helper\NewsroomHelper;
 
 @include_once('../approot.inc.php');
 @include_once('../../approot.inc.php');
@@ -23,6 +22,7 @@ require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news-client/src/
 
 use \jb_itop_extensions\NewsClient\NewsRoomWebPage;
 use \jb_itop_extensions\NewsClient\NewsServer;
+use \jb_itop_extensions\NewsClient\NewsRoomHelper;
 
 try {
 	

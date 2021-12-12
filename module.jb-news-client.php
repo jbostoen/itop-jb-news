@@ -8,7 +8,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'jb-news-client/1.0.0',
+	'jb-news-client/2.7.211212',
 	array(
 		// Identification
 		//
@@ -52,8 +52,8 @@ SetupWebPage::AddModule(
 			'enabled' => true,
 			'client' => true,
 			'frequency' => 60,
-			'server' => true,
-			'source_url' => 'https://news.jeffreybostoen.be/pages/exec.php?&exec_module=jb-news-client&exec_page=index.php&exec_env=production-news',
+			'server' => false,
+			'source_url' => 'https://support.jeffreybostoen.be/pages/exec.php?&exec_module=jb-news-client&exec_page=index.php&exec_env=production-news',
 		),
 	)
 );
