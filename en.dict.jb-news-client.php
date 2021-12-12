@@ -48,5 +48,8 @@ Dict::Add('EN US', 'English', 'English', array(
 	
 	'UI:News:AllMessages' => 'All messages',
 	
+	'ThirdPartyNewsroomMessage:info' => 'Info',
+	'ThirdPartyNewsroomMessage:publication' => 'Publication',
+	
 ));
 

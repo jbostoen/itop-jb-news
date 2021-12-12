@@ -143,7 +143,7 @@
 						<item id="col:col0">
 							<rank>10</rank>
 							<items>
-								<item id="fieldset:NewsroomMessage:baseinfo">
+								<item id="fieldset:ThirdPartyNewsroomMessage:info">
 									<rank>10</rank>
 									<items>
 										<item id="title">
@@ -162,7 +162,7 @@
 						<item id="col:col1">
 							<rank>20</rank>
 							<items>
-								<item id="fieldset:NewsroomMessage:moreinfo">
+								<item id="fieldset:ThirdPartyNewsroomMessage:publication">
 									<items>
 										<item id="start_date">
 											<rank>20</rank>

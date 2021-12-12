@@ -1,13 +1,20 @@
 <?php
 
+/**
+ * @copyright   Copyright (C) 2019-2020 Jeffrey Bostoen
+ * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
+ * @version     2020-11-04 15:45:48
+ *
+ */
+
 
 use \jb_itop_extensions\NewsClient\Common\Helper\NewsroomHelper;
 
-@include_once '../approot.inc.php';
-@include_once '../../approot.inc.php';
-@include_once '../../../approot.inc.php';
-require_once APPROOT.'/application/application.inc.php';
-require_once APPROOT.'/application/webpage.class.inc.php';
+@include_once('../approot.inc.php');
+@include_once('../../approot.inc.php');
+@include_once('../../../approot.inc.php');
+require_once(APPROOT.'/application/application.inc.php');
+require_once(APPROOT.'/application/webpage.class.inc.php');
 require_once(APPROOT.'/application/itopwebpage.class.inc.php');
 require_once(APPROOT.'/application/loginwebpage.class.inc.php');
 require_once(APPROOT.'/application/ajaxwebpage.class.inc.php');
@@ -37,7 +44,6 @@ try {
 	$oPage->no_cache();
 
 	// Retrieve global parameters
-	$sOperation = utils::ReadParam('operation', '');
 	$sVersion = utils::ReadParam('api_version', NewsroomHelper::DEFAULT_API_VERSION);
 	$sAppName = utils::ReadParam('app_name', NewsroomHelper::DEFAULT_APP_NAME, false, 'raw_data');
 	$sAppVersion = utils::ReadParam('app_version', NewsroomHelper::DEFAULT_APP_VERSION, false, 'raw_data');

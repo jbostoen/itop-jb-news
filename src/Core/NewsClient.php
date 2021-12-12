@@ -101,6 +101,9 @@
 			// to tell which news they have already read.
 			$sInstanceId = hash('fnv1a64', $sITopUUID);
 			
+			return $sInstanceId;
+		
+		
 		}
 		
 		/**

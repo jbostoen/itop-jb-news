@@ -5,19 +5,16 @@
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
  * @version     2020-11-04 15:45:48
  *
- * Definition of ScheduledProcessCrabSync
  */
 
 namespace jb_itop_extensions\NewsClient;
 
 // iTop internals
-use \CoreUnexpectedValue;
 use \iBackgroundProcess;
 use \MetaModel;
-use \utils;
 
 /**
- * Class ScheduledProcessThirdPartyNews
+ * Class ProcessThirdPartyNews. a background process which pulls news messages from a third party news source.
  */
 class ProcessThirdPartyNews implements iBackgroundProcess {
 	
@@ -40,7 +37,8 @@ class ProcessThirdPartyNews implements iBackgroundProcess {
 	 */
 	public function Process($iTimeLimit) {
 		
-		$this->Trace(self::MODULE_CODE.' - Processing News ...');
+		
+		$this->Trace(self::MODULE_CODE.' - Processing ...');
 		
 		try {
 			
@@ -52,7 +50,7 @@ class ProcessThirdPartyNews implements iBackgroundProcess {
 			$this->Trace($e->GetMessage());
 		}
 		
-		$this->Trace(self::MODULE_CODE.' - Finished processing.');
+		$this->Trace(self::MODULE_CODE.' - Finished.');
 		
 	}
 	
