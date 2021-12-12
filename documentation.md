@@ -10,10 +10,10 @@ In iTop configuration file, these settings are available:
 		// Module specific settings go here, if any
 		'enabled' => true, // Whether the module is enabled or not
 		'client' => true, // Acts as client
-		'frequency' => 60, // Check the remote news source every N minutes (once the cron job is running)
+		'frequency' => 60, // Interval in minutes before checking the remote news source (if the cron job is running)
 		'server' => false, // Acts as server
 		'source_url' => 'https://127.0.0.1:8182/test-newsroom/demo.php', // Remote news source
-		'ttl' => 3600, // How long before checking again (frontend) if a user has new messages
+		'ttl' => 3600, // Time interval in milliseconds before checking again (frontend) if a user has new messages
 	),
 ```
 
