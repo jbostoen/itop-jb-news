@@ -34,7 +34,7 @@ if(class_exists('NewsroomProviderBase')) {
 		 */
 		public function GetTTL() {
 			// Update every hour
-			return 60 * 60;
+			return (Int)utils::GetCurrentModuleSetting('ttl', 3600);
 		}
 
 		/**
@@ -43,15 +43,15 @@ if(class_exists('NewsroomProviderBase')) {
 		public function IsApplicable(User $oUser = null) {
 			
 			// @todo review rights here!
-			if(utils::GetCurrentModuleSetting('enabled', false) == false || utils::GetCurrentModuleSetting('client', false) == false) {
-				return false;
+			switch(true) {
+				case (utils::GetCurrentModuleSetting('enabled', false) == false): // Not enabled
+				case (utils::GetCurrentModuleSetting('client', false) == false): // Not acting as a client
+				case ($oUser === null): // No user (not sure when this happens)
+					return false;
 			}
-			elseif($oUser === null) {
-				return false;
-			}
-			else {
-				return true;
-			}
+			
+			// All other cases
+			return true;
 
 		}
 

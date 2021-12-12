@@ -12,7 +12,8 @@ In iTop configuration file, these settings are available:
 		'client' => true, // Acts as client
 		'frequency' => 60, // Check the remote news source every N minutes (once the cron job is running)
 		'server' => false, // Acts as server
-		'source_url' => 'https://127.0.0.1:8182/test-newsroom/demo.php', // News source
+		'source_url' => 'https://127.0.0.1:8182/test-newsroom/demo.php', // Remote news source
+		'ttl' => 3600, // How long before checking again (frontend) if a user has new messages
 	),
 ```
 

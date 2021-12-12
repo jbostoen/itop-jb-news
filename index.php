@@ -57,6 +57,7 @@ try {
 	switch($sOperation) {
 		
 		case 'fetch':
+		case 'mark_all_as_read':
 		
 			$sCallback = utils::ReadParam('callback', '');
 

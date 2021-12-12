@@ -124,7 +124,7 @@ class NewsRoomHelper {
 
 				$aMessages[] = array(
 					'id' => $oMessage->GetKey(),
-					'text' => $oTranslation->Get('text'),
+					'text' => '# '.$oTranslation->Get('title').PHP_EOL.PHP_EOL.$oTranslation->Get('text'),
 					'url' => $oTranslation->Get('url'),
 					'start_date' => $oMessage->Get('start_date'),
 					'priority' => $oMessage->Get('priority'),

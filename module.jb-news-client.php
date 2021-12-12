@@ -53,6 +53,7 @@ SetupWebPage::AddModule(
 			'client' => true,
 			'frequency' => 60,
 			'server' => false,
+			'ttl' => 60,
 			'source_url' => 'https://support.jeffreybostoen.be/pages/exec.php?&exec_module=jb-news-client&exec_page=index.php&exec_env=production-news',
 		),
 	)
