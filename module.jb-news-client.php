@@ -22,6 +22,7 @@ SetupWebPage::AddModule(
 		),
 		'mandatory' => false,
 		'visible' => true,
+		'auto_select' => true,
 
 		// Components
 		//
@@ -54,7 +55,7 @@ SetupWebPage::AddModule(
 			'frequency' => 60,
 			'server' => false,
 			'ttl' => 3600,
-			'source_url' => 'https://support.jeffreybostoen.be/pages/exec.php?&exec_module=jb-news-client&exec_page=index.php&exec_env=production-news',
+			'source_url' => 'https://support.jeffreybostoen.be/pages/exec.php?&exec_module=jb-news-client&exec_page=index.php&exec_env=production',
 		),
 	)
 );

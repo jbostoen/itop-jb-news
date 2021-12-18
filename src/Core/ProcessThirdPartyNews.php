@@ -28,7 +28,8 @@ class ProcessThirdPartyNews implements iBackgroundProcess {
 	 */
 	public function GetPeriodicity() {
 		
-		return (Int)MetaModel::GetModuleSetting(self::MODULE_CODE, 'frequency', 1 * 60); // minutes
+		// Periodicity (is returned in ms)
+		return (Int)(MetaModel::GetModuleSetting(self::MODULE_CODE, 'frequency', 60) * 60); // minutes
 		
 	}
 	
