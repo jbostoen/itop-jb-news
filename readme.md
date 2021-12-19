@@ -1,4 +1,4 @@
-# jb-news-client
+# jb-news
 
 Copyright (c) 2019-2021 Jeffrey Bostoen
 
@@ -23,4 +23,5 @@ PHP:
 ## Credits
 
 Heavily based on work by Guillaume Lajarige (@Molkobain) and Combodo's iTop Hub Connector.
+
 
