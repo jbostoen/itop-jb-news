@@ -128,7 +128,7 @@ try {
 			$bMarked = NewsroomHelper::MarkMessageAsReadForUser($iMessageId, $oUser);
 
 			// Redirect to final URL
-			$oMessage = MetaModel::GetObject('ThirdPartyNewsroomMessage', $iMessageId, true, true);
+			$oMessage = MetaModel::GetObject('ThirdPartyNewsRoomMessage', $iMessageId, true, true);
 			header('Location: ' . $oMessage->Get('url'));
 			break;
 			

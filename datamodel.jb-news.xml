@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <itop_design xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.6">
 	<classes>
-		<class id="ThirdPartyNewsroomMessage" _delta="define">
+		<class id="ThirdPartyNewsRoomMessage" _delta="define">
 			<parent>cmdbAbstractObject</parent>
 			<properties>
 				<category>bizmodel,searchable</category>
@@ -83,7 +83,7 @@
 					<is_null_allowed>true</is_null_allowed>
 				</field>
 				<field id="translations_list" xsi:type="AttributeLinkedSet">
-					<linked_class>ThirdPartyNewsroomMessageTranslation</linked_class>
+					<linked_class>ThirdPartyNewsRoomMessageTranslation</linked_class>
 					<ext_key_to_me>message_id</ext_key_to_me>
 					<edit_mode>actions</edit_mode>
 				</field>
@@ -111,7 +111,7 @@
 						<item id="col:col0">
 							<rank>10</rank>
 							<items>
-								<item id="fieldset:ThirdPartyNewsroomMessage:info">
+								<item id="fieldset:ThirdPartyNewsRoomMessage:info">
 									<rank>10</rank>
 									<items>
 										<item id="title">
@@ -130,7 +130,7 @@
 						<item id="col:col1">
 							<rank>20</rank>
 							<items>
-								<item id="fieldset:ThirdPartyNewsroomMessage:publication">
+								<item id="fieldset:ThirdPartyNewsRoomMessage:publication">
 									<items>
 										<item id="start_date">
 											<rank>20</rank>
@@ -168,7 +168,7 @@
 				</default_search>
 			</presentation>
 		</class>
-		<class id="ThirdPartyNewsroomMessageTranslation" _delta="define">
+		<class id="ThirdPartyNewsRoomMessageTranslation" _delta="define">
 			<parent>cmdbAbstractObject</parent>
 			<properties>
 				<category>bizmodel,searchable</category>
@@ -197,7 +197,7 @@
 				<!-- Note: this refers to the message_id that has been created by the client; it's NOT the third party message ID -->
 				<field id="message_id" xsi:type="AttributeExternalKey">
 					<sql>message_id</sql>
-					<target_class>ThirdPartyNewsroomMessage</target_class>
+					<target_class>ThirdPartyNewsRoomMessage</target_class>
 					<is_null_allowed>false</is_null_allowed>
 					<on_target_delete>DEL_AUTO</on_target_delete>
 					<display_style>list</display_style>
@@ -330,7 +330,7 @@
 					<dependencies/>
 					<default_value/>
 					<is_null_allowed>false</is_null_allowed>
-					<target_class>ThirdPartyNewsroomMessage</target_class>
+					<target_class>ThirdPartyNewsRoomMessage</target_class>
 					<on_target_delete>DEL_AUTO</on_target_delete>
 					<tracking_level>none</tracking_level>
 				</field>

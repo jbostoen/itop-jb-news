@@ -21,8 +21,8 @@ use \utils;
 use \WebPage;
 
 // iTop classes
-use \ThirdPartyNewsroomMessage;
-use \ThirdPartyNewsroomMessageTranslation;
+use \ThirdPartyNewsRoomMessage;
+use \ThirdPartyNewsRoomMessageTranslation;
 use \ThirdPartyUnreadMessageToUser;
 
 // Custom classes
@@ -48,7 +48,7 @@ class NewsRoomHelper {
 	/**
 	 * Returns all published messages until now (not those planned for further publication) for this user
 	 *
-	 * @return \ThirdPartyNewsroomMessage[] Set of messages
+	 * @return \ThirdPartyNewsRoomMessage[] Set of messages
 	 *
 	 * @throws \CoreException
 	 * @throws \CoreUnexpectedValue
@@ -57,7 +57,7 @@ class NewsRoomHelper {
 	 */
 	protected static function GetAllMessages() {
 		
-		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsroomMessage WHERE start_date <= NOW() AND (ISNULL(end_date) OR end_date >= NOW())');
+		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsRoomMessage WHERE start_date <= NOW() AND (ISNULL(end_date) OR end_date >= NOW())');
 		$oSet = new DBObjectSet($oSearch);
 		
 		$aMessages = [];
@@ -74,7 +74,7 @@ class NewsRoomHelper {
 	}
 
 	/**
-	 * Returns an array of ThirdPartyNewsroomMessage data prepared for the webservice.
+	 * Returns an array of ThirdPartyNewsRoomMessage data prepared for the webservice.
 	 *
 	 * @return array
 	 *
@@ -87,7 +87,7 @@ class NewsRoomHelper {
 	public static function GetUnreadMessagesForUser() {
 		
 		$oUser = UserRights::GetUserObject();
-		$sMessageClass = 'ThirdPartyNewsroomMessage';
+		$sMessageClass = 'ThirdPartyNewsRoomMessage';
 		$sMessageIconAttCode = 'icon';
 
 		$aSearchParams = array('user_id' => $oUser->GetKey());
@@ -212,7 +212,7 @@ class NewsRoomHelper {
 	 */
 	public static function MakeAllMessagesPage(NewsRoomWebPage &$oPage) {
 		
-		$sMessageClass = 'ThirdPartyNewsroomMessage';
+		$sMessageClass = 'ThirdPartyNewsRoomMessage';
 		$sMessageIconAttCode = 'icon';
 
 		// Retrieve messages
@@ -309,9 +309,9 @@ JS
 	/**
 	 * Gets translation for current user
 	 *
-	 * @param \ThirdPartyNewsroomMessage $oMessage Third party newsroom message
+	 * @param \ThirdPartyNewsRoomMessage $oMessage Third party newsroom message
 	 *
-	 * @return \ThirdPartyNewsroomMessageTranslation
+	 * @return \ThirdPartyNewsRoomMessageTranslation
 	 */
 	protected static function GetTranslation($oMessage) {
 		
@@ -319,7 +319,7 @@ JS
 		$oSetTranslations = $oMessage->Get('translations_list');
 		
 		/**
-		 * @var \ThirdPartyNewsroomMessageTranslation $oTranslation Third Party Newsroom Message Translation
+		 * @var \ThirdPartyNewsRoomMessageTranslation $oTranslation Third Party Newsroom Message Translation
 		 */
 		$oTranslation = null;
 		
@@ -350,12 +350,12 @@ JS
 	/**
 	 * Checks whether current user falls under target profiles scope
 	 *
-	 * @param \ThirdPartyNewsroomMessage $oMessage Third party newsroom message
+	 * @param \ThirdPartyNewsRoomMessage $oMessage Third party newsroom message
 	 * @param \User $oUser Optional user
 	 *
 	 * @return \Boolean
 	 */
-	protected static function MessageIsApplicable(ThirdPartyNewsroomMessage $oMessage, User $oUser = null) {
+	protected static function MessageIsApplicable(ThirdPartyNewsRoomMessage $oMessage, User $oUser = null) {
 		
 		$sTargetProfiles = $oMessage->Get('target_profiles');
 		$sTargetProfiles = preg_replace('/[\s]{1,},[\s]{1,}/', '', $sTargetProfiles);
@@ -370,7 +370,7 @@ JS
 	/**
 	 * Creates record to keep track of unread messages for user
 	 *
-	 * @param \ThirdPartyNewsroomMessage $oMessage Third party newsroom message
+	 * @param \ThirdPartyNewsRoomMessage $oMessage Third party newsroom message
 	 *
 	 * @return \void
 	 */

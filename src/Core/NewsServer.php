@@ -69,11 +69,11 @@
 			// for instance to only return messages if certain extensions are installed
 			// Or logging could be added
 			
-			$oFilterMessages = new DBObjectSearch('ThirdPartyNewsroomMessage');
+			$oFilterMessages = new DBObjectSearch('ThirdPartyNewsRoomMessage');
 			
 			// Some publications might still be hidden (surprise announcement, promo, limited offer, ...)
 			$sNow = date('Y-m-d H:i:s');
-			$sOQL = 'SELECT ThirdPartyNewsroomMessage WHERE start_date <= "'.$sNow.'" AND (ISNULL(end_date) OR end_date >= "'.$sNow.'")';
+			$sOQL = 'SELECT ThirdPartyNewsRoomMessage WHERE start_date <= "'.$sNow.'" AND (ISNULL(end_date) OR end_date >= "'.$sNow.'")';
 			$oSetMessages = new DBObjectSet(DBObjectSearch::FromOQL($sOQL));
 			
 			$aObjects = [];

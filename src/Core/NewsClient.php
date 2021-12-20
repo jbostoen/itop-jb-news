@@ -179,7 +179,7 @@
 				$aMessages = json_decode($sApiResponse, true);
 				
 				// Get messages currently in database for this third party source
-				$oFilterMessages = new DBObjectSearch('ThirdPartyNewsroomMessage');
+				$oFilterMessages = new DBObjectSearch('ThirdPartyNewsRoomMessage');
 				$oFilterMessages->AddCondition('thirdparty_name', self::GetThirdPartyName(), '=');
 				$oSetMessages = new DBObjectSet($oFilterMessages);
 				
@@ -194,7 +194,7 @@
 					if(in_array($aMessage['thirdparty_message_id'], $aKnownMessageIds) == false) {
 						
 						// Enrich
-						$oMessage = MetaModel::NewObject('ThirdPartyNewsroomMessage', [
+						$oMessage = MetaModel::NewObject('ThirdPartyNewsRoomMessage', [
 							'thirdparty_name' => self::GetThirdPartyName(),
 							'thirdparty_message_id' => $aMessage['thirdparty_message_id'],
 							'title' => $aMessage['title'],
@@ -208,7 +208,7 @@
 						
 						foreach($aMessage['translations_list'] as $aTranslation) {
 
-							$oTranslation = MetaModel::NewObject('ThirdPartyNewsroomMessageTranslation', [
+							$oTranslation = MetaModel::NewObject('ThirdPartyNewsRoomMessageTranslation', [
 								'message_id' => $iInstanceMsgId, // Remap
 								'language' => $aTranslation['language'],
 								'title' => $aTranslation['title'],
@@ -240,7 +240,7 @@
 										case 'translations_list':
 											
 											// Get translations currently in database
-											$oFilterTranslations = new DBObjectSearch('ThirdPartyNewsroomMessageTranslation');
+											$oFilterTranslations = new DBObjectSearch('ThirdPartyNewsRoomMessageTranslation');
 											$oFilterTranslations->AddCondition('message_id', $oMessage->GetKey(), '=');
 											$oSetTranslations = new DBObjectSet($oFilterTranslations);
 											
@@ -269,7 +269,7 @@
 												}
 												
 												// Translation is new
-												$oTranslation = MetaModel::NewObject('ThirdPartyNewsroomMessageTranslation', [
+												$oTranslation = MetaModel::NewObject('ThirdPartyNewsRoomMessageTranslation', [
 													'message_id' => $iInstanceMsgId, // Remap
 													'language' => $aTranslation['language'],
 													'title' => $aTranslation['title'],
