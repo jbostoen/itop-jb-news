@@ -17,8 +17,8 @@ require_once(APPROOT.'/application/webpage.class.inc.php');
 require_once(APPROOT.'/application/itopwebpage.class.inc.php');
 require_once(APPROOT.'/application/loginwebpage.class.inc.php');
 require_once(APPROOT.'/application/ajaxwebpage.class.inc.php');
-require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news-client/src/Core/NewsRoomWebPage.php');
-require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news-client/src/Core/NewsServer.php');
+require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news/src/Core/NewsRoomWebPage.php');
+require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news/src/Core/NewsServer.php');
 
 use \jb_itop_extensions\NewsClient\NewsRoomWebPage;
 use \jb_itop_extensions\NewsClient\NewsServer;

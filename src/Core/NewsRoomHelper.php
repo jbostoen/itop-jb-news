@@ -34,7 +34,7 @@ use \jb_itop_extensions\NewsClient\NewsRoomWebPage;
 class NewsRoomHelper {
 	
 	/** @var \String MODULE_CODE */
-	const MODULE_CODE = 'jb-news-client';
+	const MODULE_CODE = 'jb-news';
 
 	/** @var \String DEFAULT_API_VERSION */
 	const DEFAULT_API_VERSION = '1.0';

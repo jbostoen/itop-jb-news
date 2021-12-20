@@ -142,7 +142,7 @@
 					parse_str($sParameters, $aParameters);
 					
 					// Meant to get parameters from a URL, for instance if a news URL uses this extension as a client and uses a configured URL like
-					// https://127.0.0.1:8182/iTop-clients/web/pages/exec.php?&exec_module=jb-news-client&exec_page=index.php&exec_env=production-news&operation=get_messages_for_instance&version=1.0
+					// https://127.0.0.1:8182/iTop-clients/web/pages/exec.php?&exec_module=jb-news&exec_page=index.php&exec_env=production-news&operation=get_messages_for_instance&version=1.0
 					$aPostRequestData = array_merge($aPostRequestData, $aParameters);
 					
 					

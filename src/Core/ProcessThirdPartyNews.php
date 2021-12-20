@@ -21,7 +21,7 @@ class ProcessThirdPartyNews implements iBackgroundProcess {
 	/**
 	 * @var \String Module code
 	 */
-	public const MODULE_CODE = 'jb-news-client';
+	public const MODULE_CODE = 'jb-news';
 	
 	/**
 	 * @inheritdoc
