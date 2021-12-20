@@ -32,11 +32,17 @@ body {
 
 				.jbnewsclient-m-icon {
 					margin-right: 0.5rem;
-					width: 128px;
+					margin-top: 1rem;
+					width: 64px !important;
+					min-width: 64px !important;
+					max-width: 64px !important;
 
 					img {
 						width: 100%;
+						opacity:0.4;
+						filter:alpha(opacity=40);
 					}
+					
 				}
 
 				.jbnewsclient-m-content {
@@ -53,6 +59,11 @@ body {
 						color: grey;
 						margin-top: 0.5rem;
 					}
+					
+					.jbnewsclient-m-title {
+						font-weight: bold;
+					}
+					
 				}
 			}
 
