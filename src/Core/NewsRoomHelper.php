@@ -68,6 +68,15 @@ class NewsRoomHelper {
 			}
 			
 		}
+		
+		// Sort
+		usort($aMessages, function ($oMessage1, $oMessage2) {
+			
+			$iSort = $oMessage1->Get('priority') <=> $oMessage2->Get('priority');
+			
+			return ($iSort == 0 ? strtotime($oMessage1->Get('start_date') <=> $oMessage2->Get('start_date')) : $iSort);
+			
+		});
 
 		return $aMessages;
 		
@@ -267,9 +276,7 @@ HTML
 		);
 		
 		$sJsonMessages = json_encode($aJsonMessages);
-		
-		
-		// @todo Implement sorting
+
 		
 		$oPage->add_ready_script(
 <<<JS
@@ -291,7 +298,7 @@ HTML
 					'		<div class="jbnewsclient-m-content">' +
 					'			<div class="jbnewsclient-m-title">' + sTitle + '</div>' +
 					'			<div class="jbnewsclient-m-text">' + sText + '</div>' +
-					'			<div class="jbnewsclient-m-date">' + msg.start_date + '</div>' +
+					'			<div class="jbnewsclient-m-date"><p>' + msg.start_date + '</p></div>' +
 					'		</div>' +
 					'</div>'
 				);

@@ -13,6 +13,7 @@ body {
 }
 
 .jbnewsclient-all-messages {
+
 	margin: 3rem auto;
 	max-width: 600px;
 
@@ -25,12 +26,11 @@ body {
 			
 			display: flex;
 			
-			
-
 				.jbnewsclient-m-icon { 
 					
 					flex: 20%;
 					text-align: center;
+					margin-top: 1rem;
 
 					img {
 
@@ -51,19 +51,30 @@ body {
 
 					.jbnewsclient-m-text {
 						color: #545454;
-						font-size: 0.85rem;
+						p, ul > li {
+							font-size: 0.85rem;
+						}
 					}
 
 					.jbnewsclient-m-date {
+						
 						text-align: right;
-						font-size: 0.7rem;
 						color: grey;
 						margin-top: 0.5rem;
+						
+						p {
+							font-size: 0.7rem;
+						}
+						
 					}
 					
 					.jbnewsclient-m-title {
 						font-weight: bold;
-						font-size: 1rem;
+						
+						p {
+							font-size: 1rem;
+						}
+						
 					}
 					
 				}
@@ -77,13 +88,13 @@ body {
 }
 
 p {
-	margin: 1em;
+	/* margin: 1em; */
 }
 
 h1 {
-	font-size: 1rem;
+	/* font-size: 1em; */
 }
 
 h2 {
-	font-size: 0.9rem;
+	/* font-size: 0.9em; */
 }

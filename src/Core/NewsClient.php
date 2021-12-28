@@ -195,11 +195,12 @@
 				$aRetrievedMessageIds = [];
 				foreach($aMessages as $aMessage) {
 					
+					$aIcon = $aMessage['icon'];
 					
 					/** @var \ormDocument|null $oDoc Document (image) */
 					$oDoc = null;
-					if($aMessage['icon']['data'] == '' || $aMessage['icon']['mimetype'] == '' || $aMessage['icon']['filename'] == '') {
-						$oDoc = new ormDocument($aMessage['icon']['data'], $aMessage['icon']['mimetype'], $aMessage['icon']['filename']);
+					if($aIcon['data'] != '' && $aIcon['mimetype'] != '' && $aIcon['filename'] != '') {
+						$oDoc = new ormDocument(base64_decode($aIcon['data']), $aIcon['mimetype'], $aIcon['filename']);
 					}
 					
 					if(in_array($aMessage['thirdparty_message_id'], $aKnownMessageIds) == false) {

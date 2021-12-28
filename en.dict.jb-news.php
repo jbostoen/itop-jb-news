@@ -21,7 +21,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Class:ThirdPartyNewsRoomMessage/Attribute:end_date' => 'End date',
 	'Class:ThirdPartyNewsRoomMessage/Attribute:end_date+' => 'Date on which message will no longer be visible to user.',
 	'Class:ThirdPartyNewsRoomMessage/Attribute:priority' => 'Priority',
-	'Class:ThirdPartyNewsRoomMessage/Attribute:priority+' => 'Priority',
+	'Class:ThirdPartyNewsRoomMessage/Attribute:priority+' => 'Priority. 1 = highest, 4 = lowest.',
 	'Class:ThirdPartyNewsRoomMessage/Attribute:icon' => 'Icon',
 	'Class:ThirdPartyNewsRoomMessage/Attribute:icon+' => 'Icon to appear next to message in the newsroom',
 	'Class:ThirdPartyNewsRoomMessage/Attribute:translations_list' => 'Translations',
