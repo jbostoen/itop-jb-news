@@ -22,6 +22,7 @@ use \User;
 // Protection for iTop older than 2.6.0 when the extension is packaged with another.
 
 if(class_exists('NewsroomProviderBase')) {
+	
 	/**
 	 * Class NewsRoomProvider
 	 *
@@ -140,4 +141,5 @@ if(class_exists('NewsroomProviderBase')) {
 		}
 		
 	}
+		
 }

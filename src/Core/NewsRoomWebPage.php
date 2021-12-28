@@ -22,17 +22,20 @@
 		/**
 		 * @inheritDoc
 		 */
-		public function __construct($s_title, $bPrintable = false)
-		{
+		public function __construct($s_title, $bPrintable = false) {
+			
 			parent::__construct($s_title, $bPrintable);
-			$this->m_aReadyScripts = array();
+			$this->m_aReadyScripts = [];
+			
 		}
 		
 		/**
 		 * @inheritDoc
 		 */
 		public function add_ready_script($sScript) {
+			
 			$this->m_aReadyScripts[] = $sScript;
+			
 		}
 		
 		/**

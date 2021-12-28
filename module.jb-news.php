@@ -29,6 +29,7 @@ SetupWebPage::AddModule(
 		'datamodel' => array(
 			'model.jb-news.php',
 			'src/Core/NewsClient.php',
+			'src/Core/NewsRoomCSS.php',
 			'src/Core/NewsRoomHelper.php',
 			'src/Core/NewsRoomProvider.php',
 			'src/Core/NewsRoomWebPage.php',

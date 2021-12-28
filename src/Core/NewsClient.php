@@ -13,6 +13,7 @@
 	use \DBObjectSearch;
 	use \DBObjectSet;
 	use \MetaModel;
+	use \ormDocument;
 	use \UserRights;
 	use \utils;
 	
@@ -147,6 +148,9 @@
 					
 					
 				}
+				
+				$oProcess->Trace('. Url: '.$sNewsUrl);
+				$oProcess->Trace('. Data: '.json_encode($aPostRequestData));
 
 				$cURLConnection = curl_init($sNewsUrl);
 				curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, $aPostRequestData);
@@ -191,6 +195,13 @@
 				$aRetrievedMessageIds = [];
 				foreach($aMessages as $aMessage) {
 					
+					
+					/** @var \ormDocument|null $oDoc Document (image) */
+					$oDoc = null;
+					if($aMessage['icon']['data'] == '' || $aMessage['icon']['mimetype'] == '' || $aMessage['icon']['filename'] == '') {
+						$oDoc = new ormDocument($aMessage['icon']['data'], $aMessage['icon']['mimetype'], $aMessage['icon']['filename']);
+					}
+					
 					if(in_array($aMessage['thirdparty_message_id'], $aKnownMessageIds) == false) {
 						
 						// Enrich
@@ -199,10 +210,15 @@
 							'thirdparty_message_id' => $aMessage['thirdparty_message_id'],
 							'title' => $aMessage['title'],
 							'start_date' => $aMessage['start_date'],
-							'end_date' => $aMessage['end_date'],
+							'end_date' => $aMessage['end_date'] ?? '',
 							'priority' => $aMessage['priority'],
-							'icon' => $aMessage['icon']
+							'target_profiles' => $aMessage['target_profiles'] ?? ''
 						]);
+						
+						if($oDoc !== null) {
+							$oDoc->Set('icon', $oDoc);
+						}
+						
 						$oMessage->AllowWrite(true);
 						$iInstanceMsgId = $oMessage->DBInsert();
 						
@@ -284,8 +300,16 @@
 											
 											break;
 										
+										case 'icon':
+										
+											// @todo Check if 'icon' can be null
+											if($oDoc !== null) {
+												$oMessage->Set('icon', $oDoc);
+											}
+											break;
+											
 										default:
-											$oMessage->Set($sAttCode, $sValue);
+											$oMessage->Set($sAttCode, $sValue ?? '');
 											break;
 									
 									}

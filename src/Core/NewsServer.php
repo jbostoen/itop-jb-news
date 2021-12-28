@@ -98,10 +98,14 @@
 					
 				}
 				
+				
+				$oAttDef = MetaModel::GetAttributeDef('ThirdPartyNewsRoomMessage', 'icon');
+				$aIcon = $oAttDef->GetForJSON($oMessage->Get('icon'));
+				
 				$aObjects[] = [
 					'thirdparty_message_id' => $oMessage->Get('thirdparty_message_id'),
 					'title' => $oMessage->Get('title'),
-					'icon' => $oMessage->Get('icon'),
+					'icon' => $aIcon,
 					'start_date' => $oMessage->Get('start_date'),
 					'end_date' => $oMessage->Get('end_date'),
 					'priority' => $oMessage->Get('priority'),

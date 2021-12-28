@@ -268,12 +268,14 @@ HTML
 		
 		$sJsonMessages = json_encode($aJsonMessages);
 		
+		
+		// @todo Implement sorting
+		
 		$oPage->add_ready_script(
 <<<JS
 
-			var aThirdPartyNewsRoomMessages = {$sJsonMessages};
-
-			oShownDownConverter = new showdown.Converter(),
+			var oShownDownConverter = new showdown.Converter();
+			var aThirdPartyNewsRoomMessages = {$sJsonMessages}
 			
 			$.each(aThirdPartyNewsRoomMessages, function(i) {
 				
@@ -282,8 +284,7 @@ HTML
 				var sText = oShownDownConverter.makeHtml(msg.text);
 				
 				$('.jbnewsclient-messages').append(
-					'<div class="jbnewsclient-message">' +
-					'	<a href="' + msg.url + '" target="_blank">' +
+					'<div class="jbnewsclient-message" data-url="' + msg.url + '">' +
 					'		<div class="jbnewsclient-m-icon">' +
 					'			<img src="' + msg.icon + '" alt="Message icon" />' +
 					'		</div>' +
@@ -292,12 +293,14 @@ HTML
 					'			<div class="jbnewsclient-m-text">' + sText + '</div>' +
 					'			<div class="jbnewsclient-m-date">' + msg.start_date + '</div>' +
 					'		</div>' +
-					'	</a>' +
 					'</div>'
 				);
 				
 			});
-			
+
+			$(document.body).on('click', '[data-url]', function(e) {
+				document.location.href = $(this).attr('data-url');
+			});
 			
 JS
 		);

@@ -1,0 +1,8 @@
+[data-url^="https://jeffreybostoen.be"] ul li {
+  display: list-item !important;
+  list-style: disc !important;
+}
+[data-url^="https://jeffreybostoen.be"] ul {
+  padding-left: 2.5rem !important;
+  padding-bottom: 1rem;
+}
