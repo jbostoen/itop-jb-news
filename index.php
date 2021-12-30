@@ -12,11 +12,24 @@
 @include_once('../approot.inc.php');
 @include_once('../../approot.inc.php');
 @include_once('../../../approot.inc.php');
+
 require_once(APPROOT.'/application/application.inc.php');
-require_once(APPROOT.'/application/webpage.class.inc.php');
-require_once(APPROOT.'/application/itopwebpage.class.inc.php');
+
+// iTop 3 makes WebPage auto-loadable
+if(class_exists('AjaxPage') == false) {
+	
+	require_once(APPROOT.'/application/webpage.class.inc.php');
+	require_once(APPROOT.'/application/itopwebpage.class.inc.php');
+	require_once(APPROOT.'/application/ajaxwebpage.class.inc.php');
+
+	class AjaxPage extends ajax_page {
+	}
+	
+}
+
+// Still classic
 require_once(APPROOT.'/application/loginwebpage.class.inc.php');
-require_once(APPROOT.'/application/ajaxwebpage.class.inc.php');
+
 require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news/src/Core/NewsRoomWebPage.php');
 require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news/src/Core/NewsServer.php');
 
@@ -40,7 +53,7 @@ try {
 			$sLoginMessage = LoginWebPage::DoLogin();
 	}
 	
-	$oPage = new ajax_page('');
+	$oPage = new AjaxPage('');
 	$oPage->no_cache();
 
 	// Retrieve global parameters

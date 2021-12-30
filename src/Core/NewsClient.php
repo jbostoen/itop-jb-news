@@ -217,7 +217,7 @@
 						]);
 						
 						if($oDoc !== null) {
-							$oDoc->Set('icon', $oDoc);
+							$oMessage->Set('icon', $oDoc);
 						}
 						
 						$oMessage->AllowWrite(true);
