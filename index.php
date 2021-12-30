@@ -16,7 +16,7 @@
 require_once(APPROOT.'/application/application.inc.php');
 
 // iTop 3 makes WebPage auto-loadable
-if(class_exists('AjaxPage') == false) {
+if(defined('ITOP_VERSION') == true && version_compare(ITOP_VERSION, '3.0', '<')) {
 	
 	require_once(APPROOT.'/application/webpage.class.inc.php');
 	require_once(APPROOT.'/application/itopwebpage.class.inc.php');
