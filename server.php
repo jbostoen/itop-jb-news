@@ -44,9 +44,6 @@ try {
 	// Check user rights and prompt if needed
 	$sOperation = utils::ReadParam('operation', '');
 	
-	// Authentication is required
-	$sLoginMessage = LoginWebPage::DoLogin();
-	
 	$oPage = new AjaxPage('');
 	$oPage->no_cache();
 
@@ -63,81 +60,36 @@ try {
 	// Check operation parameters
 	switch($sOperation) {
 		
-		case 'fetch':
-		case 'mark_all_as_read':
+		case 'get_messages_for_instance':
 		
-			$sCallback = utils::ReadParam('callback', '');
-
+			$sInstanceHash = utils::ReadParam('instance_hash', '');
+			$sInstanceHash2 = utils::ReadParam('instance_hash2', '');
+		
 			// Check parameters
-			if(empty($sCallback))
-			{
+			if($sInstanceHash == '' || $sInstanceHash2 == '') {
 				throw new Exception('Missing parameters for requested operation.');
 			}
-			break;
-
-		case 'redirect':
 		
-			$iMessageId = (int) utils::ReadParam('message_id', 0);
+			if(utils::GetCurrentModuleSetting('server', false) == true) {
+		
+				// Retrieve messages
+				$aMessages = NewsServer::GetMessagesForInstance();
+				$sMessagesJSON = json_encode($aMessages);
 
-			// Check parameters
-			if(empty($iMessageId))
-			{
-				throw new Exception('Missing parameters for requested operation.');
+				// Prepare response
+				$sOutput = $sMessagesJSON;
+
+				// Regular JSON here, not JSONP
+				$oPage->SetContentType('application/json');
+				$oPage->add($sOutput);
+				break;
+				
 			}
-			break;
-
-		case 'view_all':
-
-			break;
-	}
-
-	// Execute operation
-	switch($sOperation) {
-		
-		case 'fetch':
-		
-			// Retrieve messages
-			$aMessages = NewsroomHelper::GetUnreadMessagesForUser();
-			$sMessagesJSON = json_encode($aMessages);
-
-			// Prepare response
-			$sOutput = $sCallback . '(' . $sMessagesJSON . ')';
-
-			$oPage->SetContentType('application/jsonp');
-			echo $sOutput;
-			break;
-
-		case 'mark_all_as_read':
-		
-			// Mark messages as read
-			$iMessageCount = NewsroomHelper::MarkAllMessagesAsReadForUser();
-			$sMessageCountJSON = json_encode(array(
-				'counter' => $iMessageCount,
-				'message' => $iMessageCount . ' message(s) marked as viewed',
-			));
-
-			// Prepare response
-			$sOutput = $sCallback . '(' . $sMessageCountJSON . ')';
-
-			$oPage->SetContentType('application/jsonp');
-			echo $sOutput;
-			break;
-
-		case 'view_all':
-		
-			$oPage = new NewsRoomWebPage('All messages');
-			NewsroomHelper::MakeAllMessagesPage($oPage);
-			break;
-
-		case 'redirect':
-		
-			// Mark message as read
-			$bMarked = NewsroomHelper::MarkMessageAsReadForUser($iMessageId, $oUser);
-
-			// Redirect to final URL
-			$oMessage = MetaModel::GetObject('ThirdPartyNewsRoomMessage', $iMessageId, true, true);
-			header('Location: ' . $oMessage->Get('url'));
-			break;
+			else {
+				
+				$oPage->add('Server not active.');
+				break;
+			}
 			
 		default:
 			$oPage->p('Invalid query.');

@@ -1,9 +1,9 @@
 <?php
 
 /**
- * @copyright   Copyright (c) 2019-2021 Jeffrey Bostoen
+ * @copyright   Copyright (c) 2019-2022 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.211212
+ * @version     2.7.220113
  *
  */
 
@@ -89,11 +89,27 @@
 			return $sUserHash;
 			
 		}
+			
+		/**
+		 * Returns hash of instance
+		 */
+		public static function GetInstanceHash() {
+		
+			// Note: not retrieving DB UUID for now as it is not of any use for now.
+			$sITopUUID = (string) trim(@file_get_contents(APPROOT . 'data/instance.txt'), "{} \n");
+
+			// Prepare a unique hash to identify users and instances across all iTops in order to be able for them 
+			// to tell which news they have already read.
+			$sInstanceId = hash('sha256', $sITopUUID);
+			
+			return $sInstanceId;
+			
+		}
 		
 		/**
 		 * Returns hash of instance
 		 */
-		protected static function GetInstanceHash() {
+		public static function GetInstanceHash2() {
 		
 			// Note: not retrieving DB UUID for now as it is not of any use for now.
 			$sITopUUID = (string) trim(@file_get_contents(APPROOT . 'data/instance.txt'), "{} \n");
@@ -134,6 +150,7 @@
 					'operation' => 'get_messages_for_instance',
 					'api_version' => $sApiVersion,
 					'instance_hash' => self::GetInstanceHash(),
+					'instance_hash2' => self::GetInstanceHash2(),
 					'app_name' => $sApp,
 					'app_version' => $sVersion
 				];
@@ -181,6 +198,15 @@
 				// If the format has changed in a backwards not compatible way, the API should simply not return any more messages
 				// (except for one to recommend to upgrade the extension)
 				$aMessages = json_decode($sApiResponse, true);
+				
+				// Upon getting invalid data: abort
+				if($aMessages === null) {
+					$oProcess->Trace('. Invalid data received:');
+					$oProcess->Trace(str_repeat('*', 25));
+					$oProcess->Trace($sApiResponse);
+					$oProcess->Trace(str_repeat('*', 25));
+					return;
+				}
 				
 				// Get messages currently in database for this third party source
 				$oFilterMessages = new DBObjectSearch('ThirdPartyNewsRoomMessage');

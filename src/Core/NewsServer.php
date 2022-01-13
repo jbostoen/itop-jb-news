@@ -1,9 +1,9 @@
 <?php
 
 /**
- * @copyright   Copyright (c) 2019-2021 Jeffrey Bostoen
+ * @copyright   Copyright (c) 2019-2022 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.211212
+ * @version     2.7.220113
  *
  */
 
@@ -45,15 +45,6 @@
 		}
 		
 		/**
-		 * Returns hash of instance
-		 */
-		protected static function GetInstanceHash() {
-		
-			return utils::ReadParam('instance_hash', '');
-			
-		}
-		
-		/**
 		 * Gets all the relevant messages for an instance
 		 *
 		 * @return \Array
@@ -62,7 +53,8 @@
 			
 			$sAppName = utils::ReadParam('app_name', '');
 			$sAppVersion = utils::ReadParam('app_name', '');
-			$sInstanceId = self::GetInstanceHash();
+			$sInstanceId = utils::ReadParam('instance_hash', '');
+			$sInstanceId2 = utils::ReadParam('instance_hash2', '');
 			
 			// Output all messages with their translations
 			// Theoretically additional filtering could be applied to reduce JSON size;

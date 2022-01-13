@@ -8,7 +8,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'jb-news/2.7.211212',
+	'jb-news/2.7.220113',
 	array(
 		// Identification
 		//
