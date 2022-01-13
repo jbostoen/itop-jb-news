@@ -56,7 +56,7 @@ SetupWebPage::AddModule(
 			'frequency' => 60,
 			'server' => false,
 			'ttl' => 3600,
-			'source_url' => 'https://support.jeffreybostoen.be/pages/exec.php?&exec_module=jb-news&exec_page=index.php&exec_env=production',
+			'source_url' => 'https://itop-news.jeffreybostoen.be/',
 		),
 	)
 );
