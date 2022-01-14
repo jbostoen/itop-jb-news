@@ -104,7 +104,7 @@ try {
 			$sOutput = $sCallback . '(' . $sMessagesJSON . ')';
 
 			$oPage->SetContentType('application/jsonp');
-			echo $sOutput;
+			$oPage->add($sOutput);
 			break;
 
 		case 'mark_all_as_read':
@@ -120,7 +120,7 @@ try {
 			$sOutput = $sCallback . '(' . $sMessageCountJSON . ')';
 
 			$oPage->SetContentType('application/jsonp');
-			echo $sOutput;
+			$oPage->add($sOutput);
 			break;
 
 		case 'view_all':

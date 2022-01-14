@@ -56,7 +56,6 @@ SetupWebPage::AddModule(
 			'frequency' => 60,
 			'server' => false,
 			'ttl' => 3600,
-			'source_url' => 'https://itop-news.jeffreybostoen.be/',
 		),
 	)
 );

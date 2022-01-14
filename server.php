@@ -70,7 +70,19 @@ try {
 				throw new Exception('Missing parameters for requested operation.');
 			}
 		
-			if(utils::GetCurrentModuleSetting('server', false) == true) {
+			if(utils::GetCurrentModuleSetting('enabled', false) == false) {
+
+				$oPage->add('News extension not enabled.');
+				break;
+
+			}
+			elseif(utils::GetCurrentModuleSetting('server', false) == false) {
+				
+				$oPage->add('Server not active.');
+				break;
+				
+			}
+			else {
 		
 				// Retrieve messages
 				$aMessages = NewsServer::GetMessagesForInstance();
