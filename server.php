@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2022 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.220114
+ * @version     2.7.220323
  *
  */
 
@@ -73,13 +73,11 @@ try {
 			if(utils::GetCurrentModuleSetting('enabled', false) == false) {
 
 				$oPage->add('News extension not enabled.');
-				break;
 
 			}
 			elseif(utils::GetCurrentModuleSetting('server', false) == false) {
 				
 				$oPage->add('Server not active.');
-				break;
 				
 			}
 			else {
@@ -94,14 +92,10 @@ try {
 				// Regular JSON here, not JSONP
 				$oPage->SetContentType('application/json');
 				$oPage->add($sOutput);
-				break;
 				
 			}
-			else {
-				
-				$oPage->add('Server not active.');
-				break;
-			}
+			
+			break;
 			
 		default:
 			$oPage->p('Invalid query.');
