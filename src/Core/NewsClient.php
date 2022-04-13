@@ -167,8 +167,8 @@
 			$sApp = defined('ITOP_APPLICATION') ? ITOP_APPLICATION : 'unknown';
 			$sVersion = defined('ITOP_VERSION') ? ITOP_VERSION : 'unknown';
 			
-			$sInstanceHash = self::GetInstanceHash();
-			$sInstanceHash2 = self::GetInstanceHash2();
+			$sInstanceHash = static::GetInstanceHash();
+			$sInstanceHash2 = static::GetInstanceHash2();
 			
 			// Build list of news sources
 			// -
@@ -198,6 +198,7 @@
 						'operation' => 'get_messages_for_instance',
 						'instance_hash' => $sInstanceHash,
 						'instance_hash2' => $sInstanceHash2,
+						'env' =>  utils::GetCurrentEnvironment(),
 						'app_name' => $sApp,
 						'app_version' => $sVersion
 					];
