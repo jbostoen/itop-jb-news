@@ -156,6 +156,25 @@
 		}
 		
 		/**
+		 * Returns UID of database
+		 */
+		public static function GetDatabaseUID() {
+			
+			$oFilter = DBObjectSearch::FromOQL('SELECT DBProperty WHERE name = "database_uuid"');
+			$oSet = new DBObjectSet($oFilter);
+			$oDBProperty = $oSet->Fetch();
+			
+			if($oDBProperty !== null) {
+				
+				return $oDBProperty->Get('value');
+				
+			}
+			
+			return '';
+			
+		}
+		
+		/**
 		 * Gets all the relevant messages for this instance
 		 *
 		 * @param \ProcessThirdPartyNews $oProcess Scheduled background process
@@ -169,6 +188,7 @@
 			
 			$sInstanceHash = static::GetInstanceHash();
 			$sInstanceHash2 = static::GetInstanceHash2();
+			$sDBUid = static::GetDatabaseUID();
 			
 			// Build list of news sources
 			// -
@@ -198,6 +218,7 @@
 						'operation' => 'get_messages_for_instance',
 						'instance_hash' => $sInstanceHash,
 						'instance_hash2' => $sInstanceHash2,
+						'db_uid' => $sDBUid,
 						'env' =>  utils::GetCurrentEnvironment(),
 						'app_name' => $sApp,
 						'app_version' => $sVersion
