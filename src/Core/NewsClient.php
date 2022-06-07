@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2022 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.220323
+ * @version     2.7.220607
  *
  */
 
@@ -57,6 +57,13 @@
 		 */
 		public static function IsEnabled();
 		
+		/**
+		 * Returns the base64 encoded public key for a Sodium implementation
+		 *
+		 * @return \Boolean
+		 */
+		public static function GetPublicKeySodium();
+		
 	}
 	
 	/**
@@ -102,6 +109,14 @@
 			
 		}
 		
+		/**
+		 * @inheritDoc
+		 */
+		public static function GetPublicKeySodium() {
+			
+			return 'SafJHvlxp3ktweQDbRnkwvm6ih4dru2H3ydvVaA0xSI=';
+			
+		}
 		
 	}
 	
@@ -190,6 +205,8 @@
 			$sInstanceHash2 = static::GetInstanceHash2();
 			$sDBUid = static::GetDatabaseUID();
 			
+			$sEncryptionLib = static::GetEncryptionLibrary();
+			
 			// Build list of news sources
 			// -
 			
@@ -206,10 +223,10 @@
 			// Request messages
 			// -
 			
-				foreach($aSources as $aSource) {
+				foreach($aSources as $sSourceClass) {
 					
-					$sNewsUrl = $aSource::GetUrl();
-					$sThirdPartyName = $aSource::GetThirdPartyName();					
+					$sNewsUrl = $sSourceClass::GetUrl();
+					$sThirdPartyName = $sSourceClass::GetThirdPartyName();					
 				
 					// All messages will be requested.
 					// It may be necessary to retract/delete some messages at some point.
@@ -221,10 +238,11 @@
 						'db_uid' => $sDBUid,
 						'env' =>  utils::GetCurrentEnvironment(),
 						'app_name' => $sApp,
-						'app_version' => $sVersion
+						'app_version' => $sVersion,
+						'encryption_library' => $sEncryptionLib
 					];
 					
-					$aPostRequestData = array_merge($aPostRequestData, $aSource::GetPostParameters());
+					$aPostRequestData = array_merge($aPostRequestData, $sSourceClass::GetPostParameters());
 					
 					if(strpos($sNewsUrl, '?') !== false) {
 						$sParameters = explode('?', $sNewsUrl)[1];
@@ -268,15 +286,88 @@
 					// Assume these messages are in the correct format.
 					// If the format has changed in a backwards not compatible way, the API should simply not return any more messages
 					// (except for one to recommend to upgrade the extension)
-					$aMessages = json_decode($sApiResponse, true);
+					$aData = json_decode($sApiResponse, true);
 					
 					// Upon getting invalid data: abort
-					if($aMessages === null) {
+					if($aData === null) {
 						$oProcess->Trace('. Invalid data received:');
 						$oProcess->Trace(str_repeat('*', 25));
 						$oProcess->Trace($sApiResponse);
 						$oProcess->Trace(str_repeat('*', 25));
 						return;
+					}
+					
+					// Check if modern implementation is in place
+					if(array_key_exists('messages', $aData) == true) {
+						
+						if(array_key_exists('encryption_library', $aData) == true && array_key_exists('signature', $aData) == true) {
+
+							// Check if the server responded in the proper way (e.g. client indicates it supports and expects Sodium: server should return data that can be verified with Sodium)
+							// It could also mean that the extension (or NewsSource class) is out of date
+							if($sEncryptionLib != $aData['encryption_library']) {
+								
+								$oProcess->Trace('. Requested encryption library "'.$sEncryptionLib.'", but the response does not match the requested library.');
+								return;
+						
+							}
+							else {
+								
+								// Implement supported libraries. For now, only Sodium
+								if($sEncryptionLib == 'Sodium') {
+								
+									$aMessages = $aData['messages'];
+									$sSignature = sodium_base642bin($aData['signature'], SODIUM_BASE64_VARIANT_URLSAFE);
+									$sKey = sodium_base642bin($sSourceClass::GetPublicKeySodium(), SODIUM_BASE64_VARIANT_URLSAFE);
+										
+									// Verify using public key
+									if(sodium_crypto_sign_verify_detached($sSignature, json_encode($aMessages), $sKey)) {
+										
+										// Verified
+										$oProcess->Trace('. Signature is valid.');
+										
+									} 
+									else {
+										
+										$oProcess->Trace('. Unable to verify the signature using the public key for '.$sSourceClass);
+										return;
+										
+									}   
+								
+									
+								}
+								else {
+									
+									$oProcess->Trace('. Unexpected path: suddenly using an unsupported encryption library.');
+									
+								}
+								
+							}
+							
+						}
+						else {
+						
+							// It seems required keys (encryption_library, signature) were missing in the response
+							// It could also mean that the extension (or NewsSource class) is out of date
+							$oProcess->Trace('. Invalid response - encryption_library and signature are missing.');
+							$oProcess->Trace(str_repeat('*', 25));
+							$oProcess->Trace($sApiResponse);
+							$oProcess->Trace(str_repeat('*', 25));
+							return;
+							
+						}
+						
+					}
+					elseif($sEncryptionLib != 'none' && array_key_exists('messages') == false) {
+						
+						$oProcess->Trace('. Invalid response - messages is missing while a signed response is expected.');
+						return;
+						
+					}
+					elseif($sEncryptionLib == 'none') {
+						
+						// Legacy implementation
+						$aMessages = $aData;
+						
 					}
 					
 					// Get messages currently in database for this third party source
@@ -454,6 +545,44 @@
 			
 			// @todo Check whether this can be grouped without sending too much data in one call
 			return;
+			
+		}
+			
+		/**
+		 * Get preferred encryption library
+		 *
+		 * @return \String Sodium, none
+		 */
+		public static function GetEncryptionLibrary() {
+			
+			// Start from what's configured
+			$sEncryptionLib = MetaModel::GetConfig()->GetEncryptionLibrary();
+			
+			$aSupportedLibsByEndPoint = ['Sodium', 'none'];
+			
+			// Reset variable if encryption from config file is not supported by this extension
+			if(in_array($sEncryptionLib, $aSupportedLibsByEndPoint) == false) {
+				$sEncryptionLib = 'none';
+			}
+
+			// This extension only supports  Sodium or none
+			if($sEncryptionLib != 'Sodium') {
+			
+				$bFunctionExists = function_exists('sodium_crypto_box_keypair');
+				
+				// Preference 1: Sodium
+				if($bFunctionExists == true && in_array('Sodium', $aSupportedLibsByEndPoint) == true) {
+					$sEncryptionLib = 'Sodium';
+				}
+				// Worst case: no encryption
+				else {
+					
+					$sEncryptionLib = 'none';
+				}
+			
+			}
+			
+			return $sEncryptionLib;
 			
 		}
 		

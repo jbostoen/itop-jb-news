@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2022 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.220323
+ * @version     2.7.220607
  *
  */
 
@@ -51,6 +51,8 @@ try {
 	$sVersion = utils::ReadParam('api_version', NewsroomHelper::DEFAULT_API_VERSION);
 	$sAppName = utils::ReadParam('app_name', NewsroomHelper::DEFAULT_APP_NAME, false, 'raw_data');
 	$sAppVersion = utils::ReadParam('app_version', NewsroomHelper::DEFAULT_APP_VERSION, false, 'raw_data');
+	
+	$sEncryptionLib =  utils::ReadParam('encryption_library', 'none', false, 'raw_data');
 
 	// Check global parameters
 	if(empty($sOperation) || empty($sVersion)) {
@@ -84,10 +86,39 @@ try {
 		
 				// Retrieve messages
 				$aMessages = NewsServer::GetMessagesForInstance();
-				$sMessagesJSON = json_encode($aMessages);
-
+				
 				// Prepare response
-				$sOutput = $sMessagesJSON;
+				// Note: the encryption library is appended in the response.
+				// While the client may have specified a preferred library, the server might not be support it (anymore).
+				// The messages will then still be appended in plain text, but the NewsClient should not process them anymore and add a warning instead.
+				$bFunctionExists = function_exists('sodium_crypto_sign_detached');
+				
+				if($sEncryptionLib == 'Sodium' && $bFunctionExists == true) {
+					
+					// Get private key
+					$sFolder = dirname(__FILE__);
+					$sKey = file_get_contents($sFolder.'/keys/sodium_priv.key');
+					
+					$sSodium_PrivBase64 = sodium_base642bin($sKey, SODIUM_BASE64_VARIANT_URLSAFE);
+					
+					// Sign using private key
+					$sSignature = sodium_crypto_sign_detached(json_encode($aMessages), $sSodium_PrivBase64);
+					
+					// The data itself is not secret, its authenticity just needs to be able to be verified
+					$sOutput = json_encode([
+						'encryption_library' => 'Sodium',
+						'messages' => $aMessages,
+						'signature' => sodium_bin2base64($sSignature, SODIUM_BASE64_VARIANT_URLSAFE)
+					]);					
+					
+				}
+				// 'none' specified by user or requested encryption library not available on server
+				else {
+					
+					// Legacy. Left this untouched for existing users.
+					$sOutput = json_encode($aMessages);
+					
+				}
 
 				// Regular JSON here, not JSONP
 				$oPage->SetContentType('application/json');

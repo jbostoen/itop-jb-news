@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2022 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.220323
+ * @version     2.7.220607
  *
  */
 
@@ -66,8 +66,8 @@ class ProcessThirdPartyNews implements iBackgroundProcess {
 	public function Trace($sMessage, $sType = 'info') {
 		
 		// Nothing
-		// echo $sMessage;
-				
+		echo $sMessage.PHP_EOL;
+		
 	}
 	
 }
