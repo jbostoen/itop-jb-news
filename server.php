@@ -13,6 +13,8 @@
 @include_once('../../approot.inc.php');
 @include_once('../../../approot.inc.php');
 
+use \DownloadPage;
+
 require_once(APPROOT.'/application/application.inc.php');
 
 // iTop 3 makes WebPage auto-loadable
@@ -22,8 +24,6 @@ if(defined('ITOP_VERSION') == true && version_compare(ITOP_VERSION, '3.0', '<'))
 	require_once(APPROOT.'/application/itopwebpage.class.inc.php');
 	require_once(APPROOT.'/application/ajaxwebpage.class.inc.php');
 
-	class AjaxPage extends ajax_page {
-	}
 	
 }
 
@@ -44,7 +44,16 @@ try {
 	// Check user rights and prompt if needed
 	$sOperation = utils::ReadParam('operation', '');
 	
-	$oPage = new AjaxPage('');
+	if(class_exists('DownloadPage') == true) {
+		// Modern 3.0
+		$oPage = new DownloadPage('');
+		$oPage->SetContentType('application/json');
+	}
+	else {
+		// Legacy 2.7
+		$oPage = new ajax_page('');
+	}
+	
 	$oPage->no_cache();
 
 	// Retrieve global parameters
