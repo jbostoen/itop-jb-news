@@ -357,7 +357,7 @@
 						}
 						
 					}
-					elseif($sEncryptionLib != 'none' && array_key_exists('messages') == false) {
+					elseif($sEncryptionLib != 'none' && array_key_exists('messages', $aData) == false) {
 						
 						$oProcess->Trace('. Invalid response - messages is missing while a signed response is expected.');
 						return;
@@ -533,7 +533,7 @@
 		}
 		
 		/**
-		 * Send the info back to the news server.
+		 * Send the info back to the news server, such as statistics about (un)read messages.
 		 *
 		 * @param \ProcessThirdPartyNews $oProcess Scheduled background process
 		 *

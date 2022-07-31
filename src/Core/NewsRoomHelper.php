@@ -388,13 +388,13 @@ JS
 
 		// @todo For now this method is only called when the message is created. There's no track record of (un)read messages. Hence, there's a record for each user, even if it's not the target user.
 
-		// Create a record for each user
+		// Create a record for each user (even disabled ones)
 		$oUserSearch = DBObjectSearch::FromOQL('SELECT User');
 		$oUserSet = new DBObjectSet($oUserSearch);
 		$oUserSet->OptimizeColumnLoad(array());
 
 		while($oUser = $oUserSet->Fetch()) {
-						
+
 			$oUnreadMessage = MetaModel::NewObject('ThirdPartyUnreadMessageToUser', array(
 				'user_id' => $oUser->GetKey(),
 				'message_id' => $oMessage->GetKey(),
