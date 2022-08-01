@@ -45,6 +45,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Class:ThirdPartyUnreadMessageToUser' => 'Third party Unread Newsroom Message to User',
 	'Class:ThirdPartyUnreadMessageToUser/Attribute:user_id' => 'User ID',
 	'Class:ThirdPartyUnreadMessageToUser/Attribute:message_id' => 'Message ID',
+	'Class:ThirdPartyUnreadMessageToUser/Attribute:read_date' => 'Date',
 	
 	'UI:News:AllMessages' => 'All messages',
 	

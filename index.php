@@ -15,7 +15,7 @@
 
 require_once(APPROOT.'/application/application.inc.php');
 
-use \DownloadPage;
+// use \DownloadPage;
 
 // iTop 3 makes WebPage auto-loadable
 if(defined('ITOP_VERSION') == true && version_compare(ITOP_VERSION, '3.0', '<')) {

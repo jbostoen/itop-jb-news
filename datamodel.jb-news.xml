@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<itop_design xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.6">
+<itop_design xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.7">
 	<classes>
 		<class id="ThirdPartyNewsRoomMessage" _delta="define">
 			<parent>cmdbAbstractObject</parent>
@@ -326,13 +326,16 @@
 				</field>
 				<field id="message_id" xsi:type="AttributeExternalKey">
 					<sql>message_id</sql>
-					<filter/>
-					<dependencies/>
 					<default_value/>
 					<is_null_allowed>false</is_null_allowed>
 					<target_class>ThirdPartyNewsRoomMessage</target_class>
 					<on_target_delete>DEL_AUTO</on_target_delete>
 					<tracking_level>none</tracking_level>
+				</field>
+				<field id="read_date" xsi:type="AttributeDateTime">
+					<sql>read_date</sql>
+					<default_value/>
+					<is_null_allowed>true</is_null_allowed>
 				</field>
 			</fields>
 			<methods/>
@@ -345,6 +348,9 @@
 						<item id="message_id">
 							<rank>20</rank>
 						</item>
+						<item id="read_date">
+							<rank>30</rank>
+						</item>
 					</items>
 				</details>
 				<list>
@@ -355,6 +361,9 @@
 						<item id="message_id">
 							<rank>20</rank>
 						</item>
+						<item id="read_date">
+							<rank>30</rank>
+						</item>
 					</items>
 				</list>
 				<default_search>
@@ -364,6 +373,9 @@
 						</item>
 						<item id="message_id">
 							<rank>20</rank>
+						</item>
+						<item id="read_date">
+							<rank>30</rank>
 						</item>
 					</items>
 				</default_search>
