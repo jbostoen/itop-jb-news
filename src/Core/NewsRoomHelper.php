@@ -23,7 +23,7 @@ use \WebPage;
 // iTop classes
 use \ThirdPartyNewsRoomMessage;
 use \ThirdPartyNewsRoomMessageTranslation;
-use \ThirdPartyUnreadMessageToUser;
+use \ThirdPartyMessageToUser;
 
 // Custom classes
 use \jb_itop_extensions\NewsClient\NewsRoomWebPage;
@@ -46,39 +46,37 @@ class NewsRoomHelper {
 	const DEFAULT_APP_VERSION = 'unknown';
 
 	/**
-	 * Returns all published messages until now (not those planned for further publication) for this user
+	 * Returns all messages that have been published until now (not those planned for further publication) and are applicable to a certain user.
+	 * Returned as an array instead of DBObjectSet due to sorting (priority, start_date).
 	 *
-	 * @return \ThirdPartyNewsRoomMessage[] Set of messages
+	 * @return \DBObjectSet Filtered set of messages
 	 *
 	 * @throws \CoreException
 	 * @throws \CoreUnexpectedValue
 	 * @throws \MySQLException
 	 * @throws \OQLException
 	 */
-	protected static function GetAllMessages() {
+	public static function GetAllMessagesForCurrentUser() {
 		
 		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsRoomMessage WHERE start_date <= NOW() AND (ISNULL(end_date) OR end_date >= NOW())');
-		$oSet = new DBObjectSet($oSearch);
+		$oSet = new DBObjectSet($oSearch, [
+			'priority' => false, // Higher priority first
+			'start_date' => false, // Most recent publication first
+		]);
 		
-		$aMessages = [];
+		$oReturnSet = DBObjectSet::FromScratch('ThirdPartyNewsRoomMessage');
+		
 		while($oMessage = $oSet->Fetch()) {
-			
+		
 			if(static::MessageIsApplicable($oMessage) == true) {
-				$aMessages[] = $oMessage;
+				$oReturnSet->AddObject($oMessage);
 			}
 			
 		}
 		
-		// Sort
-		usort($aMessages, function ($oMessage1, $oMessage2) {
-			
-			$iSort = $oMessage1->Get('priority') <=> $oMessage2->Get('priority');
-			
-			return ($iSort == 0 ? strtotime($oMessage1->Get('start_date') <=> $oMessage2->Get('start_date')) : $iSort);
-			
-		});
-
-		return $aMessages;
+		// Apparently it's necessary to rewind
+		$oSet->Rewind();
+		return $oSet;;
 		
 	}
 
@@ -99,13 +97,12 @@ class NewsRoomHelper {
 		$sMessageClass = 'ThirdPartyNewsRoomMessage';
 		$sMessageIconAttCode = 'icon';
 
-		$aSearchParams = array('user_id' => $oUser->GetKey());
-		$oSearch = DBObjectSearch::FromOQL('SELECT M FROM '.$sMessageClass.' AS M JOIN ThirdPartyUnreadMessageToUser AS LUM ON LUM.message_id = M.id WHERE LUM.user_id = :user_id AND M.start_date <= NOW() AND (ISNULL(M.end_date) OR M.end_date >= NOW())', $aSearchParams);
+		$aSearchParams = ['user_id' => $oUser->GetKey()];
+		$oSearch = DBObjectSearch::FromOQL('SELECT M FROM '.$sMessageClass.' AS M JOIN ThirdPartyMessageToUser AS LUM ON LUM.message_id = M.id WHERE LUM.user_id = :user_id AND M.start_date <= NOW() AND (ISNULL(M.end_date) OR M.end_date >= NOW()) AND ISNULL(LUM.read_date)', $aSearchParams);
 		$oSet = new DBObjectSet($oSearch);
 		$oSet->SetLimit(50); // Limit messages count to avoid server crash
 
 		$aMessages = [];
-		$aProfiles = UserRights::ListProfiles();
 		
 		while($oMessage = $oSet->Fetch()) {
 			
@@ -127,14 +124,14 @@ class NewsRoomHelper {
 			// Prepare url redirection
 			$sUrl = utils::GetAbsoluteUrlExecPage().'?exec_module='.static::MODULE_CODE.'&exec_page=index.php&operation=redirect&message_id='.$oMessage->GetKey().'&user='.$oUser->GetKey();
 
-			$oTranslation = self::GetTranslation($oMessage);
+			$oTranslation = static::GetTranslation($oMessage);
 			
 			if($oTranslation !== null) {
 
 				$aMessages[] = array(
 					'id' => $oMessage->GetKey(),
-					'text' => '# '.$oTranslation->Get('title').PHP_EOL.PHP_EOL.$oTranslation->Get('text'),
-					'url' => $oTranslation->Get('url'),
+					'text' => '# '.$oTranslation->Get('title').PHP_EOL.PHP_EOL.$oTranslation->Get('text'), // Prepare header (MarkDown) + add regular text/description.
+					'url' => $sUrl, // Mind that this is used to show the messages in the newsroom. Routing is applied to take care of "read date" before redirecting.
 					'start_date' => $oMessage->Get('start_date'),
 					'priority' => $oMessage->Get('priority'),
 					'image' => $sIconUrl,
@@ -164,18 +161,19 @@ class NewsRoomHelper {
 		
 		$oUser = UserRights::GetUserObject();
 		$aSearchParams = array('user_id' => $oUser->GetKey());
-		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyUnreadMessageToUser WHERE user_id = :user_id', $aSearchParams);
+		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyMessageToUser WHERE user_id = :user_id AND ISNULL(read_date)', $aSearchParams);
 		$oSet = new DBObjectSet($oSearch);
 		$oSet->SetLimit(50); // Limit messages count to avoid server crash
 		$oSet->OptimizeColumnLoad(array());
 
-		$iMessageCount = 0;
 		while($oMessage = $oSet->Fetch()) {
-			$oMessage->DBDelete();
-			$iMessageCount++;
+			
+			$oMessage->Set('read_date', date('Y-m-d H:i:s'));
+			$oMessage->DBUpdate();
+			
 		}
 
-		return $iMessageCount;
+		return $oSet->Count();
 	}
 
 	/**
@@ -194,17 +192,24 @@ class NewsRoomHelper {
 	public static function MarkMessageAsReadForUser($iMessageId) {
 		
 		$oUser = UserRights::GetUserObject();
-		$aSearchParams = array('message_id' => $iMessageId, 'user_id' => $oUser->GetKey());
-		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyUnreadMessageToUser WHERE message_id = :message_id AND user_id = :user_id', $aSearchParams);
+		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyMessageToUser WHERE message_id = :message_id AND user_id = :user_id AND ISNULL(read_date)', [
+			'message_id' => $iMessageId, 
+			'user_id' => $oUser->GetKey()
+		]);
 		$oSet = new DBObjectSet($oSearch);
 
 		$oMessage = $oSet->Fetch();
 		if($oMessage !== null) {
-			$oMessage->DBDelete();
+			
+			$oMessage->Set('read_date', date('Y-m-d H:i:s'));
+			$oMessage->DBUpdate();
 			return true;
+			
 		}
 		else {
+			
 			return false;
+			
 		}
 	}
 
@@ -226,8 +231,9 @@ class NewsRoomHelper {
 
 		// Retrieve messages
 		$aJsonMessages = [];
-		$aMessages = static::GetAllMessages();
-		foreach($aMessages as $oMessage) {
+		$oSetMessages = static::GetAllMessagesForCurrentUser();
+		
+		while($oMessage = $oSetMessages->Fetch()) {
 			
 			// Prepare icon URL
 			/** @var \ormDocument $oIcon */
@@ -239,12 +245,12 @@ class NewsRoomHelper {
 				$sIconUrl = MetaModel::GetAttributeDef($sMessageClass, $sMessageIconAttCode)->Get('default_image');
 			}
 			
-			$oTranslation = self::GetTranslation($oMessage);
+			$oTranslation = static::GetTranslation($oMessage);
 
 			if($oTranslation !== null) {
 				
 				$aJsonMessages[] = [
-					'url' => $oTranslation->Get('url'),
+					'url' => $oTranslation->Get('url'), // Leave this URL intact, it's shown in an overview.
 					'icon' => $sIconUrl,
 					'start_date' => $oMessage->Get('start_date'),
 					'title' => $oTranslation->Get('title'),
@@ -258,6 +264,7 @@ class NewsRoomHelper {
 		// Add style
 		$oPage->add_saas('env-'.utils::GetCurrentEnvironment().'/'.static::MODULE_CODE.'/css/default.scss');
 		$sLabel = Dict::S('UI:News:AllMessages');
+		$sMoreInfo = Dict::S('UI:News:MoreInfo');
 		
 		// Add libraries
 		$oPage->add_linked_script(utils::GetAbsoluteUrlAppRoot().'js/jquery.min.js');
@@ -299,15 +306,13 @@ HTML
 					'			<div class="jbnewsclient-m-title">' + sTitle + '</div>' +
 					'			<div class="jbnewsclient-m-text">' + sText + '</div>' +
 					'			<div class="jbnewsclient-m-date"><p>' + msg.start_date + '</p></div>' +
+					'			' + (msg.url == '' ? '' : '<hr/> <p><a href="' + msg.url + '" target="_BLANK">{$sMoreInfo}</a></p>') +
 					'		</div>' +
 					'</div>'
 				);
 				
 			});
 
-			$(document.body).on('click', '[data-url]', function(e) {
-				document.location.href = $(this).attr('data-url');
-			});
 			
 JS
 		);
@@ -323,7 +328,7 @@ JS
 	 *
 	 * @return \ThirdPartyNewsRoomMessageTranslation
 	 */
-	protected static function GetTranslation($oMessage) {
+	public static function GetTranslation($oMessage) {
 		
 		/** @var \ormLinkSet $oSetTranslations */
 		$oSetTranslations = $oMessage->Get('translations_list');
@@ -365,7 +370,7 @@ JS
 	 *
 	 * @return \Boolean
 	 */
-	protected static function MessageIsApplicable(ThirdPartyNewsRoomMessage $oMessage, User $oUser = null) {
+	public static function MessageIsApplicable(ThirdPartyNewsRoomMessage $oMessage, User $oUser = null) {
 		
 		$sTargetProfiles = $oMessage->Get('target_profiles');
 		$sTargetProfiles = preg_replace('/[\s]{1,},[\s]{1,}/', '', $sTargetProfiles);
@@ -377,31 +382,5 @@ JS
 		
 	}
 	
-	/**
-	 * Creates record to keep track of unread messages for user
-	 *
-	 * @param \ThirdPartyNewsRoomMessage $oMessage Third party newsroom message
-	 *
-	 * @return \void
-	 */
-	public static function GenerateUnreadMessagesForUsers($oMessage) {
-
-		// @todo For now this method is only called when the message is created. There's no track record of (un)read messages. Hence, there's a record for each user, even if it's not the target user.
-
-		// Create a record for each user (even disabled ones)
-		$oUserSearch = DBObjectSearch::FromOQL('SELECT User');
-		$oUserSet = new DBObjectSet($oUserSearch);
-		$oUserSet->OptimizeColumnLoad(array());
-
-		while($oUser = $oUserSet->Fetch()) {
-
-			$oUnreadMessage = MetaModel::NewObject('ThirdPartyUnreadMessageToUser', array(
-				'user_id' => $oUser->GetKey(),
-				'message_id' => $oMessage->GetKey(),
-			));
-			$oUnreadMessage->DBInsert();
-		}
-		
-	}
 
 }

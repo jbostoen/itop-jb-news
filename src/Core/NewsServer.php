@@ -40,7 +40,7 @@
 		 */
 		protected static function GetApiVersion() {
 			
-			return self::$sApiVersion;
+			return static::$sApiVersion;
 			
 		}
 		

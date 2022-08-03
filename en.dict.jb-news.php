@@ -28,6 +28,8 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Class:ThirdPartyNewsRoomMessage/Attribute:translations_list+' => 'Localized versions of the news message',
 	'Class:ThirdPartyNewsRoomMessage/Attribute:target_profiles' => 'Target profiles',
 	'Class:ThirdPartyNewsRoomMessage/Attribute:target_profiles+' => 'Profiles which will see this message. If empty, every user profile will see this message.',
+	'Class:ThirdPartyNewsRoomMessage/Attribute:oql' => 'OQL',
+	'Class:ThirdPartyNewsRoomMessage/Attribute:oql+' => 'The OQL which specifies which users should see this message.',
 	
 	'Class:ThirdPartyNewsRoomMessageTranslation' => 'Third party Newsroom Message Translation',
 	'Class:ThirdPartyNewsRoomMessageTranslation/Attribute:message_id' => 'Message ID',
@@ -42,12 +44,13 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Class:ThirdPartyNewsRoomMessageTranslation/Attribute:language+' => 'Targeted user language',
 	'Class:ThirdPartyNewsRoomMessageTranslation/UniquenessRule:unique_language' => 'Language for this translation must be unique for each message.',
 	
-	'Class:ThirdPartyUnreadMessageToUser' => 'Third party Unread Newsroom Message to User',
-	'Class:ThirdPartyUnreadMessageToUser/Attribute:user_id' => 'User ID',
-	'Class:ThirdPartyUnreadMessageToUser/Attribute:message_id' => 'Message ID',
-	'Class:ThirdPartyUnreadMessageToUser/Attribute:read_date' => 'Date',
+	'Class:ThirdPartyMessageToUser' => 'Third party Unread Newsroom Message to User',
+	'Class:ThirdPartyMessageToUser/Attribute:user_id' => 'User ID',
+	'Class:ThirdPartyMessageToUser/Attribute:message_id' => 'Message ID',
+	'Class:ThirdPartyMessageToUser/Attribute:read_date' => 'Date',
 	
 	'UI:News:AllMessages' => 'All messages',
+	'UI:News:MoreInfo' => 'More info',
 	
 	'ThirdPartyNewsRoomMessage:info' => 'Info',
 	'ThirdPartyNewsRoomMessage:publication' => 'Publication',

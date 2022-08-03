@@ -28,8 +28,8 @@ class ProcessThirdPartyNews implements iBackgroundProcess {
 	 */
 	public function GetPeriodicity() {
 		
-		// Periodicity (is returned in ms)
-		return (Int)(MetaModel::GetModuleSetting(self::MODULE_CODE, 'frequency', 60) * 60); // minutes
+		// Periodicity (is returned in seconds)
+		return (Int)(MetaModel::GetModuleSetting(static::MODULE_CODE, 'frequency', 60) * 60); // minutes
 		
 	}
 	
@@ -39,19 +39,20 @@ class ProcessThirdPartyNews implements iBackgroundProcess {
 	public function Process($iTimeLimit) {
 		
 		
-		$this->Trace(self::MODULE_CODE.' - Processing ...');
+		$this->Trace(static::MODULE_CODE.' - Processing ...');
 		
 		try {
 			
 			NewsClient::RetrieveFromRemoteServer($this);
 			NewsClient::PostToRemoteServer($this);
+			NewsClient::SyncLinks();
 			
 		}
 		catch(Exception $e) {
 			$this->Trace($e->GetMessage());
 		}
 		
-		$this->Trace(self::MODULE_CODE.' - Finished.');
+		$this->Trace(static::MODULE_CODE.' - Finished.');
 		
 	}
 	

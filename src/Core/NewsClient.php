@@ -425,9 +425,6 @@
 							
 							}
 							
-							NewsRoomHelper::GenerateUnreadMessagesForUsers($oMessage);
-							
-							
 						}
 						else {
 							
@@ -585,5 +582,96 @@
 			return $sEncryptionLib;
 			
 		}
+		
+			
+		/**
+		 * Ensures there is a link record between each iTop user and each news message.
+		 *
+		 * @param \DBObjectSet
+		 *
+		 * @details 
+		 * Triggered by:
+		 * - A scheduled process.
+		 * - Message insert, update, delete.
+		 * - Unfortunately it can not be hooked into the "user"'s create, delete operations?
+		 *
+		 */
+		public static function SyncLinks() {
+			
+			// Obtain all existing links.
+			$oFilterLinks = new DBObjectSearch('ThirdPartyMessageToUser');
+			$oSetLinks = new DBObjectSet($oFilterLinks);
+			
+			// Obtain all users.
+			$oFilterUsers = new DBObjectSearch('User');
+			$oSetUsers = new DBObjectSet($oFilterUsers);
+			
+			// Obtain all messages.
+			$oFilterMessages = new DBObjectSearch('ThirdPartyNewsRoomMessage');
+			$oSetMessages = new DBObjectSet($oFilterMessages);
+			
+			// Build arrays with IDs for easy reference
+			
+				$aIds = [
+					'messages' => [],
+					'users' => [],
+					'users_messages' => []
+				];
+				
+				
+				while($oUser = $oSetUsers->Fetch()) {
+					
+					$aIds['users'][] = $oUser->GetKey();
+					
+				}
+				
+				while($oMessage = $oSetMessages->Fetch()) {
+					
+					$aIds['messages'][] = $oMessage->GetKey();
+					
+				}
+				
+			
+			// For each existing link:
+			while($oLink = $oSetLinks->Fetch()) {
+			
+				// If either the user or message no longer exists: delete.
+				if(in_array($oLink->Get('user_id'), $aIds['users']) == false || in_array($oLink->Get('message_id'), $aIds['messages']) == false) {
+					
+					$oLink->DBDelete();
+					
+				}
+				
+				// Keep track of which messages are already linked to a user.
+				$aIds['users_messages'] = $oLink->Get('user_id').'_'.$oLink->Get('message_id');
+			
+			}
+			
+			// For each user: check if each message is linked.
+			// If not, create.
+			
+				$oSetUsers->Rewind();
+				while($oUser = $oSetUsers->Fetch()) {
+				
+					$oSetMessages->Rewind();
+					while($oMessage = $oSetMessages->Fetch()) {
+						
+						// If not in array, create new link.
+						if(in_array($oUser->GetKey().'_'.$oMessage->GetKey(), $aIds['users_messages']) == false) {
+							
+							$oLink = MetaModel::NewObject('ThirdPartyMessageToUser', [
+								'user_id' => $oUser->GetKey(),
+								'message_id' => $oMessage->GetKey()
+							]);
+							$oLink->DBInsert();
+							
+						}
+						
+					}
+					
+				}
+			
+		}
+		
 		
 	}

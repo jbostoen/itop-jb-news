@@ -86,7 +86,7 @@ try {
 		case 'redirect':
 		
 			$iMessageId = (int) utils::ReadParam('message_id', 0);
-
+			
 			// Check parameters
 			if(empty($iMessageId))
 			{
@@ -135,16 +135,24 @@ try {
 		
 			$oPage = new NewsRoomWebPage('All messages');
 			NewsroomHelper::MakeAllMessagesPage($oPage);
+			NewsroomHelper::MarkAllMessagesAsReadForUser(); // Open for discussion: when all messages are rendered on an overview page: should they be marked as read?
 			break;
 
 		case 'redirect':
 		
 			// Mark message as read
-			$bMarked = NewsroomHelper::MarkMessageAsReadForUser($iMessageId, $oUser);
+			$bMarked = NewsroomHelper::MarkMessageAsReadForUser($iMessageId);
 
 			// Redirect to final URL
-			$oMessage = MetaModel::GetObject('ThirdPartyNewsRoomMessage', $iMessageId, true, true);
-			header('Location: ' . $oMessage->Get('url'));
+			$oMessage = MetaModel::GetObject('ThirdPartyNewsRoomMessage', $iMessageId);
+			
+			if($oMessage !== null && NewsRoomHelper::MessageIsApplicable($oMessage) == true) {
+				
+				$oTranslation = NewsRoomHelper::GetTranslation($oMessage);
+				header('Location: ' . $oTranslation->Get('url'));
+			
+			}
+			
 			break;
 			
 		default:
