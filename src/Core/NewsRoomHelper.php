@@ -363,7 +363,7 @@ JS
 	}
 	
 	/**
-	 * Checks whether current user falls under target profiles scope
+	 * Checks whether current user falls under the target OQL.
 	 *
 	 * @param \ThirdPartyNewsRoomMessage $oMessage Third party newsroom message
 	 * @param \User $oUser Optional user
@@ -371,6 +371,43 @@ JS
 	 * @return \Boolean
 	 */
 	public static function MessageIsApplicable(ThirdPartyNewsRoomMessage $oMessage, User $oUser = null) {
+		
+		$sOQL = trim($oMessage->Get('oql'));
+		$oUser = $oUser ?? UserRights::GetUserObject();
+		
+		// Shortcut: no OQL = everyone
+		if($sOQL == '') {
+			
+			return true;
+			
+		}
+		
+		try {
+			
+			$oFilterUsers = DBObjectSearch::FromOQL($sOQL);
+			$sOQLClass = $oFilterUsers->GetClass();
+			
+			if(MetaModel::GetRootClass($sOQLClass) != 'User') {
+				
+				// This should never be the case.
+				throw new Exception('The OQL for a ThirdPartyNewsRoomMessage should return a user object.');
+				
+			}
+			
+			// Add condition ('AND')
+			$oFilterUsers->AddCondition('id', $oUser->GetKey(), '=');
+			
+			$oSetUsers = new DBObjectSet($oFilterUsers);
+			
+			// Matching user
+			return ($oSetUsers->Count() == 1);
+			
+		}
+		catch(Exception $e) {
+			
+			// Invalid OQL?
+			
+		}
 		
 		$sTargetProfiles = $oMessage->Get('target_profiles');
 		$sTargetProfiles = preg_replace('/[\s]{1,},[\s]{1,}/', '', $sTargetProfiles);

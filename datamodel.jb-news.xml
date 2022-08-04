@@ -93,7 +93,35 @@
 					<edit_mode>actions</edit_mode>
 				</field>
 			</fields>
-			<methods/>
+			<methods>
+					<method id="DoCheckToWrite">
+					  <comment/>
+					  <static>false</static>
+					  <access>public</access>
+					  <type>Overload-DBObject</type>
+					  <code><![CDATA[	
+					  
+				public function DoCheckToWrite() {
+				
+					parent::DoCheckToWrite();
+					
+					$sOQL = trim($this->Get('oql');
+					if($sOQL != '')) {
+
+						$oFilterUsers = DBObjectSearch::FromOQL($sOQL);
+						$sOQLClass = $oFilterUsers->GetClass();
+						
+						if(MetaModel::GetRootClass($sOQLClass) != 'User') {
+							
+							$this->m_aCheckIssues[] = Dict::Format('Class:ThirdPartyNewsRoomMessage/Check:OQLMustReturnUser', $sOQLClass);
+							
+						}
+						
+					}
+					
+				}	]]></code>
+					</method>
+			</methods>
 			<presentation>
 				<list>
 					<items>

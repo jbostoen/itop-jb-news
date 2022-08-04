@@ -30,6 +30,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Class:ThirdPartyNewsRoomMessage/Attribute:target_profiles+' => 'Profiles which will see this message. If empty, every user profile will see this message.',
 	'Class:ThirdPartyNewsRoomMessage/Attribute:oql' => 'OQL',
 	'Class:ThirdPartyNewsRoomMessage/Attribute:oql+' => 'The OQL which specifies which users should see this message.',
+	'Class:ThirdPartyNewsRoomMessage/Check:OQLMustReturnUser' => 'The OQL must return user objects, currently it returns %1$s objects.',
 	
 	'Class:ThirdPartyNewsRoomMessageTranslation' => 'Third party Newsroom Message Translation',
 	'Class:ThirdPartyNewsRoomMessageTranslation/Attribute:message_id' => 'Message ID',
