@@ -36,7 +36,7 @@
 		public static function GetThirdPartyName();
 		
 		/**
-		 * Returns post parameters. For instance, you can specify an API version here.
+		 * Returns additional post parameters. For instance, you can specify an API version here.
 		 *
 		 * @details Mind that by default certain parameters are already included in the POST request to the news source.
 		 * @see NewsClient::RetrieveFromRemoteServer())
@@ -85,10 +85,8 @@
 		 */
 		public static function GetPostParameters() {
 
-			return [
-				'api_version' => '1.0'
-			];
-		
+			return [];
+			
 		}
 		
 		/**
@@ -239,7 +237,8 @@
 						'env' =>  utils::GetCurrentEnvironment(),
 						'app_name' => $sApp,
 						'app_version' => $sVersion,
-						'encryption_library' => $sEncryptionLib
+						'encryption_library' => $sEncryptionLib,
+						'api_version' => NewsRoomHelper::DEFAULT_API_VERSION
 					];
 					
 					$aPostRequestData = array_merge($aPostRequestData, $sSourceClass::GetPostParameters());
@@ -401,7 +400,9 @@
 								'start_date' => $aMessage['start_date'],
 								'end_date' => $aMessage['end_date'] ?? '',
 								'priority' => $aMessage['priority'],
-								'target_profiles' => $aMessage['target_profiles'] ?? ''
+								
+								// Calls to a server which has not implemented API version 1.1 will not return anything.
+								'oql' => $aMessage['oql'] ?? '',
 							]);
 							
 							if($oDoc !== null) {

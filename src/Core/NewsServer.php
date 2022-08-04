@@ -26,7 +26,7 @@
 		/**
 		 * @var \String $sApiVersion API version
 		 */
-		private static $sApiVersion = '1.0';
+		private static $sApiVersion = '1.1';
 		
 		/**
 		 * @var \String $sThirdPartyName Third party name of person/organization publishing news messages
@@ -55,6 +55,7 @@
 			$sAppVersion = utils::ReadParam('app_name', '');
 			$sInstanceId = utils::ReadParam('instance_hash', '');
 			$sInstanceId2 = utils::ReadParam('instance_hash2', '');
+			$sAPI = utils::ReadParam('api_version', '1.0');
 			
 			// Output all messages with their translations
 			// Theoretically additional filtering could be applied to reduce JSON size;
@@ -94,16 +95,37 @@
 				$oAttDef = MetaModel::GetAttributeDef('ThirdPartyNewsRoomMessage', 'icon');
 				$aIcon = $oAttDef->GetForJSON($oMessage->Get('icon'));
 				
-				$aObjects[] = [
-					'thirdparty_message_id' => $oMessage->Get('thirdparty_message_id'),
-					'title' => $oMessage->Get('title'),
-					'icon' => $aIcon,
-					'start_date' => $oMessage->Get('start_date'),
-					'end_date' => $oMessage->Get('end_date'),
-					'priority' => $oMessage->Get('priority'),
-					'target_profiles' => $oMessage->Get('target_profiles'),
-					'translations_list' => $aTranslations
-				];
+				// Note: all attributes should exist on the ThirdPartyNewsRoomMessage class of the client-side.
+				switch($sApiVersion) {
+					
+					case '1.0':
+						
+						$aObjects[] = [
+							'thirdparty_message_id' => $oMessage->Get('thirdparty_message_id'),
+							'title' => $oMessage->Get('title'),
+							'icon' => $aIcon,
+							'start_date' => $oMessage->Get('start_date'),
+							'end_date' => $oMessage->Get('end_date'),
+							'priority' => $oMessage->Get('priority'),
+							'target_profiles' => 'Administrator', // API 1.0 was only used for a very small number of users. "Administrators" were always targeted in the messages that were published.
+							'translations_list' => $aTranslations
+						];
+						break;
+						
+					case '1.1':
+					
+						$aObjects[] = [
+							'thirdparty_message_id' => $oMessage->Get('thirdparty_message_id'),
+							'title' => $oMessage->Get('title'),
+							'icon' => $aIcon,
+							'start_date' => $oMessage->Get('start_date'),
+							'end_date' => $oMessage->Get('end_date'),
+							'priority' => $oMessage->Get('priority'),
+							'oql' => $oMessage->Get('oql'),
+							'translations_list' => $aTranslations
+						];
+						break;
+					
 				
 			}
 			

@@ -10,30 +10,29 @@ In iTop configuration file, these settings are available:
 		// Module specific settings go here, if any
 		'enabled' => true, // Whether the module is enabled or not
 		'client' => true, // Acts as client
-		'frequency' => 60, // Interval in minutes before checking the remote news source (if the cron job is running)
+		'frequency' => 60, // Interval in minutes before checking the remote news source(s) (if the cron job is running)
 		'server' => false, // Acts as server
-		'source_url' => 'https://127.0.0.1:8182/test-newsroom/demo.php', // Remote news source
 		'ttl' => 3600, // Time interval in milliseconds before checking again (frontend) if a user has new messages
 	),
 ```
 
 ## How it works
 
-* a background task retrieves the third party newsroom messages from a remote news source
-  * if a new third party newsroom message has been published:
-    * a copy is stored on the local iTop instance
-    * a record is created for every user to keep track of "unread" messages
-  * if a third party newsroom message is no longer returned by the remote news source:
-    * the copy will be deleted from the local iTop instance. (use case: mistakes)
-  * if a third party newsroom message has changed on the remote source:
-    * the local copy will be updated
-	* it will NOT be marked as "unread" again (as it might simply be fixing a typo)
-* on the local instance, when the newsroom checks for messages, it does so against its local data.
-  * if a newsroom message has been displayed, the record that states there's an unread message for the current user will be deleted
-  * language of the message is chosen in this preference order:
-    * same as user's language
+* A background task retrieves the third party newsroom messages from a remote news source.
+  * If a new third party newsroom message has been published:
+    * A copy is stored on the local iTop instance
+    * A record is created for every user to keep track of the read status of the message - no matter whether the user is within the target audience or not.
+  * If a third party newsroom message is no longer returned by the remote news source:
+    * The copy will be deleted from the local iTop instance. (use case: mistakes)
+  * If a third party newsroom message has changed on the remote source:
+    * The local copy will be updated
+	* The message will NOT be marked as "unread" again (as it might simply be fixing a typo)
+* On the local instance, when the newsroom checks for messages, it does so against its local data.
+  * If a newsroom message has been displayed, the "read time" attribute will be updated for the record linking the user and the message.
+  * Language of the message is chosen in this preference order:
+    * Same as user's language
 	* English
-	* first found
+	* First found language
   
 ## News server recommendations
 
