@@ -18,7 +18,7 @@ Adds a news room to be aware of information on new or updated iTop extensions cr
 ## Cookbook
 
 PHP: 
-* how to add your own news client
+* How to add your own news client
 
 ## Credits
 

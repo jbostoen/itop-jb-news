@@ -40,6 +40,43 @@ In iTop configuration file, these settings are available:
 
 
 
+## Evolution of the API
 
+Where possible, the news server API will try to respond with a backward compatible response.
 
+### Version 1.0
 
+This returned a JSON response.
+
+If the request to the endpoint indicated support for Sodium (encryption_library=Sodium), the response was similar to:
+```
+{
+	"encryption_library": "Sodium",
+	"messages": [
+		{
+			"thirdparty_message_id": "jb-20220704-portal",
+			"title": "Support portal launched!",
+			"icon": {
+				"data": "",
+				"mimetype": "",
+				"filename": ""
+			},
+			"start_date": "2022-07-04 00:00:00",
+			"end_date": null,
+			"priority": "1",
+			"target_profiles": "Administrator",
+			"translations_list": [
+				{
+					"language": "EN US",
+					"title": "Support portal launched!",
+					"text": "As of today, there's a support portal where you can find all downloads, tickets, invoices and more!",
+					"url": "https://support.jeffreybostoen.be"
+				}
+			]
+		}
+	],
+	"signature": "85e4ZQKJq-Pe-qH0C9XfOt0AoLKLL-t896ATKqEdMd45xwTIon-DxNaNge8MDqv8SHj7W_JcJnUpXZMorN8tAw=="
+}
+```
+
+If no encryption was specified, a regular JSON array was returned (the contents of "messages" above).

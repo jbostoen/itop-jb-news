@@ -26,15 +26,10 @@
 		/**
 		 * @var \String $sApiVersion API version
 		 */
-		private static $sApiVersion = '1.1';
+		private static $sApiVersion = '1.1.0';
 		
 		/**
-		 * @var \String $sThirdPartyName Third party name of person/organization publishing news messages
-		 */
-		private static $sThirdPartyName = 'jeffreybostoen';
-		
-		/**
-		 * Gets News URL
+		 * Gets API version of server.
 		 *
 		 * @return \String
 		 */
@@ -45,7 +40,7 @@
 		}
 		
 		/**
-		 * Gets all the relevant messages for an instance
+		 * Gets all the relevant messages for an instance.
 		 *
 		 * @return \Array
 		 */
@@ -55,7 +50,7 @@
 			$sAppVersion = utils::ReadParam('app_name', '');
 			$sInstanceId = utils::ReadParam('instance_hash', '');
 			$sInstanceId2 = utils::ReadParam('instance_hash2', '');
-			$sAPI = utils::ReadParam('api_version', '1.0');
+			$sApiVersion = utils::ReadParam('api_version', '1.0');
 			
 			// Output all messages with their translations
 			// Theoretically additional filtering could be applied to reduce JSON size;
@@ -112,8 +107,10 @@
 						];
 						break;
 						
-					case '1.1':
+					case '1.1.0':
 					
+						// target_profiles is deprecated.
+						// oql has been added.
 						$aObjects[] = [
 							'thirdparty_message_id' => $oMessage->Get('thirdparty_message_id'),
 							'title' => $oMessage->Get('title'),
@@ -126,6 +123,7 @@
 						];
 						break;
 					
+				}
 				
 			}
 			

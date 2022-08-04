@@ -37,7 +37,7 @@ class NewsRoomHelper {
 	const MODULE_CODE = 'jb-news';
 
 	/** @var \String DEFAULT_API_VERSION */
-	const DEFAULT_API_VERSION = '1.0';
+	const DEFAULT_API_VERSION = '1.1.0';
 	
 	/** @var \String DEFAULT_APP_NAME */
 	const DEFAULT_APP_NAME = 'unknown';

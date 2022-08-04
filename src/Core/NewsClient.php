@@ -390,6 +390,12 @@
 							$oDoc = new ormDocument(base64_decode($aIcon['data']), $aIcon['mimetype'], $aIcon['filename']);
 						}
 						
+						// Ensure backward compatibility for client API 1.1.0 with server API 1.0
+						if(array_key_exists('target_profiles', $aMessage) == true) {
+							unset($aMessage['target_profiles']);
+							$aMessage['oql'] = 'SELECT User AS u JOIN URP_UserProfile AS up ON up.userid = u.id WHERE up.profileid_friendlyname = "Administrator"'; // Assume only administrators can see this
+						}
+						
 						if(in_array($aMessage['thirdparty_message_id'], $aKnownMessageIds) == false) {
 							
 							// Enrich
@@ -401,8 +407,8 @@
 								'end_date' => $aMessage['end_date'] ?? '',
 								'priority' => $aMessage['priority'],
 								
-								// Calls to a server which has not implemented API version 1.1 will not return anything.
-								'oql' => $aMessage['oql'] ?? '',
+								// Calls to a server which has not implemented API version 1.1.0 will not return anything.
+								'oql' => $aMessage['oql'] ?? 'SELECT User',
 							]);
 							
 							if($oDoc !== null) {
