@@ -105,8 +105,8 @@
 				
 					parent::DoCheckToWrite();
 					
-					$sOQL = trim($this->Get('oql');
-					if($sOQL != '')) {
+					$sOQL = trim($this->Get('oql'));
+					if($sOQL != '') {
 
 						$oFilterUsers = DBObjectSearch::FromOQL($sOQL);
 						$sOQLClass = $oFilterUsers->GetClass();
@@ -331,6 +331,7 @@
 			</presentation>
 		</class>
 		<class id="ThirdPartyMessageToUser" _delta="define">
+			<is_link>1</is_link>
 			<parent>cmdbAbstractObject</parent>
 			<properties>
 				<category>bizmodel,searchable</category>

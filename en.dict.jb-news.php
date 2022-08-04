@@ -30,7 +30,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Class:ThirdPartyNewsRoomMessage/Attribute:target_profiles+' => 'Profiles which will see this message. If empty, every user profile will see this message.',
 	'Class:ThirdPartyNewsRoomMessage/Attribute:oql' => 'OQL',
 	'Class:ThirdPartyNewsRoomMessage/Attribute:oql+' => 'The OQL which specifies which users should see this message.',
-	'Class:ThirdPartyNewsRoomMessage/Check:OQLMustReturnUser' => 'The OQL must return user objects, currently it returns %1$s objects.',
+	'Class:ThirdPartyNewsRoomMessage/Check:OQLMustReturnUser' => 'The OQL must return User objects, currently it returns %1$s objects.',
 	
 	'Class:ThirdPartyNewsRoomMessageTranslation' => 'Third party Newsroom Message Translation',
 	'Class:ThirdPartyNewsRoomMessageTranslation/Attribute:message_id' => 'Message ID',
@@ -45,7 +45,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Class:ThirdPartyNewsRoomMessageTranslation/Attribute:language+' => 'Targeted user language',
 	'Class:ThirdPartyNewsRoomMessageTranslation/UniquenessRule:unique_language' => 'Language for this translation must be unique for each message.',
 	
-	'Class:ThirdPartyMessageToUser' => 'Third party Unread Newsroom Message to User',
+	'Class:ThirdPartyMessageToUser' => 'Link Third party Newsroom Message to User',
 	'Class:ThirdPartyMessageToUser/Attribute:user_id' => 'User ID',
 	'Class:ThirdPartyMessageToUser/Attribute:message_id' => 'Message ID',
 	'Class:ThirdPartyMessageToUser/Attribute:read_date' => 'Date',
