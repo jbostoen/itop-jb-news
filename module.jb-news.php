@@ -56,6 +56,7 @@ SetupWebPage::AddModule(
 			'frequency' => 60,
 			'server' => false,
 			'ttl' => 3600,
+			'oql_target_users' => 'SELECT User',
 		),
 	)
 );

@@ -3,16 +3,29 @@
 ## Configuration
 
 
-In iTop configuration file, these settings are available:
+In iTop's configuration file, these settings are available:
 
 ```
 	'jb-news-client' => array(
-		// Module specific settings go here, if any
-		'enabled' => true, // Whether the module is enabled or not
-		'client' => true, // Acts as client
-		'frequency' => 60, // Interval in minutes before checking the remote news source(s) (if the cron job is running)
-		'server' => false, // Acts as server
-		'ttl' => 3600, // Time interval in milliseconds before checking again (frontend) if a user has new messages
+		
+		// Whether the module is enabled or not.
+		'enabled' => true, 
+		
+		// Acts as client.
+		'client' => true, 
+		
+		// Interval in minutes before checking the remote news source(s) (if the cron job is running).
+		'frequency' => 60,
+		
+		// Acts as server.
+		'server' => false,
+		
+		// Time interval in milliseconds before checking again (frontend) if a user has new messages.
+		'ttl' => 3600,
+
+		// OQL which should return User objects. Allows the administrator to restrict who sees the news sources provided by this extension.
+		// Note: if messages were obtained before, they may be present in the localStorage of the browser; and still be displayed for a brief time.
+		'oql_target_users' => 'SELECT User',
 	),
 ```
 
@@ -27,7 +40,7 @@ In iTop configuration file, these settings are available:
   * If a third party newsroom message has changed on the remote source:
     * The local copy will be updated
 	* The message will NOT be marked as "unread" again (as it might simply be fixing a typo)
-* On the local instance, when the newsroom checks for messages, it does so against its local data.
+* On the local instance, when the front-end newsroom checks for messages, it does so against its local data.
   * If a newsroom message has been displayed, the "read time" attribute will be updated for the record linking the user and the message.
   * Language of the message is chosen in this preference order:
     * Same as user's language
@@ -42,7 +55,14 @@ In iTop configuration file, these settings are available:
 
 ## Evolution of the API
 
-Where possible, the news server API will try to respond with a backward compatible response.
+Where possible, the news server API will try to respond with a backward compatible response.  
+Servers should not provide a newer response, so there's no need for the client to check what API version the server is using.
+
+### Version 1.1.0
+
+"target_profiles" has been deprecated and removed.
+It's replaced by the more functional "oql" that can be specified to target an audience.
+
 
 ### Version 1.0
 

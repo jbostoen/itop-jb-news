@@ -11,6 +11,8 @@
 namespace jb_itop_extensions\NewsClient;
 
 // iTop internals
+use \DBObjectSearch;
+use \DBObjectSet;
 use \MetaModel;
 use \UserRights;
 use \utils;
@@ -43,12 +45,30 @@ if(class_exists('NewsroomProviderBase')) {
 		 */
 		public function IsApplicable(User $oUser = null) {
 			
+			// What's the use case of $oUser being null?
+			if($oUser === null) {
+				return false;
+			}
+			
+			// The iTop admin can specify a more restrictive query to determine for who the newsroom messages should be enabled.
+			$sOQL = utils::GetCurrentModuleSetting('oql_target_users', 'SELECT User');
+			$oFilterUsers = DBObjectSearch::FromOQL($sOQL);
+			if(MetaModel::GetRootClass($oFilterUsers->GetClass()) != 'User') {
+				$sOQL = 'SELECT User';
+				$oFilterUsers = new DBObjectSearch($sOQL);
+			}
+			$oFilterUsers->AddCondition('id', $oUser->GetKey(), '=');
+			$oSetUsers = new DBObjectSet($oFilterUsers);
+			
+			
 			// @todo review rights here!
 			switch(true) {
+				
 				case (utils::GetCurrentModuleSetting('enabled', false) == false): // Not enabled
 				case (utils::GetCurrentModuleSetting('client', false) == false): // Not acting as a client
-				case ($oUser === null): // No user (not sure when this happens)
+				case ($oSetUsers->Count() != 1):
 					return false;
+					
 			}
 			
 			// All other cases
