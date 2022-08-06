@@ -40,6 +40,7 @@ In iTop's configuration file, these settings are available:
   * If a third party newsroom message has changed on the remote source:
     * The local copy will be updated
 	* The message will NOT be marked as "unread" again (as it might simply be fixing a typo)
+  * If Sodium is available, the messages can be verified using a known public Sodium key. This is a security-measure to prevent man-in-the-middle-attacks.
 * On the local instance, when the front-end newsroom checks for messages, it does so against its local data.
   * If a newsroom message has been displayed, the "read time" attribute will be updated for the record linking the user and the message.
   * Language of the message is chosen in this preference order:
@@ -60,8 +61,9 @@ Servers should not provide a newer response, so there's no need for the client t
 
 ### Version 1.1.0
 
-"target_profiles" has been deprecated and removed.
-It's replaced by the more functional "oql" that can be specified to target an audience.
+* "target_profiles" has been deprecated and removed.  
+  It has been replaced by the more functional "oql" that can be specified to target an audience.
+* The version number also contains a 'minor release' version number now, so small changes can be implemented more easily.
 
 
 ### Version 1.0

@@ -7,7 +7,7 @@
  *
  */
 
-	namespace jb_itop_extensions\NewsClient;
+	namespace jb_itop_extensions\NewsProvider;
 
 	// iTop classes
 	use \DBObjectSearch;
@@ -21,7 +21,7 @@
 	use \Exception;
 
 	// Custom classes
-	use \jb_itop_extensions\NewsClient\ProcessThirdPartyNews;
+	use \jb_itop_extensions\NewsProvider\ProcessThirdPartyNews;
 	
 	/**
 	 * Interface iNewsSource. Interface to implement news sources.
@@ -49,13 +49,6 @@
 		 * Returns URL of news source
 		 */
 		public static function GetUrl();
-		
-		/**
-		 * Whether or not the client is enabled (please allow this to be configured by the administrator using a setting in the iTop configuration file or something!)
-		 *
-		 * @return \Boolean
-		 */
-		public static function IsEnabled();
 		
 		/**
 		 * Returns the base64 encoded public key for a Sodium implementation
@@ -96,15 +89,6 @@
 
 			return 'https://itop-news.jeffreybostoen.be';
 		
-		}
-		
-		/**
-		 * @inheritDoc
-		 */
-		public static function IsEnabled() {
-			
-			return (utils::GetCurrentModuleSetting('client', true) == true);
-			
 		}
 		
 		/**
@@ -208,24 +192,35 @@
 			// Build list of news sources
 			// -
 			
+				$aDisabledSources = MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'debug_disable_sources', []);
+			
 				$aSources = [];
 				foreach(get_declared_classes() as $sClassName) {
+					
 					$aImplementations = class_implements($sClassName);
-					if(in_array('jb_itop_extensions\NewsClient\iNewsSource', $aImplementations) == true || in_array('iNewsSource', class_implements($sClassName)) == true) {
-						if($sClassName::IsEnabled() == true) {
-							$aSources[] = $sClassName;
+					if(in_array('jb_itop_extensions\NewsProvider\iNewsSource', $aImplementations) == true || in_array('iNewsSource', class_implements($sClassName)) == true) {
+						
+						// Skip source if temporarily disabled (perhaps advised at some point for some reason, without needing to disable or uninstall the extension completely)
+						$sThirdPartyName = $sClassName::GetThirdPartyName();
+						if(in_array($sThirdPartyName, $aDisabledSources) == true) {
+							$oProcess->Trace('. Source '.$sThirdPartyName.' is disabled.');
+							continue;
 						}
+						
+						$aSources[] = $sClassName;
 					}
+					
 				}
 				
 			// Request messages
 			// -
 			
+			
 				foreach($aSources as $sSourceClass) {
-					
+										
 					$sNewsUrl = $sSourceClass::GetUrl();
-					$sThirdPartyName = $sSourceClass::GetThirdPartyName();					
-				
+					$sThirdPartyName = $sSourceClass::GetThirdPartyName();
+					
 					// All messages will be requested.
 					// It may be necessary to retract/delete some messages at some point.
 					// These are default parameters, which can be overridden.
@@ -244,11 +239,15 @@
 					$aPostRequestData = array_merge($aPostRequestData, $sSourceClass::GetPostParameters());
 					
 					if(strpos($sNewsUrl, '?') !== false) {
+						
+						// To understand the part below:
+						// Mind that to make things look more pretty, the URL for a news source could point to a generic domain: 'itop-news.domain.org'.
+						// This could be an index.php file which simply calls an iTop instance itself, the index.php script (some sort of proxy) itself would act as a client to an iTop installation with the server in this extension enabled.
+						// It could make a call to: https://127.0.0.1:8182/iTop-clients/web/pages/exec.php?&exec_module=jb-news&exec_page=index.php&exec_env=production-news&operation=get_messages_for_instance&version=1.0 
+						// and it would also need the originally appended parameters sent to 'itop-news.domain.org'.
 						$sParameters = explode('?', $sNewsUrl)[1];
 						parse_str($sParameters, $aParameters);
 						
-						// Meant to get parameters from a URL, for instance if a news URL uses this extension as a client and uses a configured URL like
-						// https://127.0.0.1:8182/iTop-clients/web/pages/exec.php?&exec_module=jb-news&exec_page=index.php&exec_env=production-news&operation=get_messages_for_instance&version=1.0
 						$aPostRequestData = array_merge($aPostRequestData, $aParameters);
 						
 						
@@ -279,8 +278,7 @@
 					}
 
 					curl_close($cURLConnection);
-					
-					$oProcess->Trace('. Response: '.$sApiResponse);
+
 
 					// Assume these messages are in the correct format.
 					// If the format has changed in a backwards not compatible way, the API should simply not return any more messages
@@ -295,6 +293,9 @@
 						$oProcess->Trace(str_repeat('*', 25));
 						return;
 					}
+										
+					$oProcess->Trace('. Response: '.PHP_EOL.json_encode($aData, JSON_PRETTY_PRINT));
+					
 					
 					// Check if modern implementation is in place
 					if(array_key_exists('messages', $aData) == true) {
@@ -390,7 +391,8 @@
 							$oDoc = new ormDocument(base64_decode($aIcon['data']), $aIcon['mimetype'], $aIcon['filename']);
 						}
 						
-						// Ensure backward compatibility for client API 1.1.0 with server API 1.0
+						// Ensure backward compatibility for client API 1.1.0 getting response from server API 1.0
+						// Note: in real world cases, this shouldn't be a problem; as the server should always take care of this and even prefer to NOT return messages rather than causing issues.
 						if(array_key_exists('target_profiles', $aMessage) == true) {
 							unset($aMessage['target_profiles']);
 							$aMessage['oql'] = 'SELECT User AS u JOIN URP_UserProfile AS up ON up.userid = u.id WHERE up.profileid_friendlyname = "Administrator"'; // Assume only administrators can see this

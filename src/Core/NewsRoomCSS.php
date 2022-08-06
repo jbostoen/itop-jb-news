@@ -8,6 +8,13 @@
  * Definition of NewsRoomProvider.
  */
 
+	namespace jb_itop_extensions\NewsProvider;
+	
+	// iTop internals
+	use \AbstractPageUIExtension;
+	use \iTopWebPage;
+	use \MetaModel;
+	
 	/**
 	 * Class NewsPageUIExtension. Adds SCSS to pages to improve layout of newsroom messages.
 	 */
@@ -18,7 +25,7 @@
 		 */
 		public function GetNorthPaneHtml(iTopWebPage $oPage) {
 			
-			$oPage->add_saas('env-'.MetaModel::GetEnvironment().'/'.utils::GetCurrentModuleName().'/css/newsroom.scss');
+			$oPage->add_saas('env-'.MetaModel::GetEnvironment().'/'.NewsRoomHelper::MODULE_CODE.'/css/newsroom.scss');
 			return '';
 			
 		}

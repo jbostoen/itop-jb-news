@@ -7,7 +7,7 @@
  *
  */
 
-	namespace jb_itop_extensions\NewsClient;
+	namespace jb_itop_extensions\NewsProvider;
 
 	// iTop internals
 	use \WebPage;

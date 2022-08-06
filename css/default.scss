@@ -12,13 +12,13 @@ body {
 	font-family: Tahoma;
 }
 
-.jbnewsclient-all-messages {
+.newsroom-all-messages {
 
 	margin: 3rem auto;
 	max-width: 600px;
 
-	.jbnewsclient-messages {
-		.jbnewsclient-message {
+	.newsroom-messages {
+		.newsroom-message {
 			margin-bottom: 1rem;
 			padding: 0.5rem;
 			background-color: white;
@@ -26,7 +26,7 @@ body {
 			
 			display: flex;
 			
-				.jbnewsclient-m-icon { 
+				.newsroom-m-icon { 
 					
 					flex: 20%;
 					text-align: center;
@@ -45,18 +45,18 @@ body {
 					
 				}
 
-				.jbnewsclient-m-content {
+				.newsroom-m-content {
 				
 					flex: 80%;
 
-					.jbnewsclient-m-text {
+					.newsroom-m-text {
 						color: #545454;
 						p, ul > li {
 							font-size: 0.85rem;
 						}
 					}
 
-					.jbnewsclient-m-date {
+					.newsroom-m-date {
 						
 						text-align: right;
 						color: grey;
@@ -68,7 +68,7 @@ body {
 						
 					}
 					
-					.jbnewsclient-m-title {
+					.newsroom-m-title {
 						font-weight: bold;
 						
 						p {

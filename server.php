@@ -33,9 +33,9 @@ require_once(APPROOT.'/application/loginwebpage.class.inc.php');
 require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news/src/Core/NewsRoomWebPage.php');
 require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news/src/Core/NewsServer.php');
 
-use \jb_itop_extensions\NewsClient\NewsRoomWebPage;
-use \jb_itop_extensions\NewsClient\NewsServer;
-use \jb_itop_extensions\NewsClient\NewsRoomHelper;
+use \jb_itop_extensions\NewsProvider\NewsRoomWebPage;
+use \jb_itop_extensions\NewsProvider\NewsServer;
+use \jb_itop_extensions\NewsProvider\NewsRoomHelper;
 
 try {
 	
@@ -81,12 +81,12 @@ try {
 				throw new Exception('Missing parameters for requested operation.');
 			}
 		
-			if(utils::GetCurrentModuleSetting('enabled', false) == false) {
+			if(MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'enabled', false) == false) {
 
 				$oPage->add('News extension not enabled.');
 
 			}
-			elseif(utils::GetCurrentModuleSetting('server', false) == false) {
+			elseif(MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'server', false) == false) {
 				
 				$oPage->add('Server not active.');
 				
@@ -95,6 +95,9 @@ try {
 		
 				// Retrieve messages
 				$aMessages = NewsServer::GetMessagesForInstance();
+				
+				// Run third party processors
+				NewsServer::RunThirdPartyProcessors();
 				
 				// Prepare response
 				// Note: the encryption library is appended in the response.

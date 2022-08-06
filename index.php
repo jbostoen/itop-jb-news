@@ -33,9 +33,9 @@ require_once(APPROOT.'/application/loginwebpage.class.inc.php');
 require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news/src/Core/NewsRoomWebPage.php');
 require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news/src/Core/NewsServer.php');
 
-use \jb_itop_extensions\NewsClient\NewsRoomWebPage;
-use \jb_itop_extensions\NewsClient\NewsServer;
-use \jb_itop_extensions\NewsClient\NewsRoomHelper;
+use \jb_itop_extensions\NewsProvider\NewsRoomWebPage;
+use \jb_itop_extensions\NewsProvider\NewsServer;
+use \jb_itop_extensions\NewsProvider\NewsRoomHelper;
 
 try {
 	

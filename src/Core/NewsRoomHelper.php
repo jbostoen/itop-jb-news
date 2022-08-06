@@ -7,7 +7,7 @@
  *
  */
 
-namespace jb_itop_extensions\NewsClient;
+namespace jb_itop_extensions\NewsProvider;
 
 // iTop internals
 use \DBObjectSearch;
@@ -26,7 +26,7 @@ use \ThirdPartyNewsRoomMessageTranslation;
 use \ThirdPartyMessageToUser;
 
 // Custom classes
-use \jb_itop_extensions\NewsClient\NewsRoomWebPage;
+use \jb_itop_extensions\NewsProvider\NewsRoomWebPage;
 
 /**
  * Class NewsRoomHelper. Contains a lot of functions to assist in AJAX requests.
@@ -273,9 +273,9 @@ class NewsRoomHelper {
 		// Build markup
 		$oPage->add(
 			<<<HTML
-<div class="jbnewsclient-all-messages">
+<div class="newsroom-all-messages">
 	<h2>{$sLabel}</h2>
-	<div class="jbnewsclient-messages">
+	<div class="newsroom-messages">
 	</div>
 </div>
 
@@ -297,15 +297,15 @@ HTML
 				var sTitle = oShownDownConverter.makeHtml(msg.title);
 				var sText = oShownDownConverter.makeHtml(msg.text);
 				
-				$('.jbnewsclient-messages').append(
-					'<div class="jbnewsclient-message" data-url="' + msg.url + '">' +
-					'		<div class="jbnewsclient-m-icon">' +
+				$('.newsroom-messages').append(
+					'<div class="newsroom-message" data-url="' + msg.url + '">' +
+					'		<div class="newsroom-m-icon">' +
 					'			<img src="' + msg.icon + '" alt="Message icon" />' +
 					'		</div>' +
-					'		<div class="jbnewsclient-m-content">' +
-					'			<div class="jbnewsclient-m-title">' + sTitle + '</div>' +
-					'			<div class="jbnewsclient-m-text">' + sText + '</div>' +
-					'			<div class="jbnewsclient-m-date"><p>' + msg.start_date + '</p></div>' +
+					'		<div class="newsroom-m-content">' +
+					'			<div class="newsroom-m-title">' + sTitle + '</div>' +
+					'			<div class="newsroom-m-text">' + sText + '</div>' +
+					'			<div class="newsroom-m-date"><p>' + msg.start_date + '</p></div>' +
 					'			' + (msg.url == '' ? '' : '<hr/> <p><a href="' + msg.url + '" target="_BLANK">{$sMoreInfo}</a></p>') +
 					'		</div>' +
 					'</div>'

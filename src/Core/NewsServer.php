@@ -7,7 +7,7 @@
  *
  */
 
-	namespace jb_itop_extensions\NewsClient;
+	namespace jb_itop_extensions\NewsProvider;
 
 	// iTop classes
 	use \DBObjectSearch;
@@ -18,6 +18,42 @@
 	// Common
 	use \Exception;
 
+	/**
+	 * Interface iNewsServerProcessor. Interface to implement some server-side actions when a client connects.
+	 */
+	interface iNewsServerProcessor {
+		
+		/**
+		 * Processes some custom actions.
+		 * Example: keep track of which instances last connected, process custom info from iNewsSource::GetPostParameters()
+		 *
+		 * @return void
+		 *
+		 */
+		public static function Process();
+		
+	}
+	
+	/**
+	 * Class NewsServerProcessorJeffreyBostoen. A news server processor which will keep track of some specific info.
+	 */
+	abstract class NewsServerProcessorJeffreyBostoen {
+		
+		/**
+		 * @inheritDoc
+		 */
+		public static function Process() {
+			
+			// To be fully implemented.
+			
+			// This could check if the instance exists already and update the info.
+			// If it's new, there is probably no way to link it to a customer. Create under an 'unknown' organization.
+			
+		}
+		
+		
+	}
+	
 	/**
 	 * Class NewsServer. A news server which is capable to output all messages for an instance.
 	 */
@@ -131,5 +167,36 @@
 				
 		}
 		
+		/**
+		 * Processes each third party implementation of iNewsServerProcessor. 
+		 *
+		 * @return void
+		 */
+		public static function RunThirdPartyProcessors() {
+			
 		
+			// Build list of news sources
+			// -
+			
+				$aProcessors = [];
+				foreach(get_declared_classes() as $sClassName) {
+					$aImplementations = class_implements($sClassName);
+					if(in_array('jb_itop_extensions\NewsProvider\iNewsServerProcessor', $aImplementations) == true || in_array('iNewsServerProcessor', class_implements($sClassName)) == true) {
+						if($sClassName::IsEnabled() == true) {
+							$aProcessors[] = $sClassName;
+						}
+					}
+				}
+				
+			// Run each processor
+			// -
+				
+				foreach($aProcessors as $sProcessor) {
+					
+					$sProcessor::Process();
+					
+				}
+			
+		}
+	
 	}

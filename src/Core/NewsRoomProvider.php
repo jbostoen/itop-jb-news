@@ -8,7 +8,7 @@
  * Definition of NewsRoomProvider.
  */
 
-namespace jb_itop_extensions\NewsClient;
+namespace jb_itop_extensions\NewsProvider;
 
 // iTop internals
 use \DBObjectSearch;
@@ -36,8 +36,10 @@ if(class_exists('NewsroomProviderBase')) {
 		 * @inheritDoc
 		 */
 		public function GetTTL() {
+			
 			// Update every hour
-			return (Int)utils::GetCurrentModuleSetting('ttl', 3600);
+			return (Int)MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'ttl', 3600);
+			
 		}
 
 		/**
@@ -51,7 +53,7 @@ if(class_exists('NewsroomProviderBase')) {
 			}
 			
 			// The iTop admin can specify a more restrictive query to determine for who the newsroom messages should be enabled.
-			$sOQL = utils::GetCurrentModuleSetting('oql_target_users', 'SELECT User');
+			$sOQL = MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'oql_target_users', 'SELECT User');
 			$oFilterUsers = DBObjectSearch::FromOQL($sOQL);
 			if(MetaModel::GetRootClass($oFilterUsers->GetClass()) != 'User') {
 				$sOQL = 'SELECT User';
@@ -64,8 +66,8 @@ if(class_exists('NewsroomProviderBase')) {
 			// @todo review rights here!
 			switch(true) {
 				
-				case (utils::GetCurrentModuleSetting('enabled', false) == false): // Not enabled
-				case (utils::GetCurrentModuleSetting('client', false) == false): // Not acting as a client
+				case (MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'enabled', false) == false): // Not enabled
+				case (MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'client', false) == false): // Not acting as a client
 				case ($oSetUsers->Count() != 1):
 					return false;
 					
@@ -107,9 +109,10 @@ if(class_exists('NewsroomProviderBase')) {
 		/**
 		 * @inheritDoc
 		 *
-		 * Note: Placeholders are only used in the news URL
+		 * Note: Placeholders are only used in the news URL.
 		 */
 		public function GetPlaceholders() {
+			
 			$aPlaceholders = [];
 
 			$oUser = UserRights::GetUserObject();
@@ -153,7 +156,7 @@ if(class_exists('NewsroomProviderBase')) {
 		private function MakeUrl($sOperation) {
 			
 			return utils::GetAbsoluteUrlExecPage().'?'
-				.'&exec_module='.utils::GetCurrentModuleName()
+				.'&exec_module='.NewsRoomHelper::MODULE_CODE
 				.'&exec_page=index.php'
 				.'&exec_env='.MetaModel::GetEnvironment()
 				.'&operation='.$sOperation
