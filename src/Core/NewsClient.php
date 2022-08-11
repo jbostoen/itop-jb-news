@@ -51,7 +51,8 @@
 		public static function GetUrl();
 		
 		/**
-		 * Returns the base64 encoded public key for a Sodium implementation
+		 * Returns the base64 encoded public key for a Sodium implementation. 
+		 * A news source should share this, so the public key can be used to verify the news message contents of the source.
 		 *
 		 * @return \Boolean
 		 */
@@ -59,50 +60,6 @@
 		
 	}
 	
-	/**
-	 * Class NewsSourceJeffreyBostoen. A news source.
-	 */
-	abstract class NewsSourceJeffreyBostoen implements iNewsSource {
-		
-		/**
-		 * @inheritDoc
-		 */
-		public static function GetThirdPartyName() {
-			
-			return 'Jeffrey Bostoen';
-			
-		}
-		
-		/**
-		 * @inheritDoc
-		 */
-		public static function GetPostParameters() {
-
-			return [];
-			
-		}
-		
-		/**
-		 * @inheritDoc
-		 */
-		public static function GetUrl() {
-
-			return 'https://itop-news.jeffreybostoen.be';
-		
-		}
-		
-		/**
-		 * @inheritDoc
-		 */
-		public static function GetPublicKeySodium() {
-			
-			return 'SafJHvlxp3ktweQDbRnkwvm6ih4dru2H3ydvVaA0xSI=';
-			
-		}
-		
-	}
-	
-
 	/**
 	 * Class NewsClient. An actual news client which retrieves messages from a third party (non Combodo) news source (person/organization).
 	 */
@@ -550,6 +507,74 @@
 		public static function PostToRemoteServer(ProcessThirdPartyNews $oProcess) {
 			
 			// @todo Check whether this can be grouped without sending too much data in one call
+			
+			// Other hooks may have ran already.
+			// Do not leak sensitive data, OQL queries may contain names etc.
+			$sOQL = MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'oql_target_users', 'SELECT User');
+			$oFilterUsers = DBObjectSearch::FromOQL($sOQL);
+			$oSetUsers = new DBObjectSet($oFilterUsers);
+			
+			$aCurrentAudienceUserIds = [];
+			
+			while($oUser = $oSetUsers->Fetch()) {
+				
+				$aCurrentAudienceUserIds[] = $oUser->GetKey();
+				
+			}
+			
+			// Post statistics: total number of possible users who can still see a message
+			// Number of users who have seen a specific message (mind that this could be larger than the number of possible users who can still see it!)
+			// Differentiation needed?
+			
+			// @todo Determine "target audience": all possible users (as defined by the admin); or combined with the OQL on the message?
+			
+			// - Count how many users:
+			//	(1) Have read the message and are still in the target group.
+			//	(2) Have read the message and are no longer in the target group.
+			//	(3) Are in the target group, but have not read the message yet.
+			
+			$oFilterMessages = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsRoomMessage');
+			$oFilterMessages->AllowAllData();
+			$oSetMessages = new DBObjectSet($oFilterMessages);
+			
+			$oFilterLinks = DBObjectSearch::FromOQL('SELECT ThirdPartyMessageToUser');
+			$oSetLinks = new DBObjectSet($oFilterLinks);
+			
+			$aMessagesData = [];
+			
+			while($oMessage = $oSetMessages->Fetch()) {
+			
+				$iTotalRead = 0;
+				$iTotalUnread = 0;
+
+				$fStillAllowed = 0;
+				$fPreviouslyAllowed = 0;
+				$fNotAllowed = 0;
+
+				// Cross-reference
+				$oSetLinks->Rewind();
+				while($oLink = $oSetLinks->Fetch()) {
+					
+					// Process unique user/message records for this message.
+					if($oLink->Get('message_id') == $oMessage->GetKey()) {
+						
+						$iTotalRead += ($oLink->Get('read_date') == '' ? 0 : 1);
+						$iTotalUnread += ($oLink->Get('read_date') == '' ? 1 : 0);
+						
+					}
+					
+					// Is this user still allowed to see this message?
+					
+					
+				}
+				
+				$aMessagesData[$oMessage->Get('thirdparty_name').'_'.$oMessage->Get('thirdparty_message_id')] = [
+					'totalRead' => $iTotalRead,
+					'totalUnread' => $iTotalUnread
+				];
+				
+			}
+			
 			return;
 			
 		}

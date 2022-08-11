@@ -12,7 +12,7 @@ SetupWebPage::AddModule(
 	array(
 		// Identification
 		//
-		'label' => 'Tools: News client - Jeffrey Bostoen',
+		'label' => 'Feature: Third Party News Provider - Jeffrey Bostoen',
 		'category' => 'tools',
 
 		// Setup
@@ -35,6 +35,7 @@ SetupWebPage::AddModule(
 			'src/Core/NewsRoomWebPage.php',
 			'src/Core/NewsServer.php',
 			'src/Core/ProcessThirdPartyNews.php',
+			'src/Core/NewsJeffreyBostoen.php',
 		),
 		'webservice' => array(),
 		'data.struct' => array(// add your 'structure' definition XML files here,

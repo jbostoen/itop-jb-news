@@ -35,26 +35,6 @@
 	}
 	
 	/**
-	 * Class NewsServerProcessorJeffreyBostoen. A news server processor which will keep track of some specific info.
-	 */
-	abstract class NewsServerProcessorJeffreyBostoen {
-		
-		/**
-		 * @inheritDoc
-		 */
-		public static function Process() {
-			
-			// To be fully implemented.
-			
-			// This could check if the instance exists already and update the info.
-			// If it's new, there is probably no way to link it to a customer. Create under an 'unknown' organization.
-			
-		}
-		
-		
-	}
-	
-	/**
 	 * Class NewsServer. A news server which is capable to output all messages for an instance.
 	 */
 	abstract class NewsServer {

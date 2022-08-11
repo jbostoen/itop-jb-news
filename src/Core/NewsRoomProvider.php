@@ -55,6 +55,7 @@ if(class_exists('NewsroomProviderBase')) {
 			// The iTop admin can specify a more restrictive query to determine for who the newsroom messages should be enabled.
 			$sOQL = MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'oql_target_users', 'SELECT User');
 			$oFilterUsers = DBObjectSearch::FromOQL($sOQL);
+			$oFilterUsers->AllowAllData();
 			if(MetaModel::GetRootClass($oFilterUsers->GetClass()) != 'User') {
 				$sOQL = 'SELECT User';
 				$oFilterUsers = new DBObjectSearch($sOQL);

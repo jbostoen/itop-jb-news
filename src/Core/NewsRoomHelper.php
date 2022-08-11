@@ -59,6 +59,7 @@ class NewsRoomHelper {
 	public static function GetAllMessagesForCurrentUser() {
 		
 		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsRoomMessage WHERE start_date <= NOW() AND (ISNULL(end_date) OR end_date >= NOW())');
+		$oSearch->AllowAllData();
 		$oSet = new DBObjectSet($oSearch, [
 			'priority' => false, // Higher priority first
 			'start_date' => false, // Most recent publication first
@@ -94,11 +95,11 @@ class NewsRoomHelper {
 	public static function GetUnreadMessagesForUser() {
 		
 		$oUser = UserRights::GetUserObject();
-		$sMessageClass = 'ThirdPartyNewsRoomMessage';
 		$sMessageIconAttCode = 'icon';
 
 		$aSearchParams = ['user_id' => $oUser->GetKey()];
-		$oSearch = DBObjectSearch::FromOQL('SELECT M FROM '.$sMessageClass.' AS M JOIN ThirdPartyMessageToUser AS LUM ON LUM.message_id = M.id WHERE LUM.user_id = :user_id AND M.start_date <= NOW() AND (ISNULL(M.end_date) OR M.end_date >= NOW()) AND ISNULL(LUM.read_date)', $aSearchParams);
+		$oSearch = DBObjectSearch::FromOQL('SELECT M FROM ThirdPartyNewsRoomMessage AS M JOIN ThirdPartyMessageToUser AS LUM ON LUM.message_id = M.id WHERE LUM.user_id = :user_id AND M.start_date <= NOW() AND (ISNULL(M.end_date) OR M.end_date >= NOW()) AND ISNULL(LUM.read_date)', $aSearchParams);
+		$oSearch->AllowAllData();
 		$oSet = new DBObjectSet($oSearch);
 		$oSet->SetLimit(50); // Limit messages count to avoid server crash
 
@@ -115,10 +116,10 @@ class NewsRoomHelper {
 			/** @var \ormDocument $oIcon */
 			$oIcon = $oMessage->Get($sMessageIconAttCode);
 			if(is_object($oIcon) && !$oIcon->IsEmpty()) {
-				$sIconUrl = $oIcon->GetDisplayURL($sMessageClass, $oMessage->GetKey(), $sMessageIconAttCode);
+				$sIconUrl = $oIcon->GetDisplayURL('ThirdPartyNewsRoomMessage', $oMessage->GetKey(), $sMessageIconAttCode);
 			}
 			else {
-				$sIconUrl = MetaModel::GetAttributeDef($sMessageClass, $sMessageIconAttCode)->Get('default_image');
+				$sIconUrl = MetaModel::GetAttributeDef('ThirdPartyNewsRoomMessage', $sMessageIconAttCode)->Get('default_image');
 			}
 
 			// Prepare url redirection
@@ -226,7 +227,6 @@ class NewsRoomHelper {
 	 */
 	public static function MakeAllMessagesPage(NewsRoomWebPage &$oPage) {
 		
-		$sMessageClass = 'ThirdPartyNewsRoomMessage';
 		$sMessageIconAttCode = 'icon';
 
 		// Retrieve messages
@@ -239,10 +239,10 @@ class NewsRoomHelper {
 			/** @var \ormDocument $oIcon */
 			$oIcon = $oMessage->Get($sMessageIconAttCode);
 			if(is_object($oIcon) && !$oIcon->IsEmpty()) {
-				$sIconUrl = $oIcon->GetDisplayURL($sMessageClass, $oMessage->GetKey(), $sMessageIconAttCode);
+				$sIconUrl = $oIcon->GetDisplayURL('ThirdPartyNewsRoomMessage', $oMessage->GetKey(), $sMessageIconAttCode);
 			}
 			else {
-				$sIconUrl = MetaModel::GetAttributeDef($sMessageClass, $sMessageIconAttCode)->Get('default_image');
+				$sIconUrl = MetaModel::GetAttributeDef('ThirdPartyNewsRoomMessage', $sMessageIconAttCode)->Get('default_image');
 			}
 			
 			$oTranslation = static::GetTranslation($oMessage);
@@ -375,6 +375,16 @@ JS
 		$sOQL = trim($oMessage->Get('oql'));
 		$oUser = $oUser ?? UserRights::GetUserObject();
 		
+		$sOQLRestricted = MetaModel::GetModuleSetting(static::MODULE_CODE, 'oql_target_users', 'SELECT User');
+		$oFilterRestricted = DBObjectSearch::FromOQL($sOQLRestricted);
+		$sClassRestricted = MetaModel::GetRootClass($oFilterRestricted->GetClass());
+		
+		if($oFilterRestricted->GetClass() != 'User') {
+			throw new Exception('The OQL for "oql_target_users" should return user objects.');
+		}
+		
+		// Don't make it too complicated: just use the "oql" value of ThirdPartyNewsRoomMessage; and add a condition to make sure the user ID is also in the subquery.
+		
 		// Shortcut: no OQL = everyone
 		if($sOQL == '') {
 			
@@ -390,7 +400,7 @@ JS
 			if(MetaModel::GetRootClass($sOQLClass) != 'User') {
 				
 				// This should never be the case.
-				throw new Exception('The OQL for a ThirdPartyNewsRoomMessage should return a user object.');
+				throw new Exception('The OQL for a ThirdPartyNewsRoomMessage should return user objects.');
 				
 			}
 			

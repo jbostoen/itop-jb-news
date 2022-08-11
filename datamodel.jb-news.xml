@@ -4,7 +4,7 @@
 		<class id="ThirdPartyNewsRoomMessage" _delta="define">
 			<parent>cmdbAbstractObject</parent>
 			<properties>
-				<category>bizmodel,searchable</category>
+				<category>grant_by_profile</category>
 				<abstract>false</abstract>
 				<db_table>thirdparty_newsroommessage</db_table>
 				<naming>
@@ -207,7 +207,7 @@
 		<class id="ThirdPartyNewsRoomMessageTranslation" _delta="define">
 			<parent>cmdbAbstractObject</parent>
 			<properties>
-				<category>bizmodel,searchable</category>
+				<category>grant_by_profile</category>
 				<abstract>false</abstract>
 				<db_table>thirdparty_newsroommessage_translation</db_table>
 				<naming>
@@ -334,7 +334,7 @@
 			<is_link>1</is_link>
 			<parent>cmdbAbstractObject</parent>
 			<properties>
-				<category>bizmodel,searchable</category>
+				<category>grant_by_profile</category>
 				<abstract>false</abstract>
 				<db_table>thirdparty_messagetouser</db_table>
 				<naming>
@@ -420,5 +420,16 @@
 			</presentation>
 		</class>
 	</classes>
+	<user_rights>
+		<groups>
+			<group id="ThirdPartyNewsRoomMessage" _delta="define">
+				<classes>
+					<class id="ThirdPartyNewsRoomMessage"/>
+					<class id="ThirdPartyNewsRoomMessageTranslation"/>
+					<class id="ThirdPartyMessageToUser"/>
+				</classes>
+			</group>
+		</groups>
+	</user_rights>
 </itop_design>
 
