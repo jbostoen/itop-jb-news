@@ -233,6 +233,20 @@ class NewsRoomHelper {
 		$aJsonMessages = [];
 		$oSetMessages = static::GetAllMessagesForCurrentUser();
 		
+		$aContextArgs = [];
+		$oUser = UserRights::GetUserObject();
+		$oContact = UserRights::GetContactObject();
+	
+		// Defensive programming. Not sure if there are cases where $oUser or $oContact would be null here.
+		if($oUser !== null) {
+			$aContextArgs = array_merge($aContextArgs, $oUser->ToArgs('current_user'));
+		}
+		
+		if($oContact !== null) {
+			$aContextArgs = array_merge($aContextArgs, $oContact->ToArgs('current_contact'));
+		}
+		
+		
 		while($oMessage = $oSetMessages->Fetch()) {
 			
 			// Prepare icon URL
@@ -249,12 +263,20 @@ class NewsRoomHelper {
 
 			if($oTranslation !== null) {
 				
+				$sUrl = $oTranslation->Get('url'); // Leave this URL intact, it's shown in an overview.
+				$sTitle = $oTranslation->Get('title');
+				$sText = $oTranslation->Get('text');
+				
+				$sUrl = MetaModel::ApplyParams($sUrl, $aContextArgs);
+				$sTitle = MetaModel::ApplyParams($sTitle, $aContextArgs);
+				$sText = MetaModel::ApplyParams($sText, $aContextArgs);
+				
 				$aJsonMessages[] = [
-					'url' => $oTranslation->Get('url'), // Leave this URL intact, it's shown in an overview.
+					'url' => $sUrl,
 					'icon' => $sIconUrl,
 					'start_date' => $oMessage->Get('start_date'),
-					'title' => $oTranslation->Get('title'),
-					'text' => $oTranslation->Get('text')
+					'title' => $sTitle,
+					'text' => $sText
 				];
 			
 			}

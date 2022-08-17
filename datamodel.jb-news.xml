@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<itop_design xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.7">
+<itop_design xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.6">
 	<classes>
 		<class id="ThirdPartyNewsRoomMessage" _delta="define">
 			<parent>cmdbAbstractObject</parent>
@@ -264,9 +264,11 @@
 					<sql>url</sql>
 					<default_value/>
 					<is_null_allowed>false</is_null_allowed>
-					<validation_pattern/>
-					<tracking_level>all</tracking_level>
-					<target/>
+					<!-- Note: to allow placeholders to be specified (use case: $current_user->language$), the validation (defaults to configuration setting url_validation_pattern) is undone. -->
+					<validation_pattern>^(.*?)$</validation_pattern>
+					<!-- If tracking_level is set to all, there is an issue with the validation above as the validation check for CMDBChangeOpSetAttributeURL->newvalue would fail: https://sourceforge.net/p/itop/tickets/2100/ -->
+					<tracking_level>none</tracking_level>
+					<target>_blank</target>
 				</field>
 			</fields>
 			<methods/>
