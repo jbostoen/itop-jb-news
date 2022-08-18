@@ -39,7 +39,7 @@
 		 * Returns additional post parameters. For instance, you can specify an API version here.
 		 *
 		 * @details Mind that by default certain parameters are already included in the POST request to the news source.
-		 * @see NewsClient::RetrieveFromRemoteServer())
+		 * @see NewsClient::GetDefaultPostParameters())
 		 *
 		 * @return \Array
 		 */
@@ -137,43 +137,22 @@
 		 */
 		public static function RetrieveFromRemoteServer(ProcessThirdPartyNews $oProcess) {
 			
-			$sApp = defined('ITOP_APPLICATION') ? ITOP_APPLICATION : 'unknown';
-			$sVersion = defined('ITOP_VERSION') ? ITOP_VERSION : 'unknown';
-			
-			$sInstanceHash = static::GetInstanceHash();
-			$sInstanceHash2 = static::GetInstanceHash2();
-			$sDBUid = static::GetDatabaseUID();
+			$oProcess->Trace('. Retrieve messages from remote news sources...');
 			
 			$sEncryptionLib = static::GetEncryptionLibrary();
 			
 			// Build list of news sources
 			// -
 			
-				$aDisabledSources = MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'debug_disable_sources', []);
-			
-				$aSources = [];
-				foreach(get_declared_classes() as $sClassName) {
-					
-					$aImplementations = class_implements($sClassName);
-					if(in_array('jb_itop_extensions\NewsProvider\iNewsSource', $aImplementations) == true || in_array('iNewsSource', class_implements($sClassName)) == true) {
-						
-						// Skip source if temporarily disabled (perhaps advised at some point for some reason, without needing to disable or uninstall the extension completely)
-						$sThirdPartyName = $sClassName::GetThirdPartyName();
-						if(in_array($sThirdPartyName, $aDisabledSources) == true) {
-							$oProcess->Trace('. Source '.$sThirdPartyName.' is disabled.');
-							continue;
-						}
-						
-						$aSources[] = $sClassName;
-					}
-					
-				}
+				$aSources = static::GetSources();
 				
 			// Request messages
 			// -
 			
 			
 				foreach($aSources as $sSourceClass) {
+					
+					// Only return data for news messages from this source.
 										
 					$sNewsUrl = $sSourceClass::GetUrl();
 					$sThirdPartyName = $sSourceClass::GetThirdPartyName();
@@ -181,18 +160,7 @@
 					// All messages will be requested.
 					// It may be necessary to retract/delete some messages at some point.
 					// These are default parameters, which can be overridden.
-					$aPostRequestData = [
-						'operation' => 'get_messages_for_instance',
-						'instance_hash' => $sInstanceHash,
-						'instance_hash2' => $sInstanceHash2,
-						'db_uid' => $sDBUid,
-						'env' =>  utils::GetCurrentEnvironment(),
-						'app_name' => $sApp,
-						'app_version' => $sVersion,
-						'encryption_library' => $sEncryptionLib,
-						'api_version' => NewsRoomHelper::DEFAULT_API_VERSION
-					];
-					
+					$aPostRequestData = static::GetDefaultPostParameters('get_messages_for_instance');
 					$aPostRequestData = array_merge($aPostRequestData, $sSourceClass::GetPostParameters());
 					
 					if(strpos($sNewsUrl, '?') !== false) {
@@ -352,7 +320,7 @@
 						// Note: in real world cases, this shouldn't be a problem; as the server should always take care of this and even prefer to NOT return messages rather than causing issues.
 						if(array_key_exists('target_profiles', $aMessage) == true) {
 							unset($aMessage['target_profiles']);
-							$aMessage['oql'] = 'SELECT User AS u JOIN URP_UserProfile AS up ON up.userid = u.id WHERE up.profileid_friendlyname = "Administrator"'; // Assume only administrators can see this
+							$aMessage['oql'] = 'SELECT User AS u JOIN URP_UserProfile AS up ON up.userid = u.id JOIN Person AS p ON u.contactid = p.id WHERE up.profileid_friendlyname = "Administrator" AND p.status = "active" AND u.status = "enabled"'; // Assume only administrators can see this
 						}
 						
 						if(in_array($aMessage['thirdparty_message_id'], $aKnownMessageIds) == false) {
@@ -506,74 +474,149 @@
 		 */
 		public static function PostToRemoteServer(ProcessThirdPartyNews $oProcess) {
 			
-			// @todo Check whether this can be grouped without sending too much data in one call
+			$oProcess->Trace('. Send statistical (anonymous) data to remote news sources...');
 			
 			// Other hooks may have ran already.
 			// Do not leak sensitive data, OQL queries may contain names etc.
-			$sOQL = MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'oql_target_users', 'SELECT User');
-			$oFilterUsers = DBObjectSearch::FromOQL($sOQL);
-			$oSetUsers = new DBObjectSet($oFilterUsers);
 			
-			$aCurrentAudienceUserIds = [];
-			
-			while($oUser = $oSetUsers->Fetch()) {
+			// List the CURRENT user IDs which are globally allowed to see messages (if the message OQL allows it).
 				
-				$aCurrentAudienceUserIds[] = $oUser->GetKey();
+				$sOQL = MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'oql_target_users', 'SELECT User');
+				$oFilterUsers = DBObjectSearch::FromOQL($sOQL);
+				$oSetUsers = new DBObjectSet($oFilterUsers);
 				
-			}
-			
-			// Post statistics: total number of possible users who can still see a message
-			// Number of users who have seen a specific message (mind that this could be larger than the number of possible users who can still see it!)
-			// Differentiation needed?
-			
-			// @todo Determine "target audience": all possible users (as defined by the admin); or combined with the OQL on the message?
-			
-			// - Count how many users:
-			//	(1) Have read the message and are still in the target group.
-			//	(2) Have read the message and are no longer in the target group.
-			//	(3) Are in the target group, but have not read the message yet.
-			
-			$oFilterMessages = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsRoomMessage');
-			$oFilterMessages->AllowAllData();
-			$oSetMessages = new DBObjectSet($oFilterMessages);
-			
-			$oFilterLinks = DBObjectSearch::FromOQL('SELECT ThirdPartyMessageToUser');
-			$oSetLinks = new DBObjectSet($oFilterLinks);
-			
-			$aMessagesData = [];
-			
-			while($oMessage = $oSetMessages->Fetch()) {
-			
-				$iTotalRead = 0;
-				$iTotalUnread = 0;
-
-				$fStillAllowed = 0;
-				$fPreviouslyAllowed = 0;
-				$fNotAllowed = 0;
-
-				// Cross-reference
-				$oSetLinks->Rewind();
-				while($oLink = $oSetLinks->Fetch()) {
+				$aCurrentAudienceUserIds = [];
+				
+				while($oUser = $oSetUsers->Fetch()) {
 					
-					// Process unique user/message records for this message.
-					if($oLink->Get('message_id') == $oMessage->GetKey()) {
-						
-						$iTotalRead += ($oLink->Get('read_date') == '' ? 0 : 1);
-						$iTotalUnread += ($oLink->Get('read_date') == '' ? 1 : 0);
-						
-					}
-					
-					// Is this user still allowed to see this message?
-					
+					// By default, there is no 'last login' data unfortunately, unless explicitly stated.
+					$aCurrentAudienceUserIds[] = $oUser->GetKey();
 					
 				}
 				
-				$aMessagesData[$oMessage->Get('thirdparty_name').'_'.$oMessage->Get('thirdparty_message_id')] = [
-					'totalRead' => $iTotalRead,
-					'totalUnread' => $iTotalUnread
-				];
+			
 				
-			}
+			// Request messages
+			// -
+			
+				$aPostRequestData = static::GetDefaultPostParameters('report_read_statistics');
+				
+				$aSources = static::GetSources();
+				
+				foreach($aSources as $sSourceClass) {
+										
+					$sNewsUrl = $sSourceClass::GetUrl();
+					$sThirdPartyName = $sSourceClass::GetThirdPartyName();
+					
+					$oFilterMessages = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsRoomMessage WHERE thirdparty_name = :thirdparty_name', [
+						'thirdparty_name' => $sThirdPartyName
+					]);
+					$oFilterMessages->AllowAllData();
+					$oSetMessages = new DBObjectSet($oFilterMessages);
+					
+					// Read statuses may include IDs of users who have seen the message, but may no longer be part of the possible target audience (message OQL - ignoring global OQL here).
+					$oFilterStatuses = DBObjectSearch::FromOQL('SELECT ThirdPartyMessageReadStatus');
+					$oFilterStatuses->AllowAllData();
+					$oSetStatuses = new DBObjectSet($oFilterStatuses);
+					
+					$aMessages = [];
+					
+					while($oMessage = $oSetMessages->Fetch()) {
+						
+						// Determine users targeted by the newsroom message (might be restricted because of the global "oql_target_users")
+						
+							$oFilterTargetUsers = DBObjectSearch::FromOQL($oMessage->Get('oql'));
+							$oFilterTargetUsers->AllowAllData();
+							$oSetUsers = new DBObjectSet($oFilterTargetUsers);
+							
+							$aTargetUsers = [];
+							
+							/** @var \User $oUser An iTop user */
+							while($oUser = $oSetUsers->Fetch()) {
+								
+								$aTargetUsers[] = $oUser->GetKey();
+								
+							}
+							
+							$aMessages[(String)$oMessage->Get('thirdparty_message_id')] = [
+								'target_users' => $aTargetUsers,
+								'users' => [], // Each user who actually "read" the message
+								'read_date' => [], // See users above - this is the read date for each user
+							];
+						
+						// Report when messages were read (users stay anonymous, only IDs are shared)
+						
+						$oSetStatuses->Rewind();
+						while($oStatus = $oSetStatuses->Fetch()) {
+							
+							if($oStatus->Get('message_id') == $oMessage->GetKey()) {
+						
+								$aMessages[(String)$oMessage->Get('thirdparty_message_id')]['users'] = $oStatus->Get('user_id');
+								$aMessages[(String)$oMessage->Get('thirdparty_message_id')]['read_date'] = $oStatus->Get('read_date');
+								
+							}
+						
+						}
+						
+					}
+					
+					
+					$aCustomData = [
+						'read_status' => base64_encode(json_encode([
+							'target_oql_users' => $aCurrentAudienceUserIds,
+							'messages' => $aMessages
+						]))
+					];
+					
+					
+					$aPostRequestData = array_merge($aPostRequestData, $sSourceClass::GetPostParameters(), $aCustomData);
+					
+					if(strpos($sNewsUrl, '?') !== false) {
+						
+						// To understand the part below:
+						// Mind that to make things look more pretty, the URL for a news source could point to a generic domain: 'itop-news.domain.org'.
+						// This could be an index.php file which simply calls an iTop instance itself, the index.php script (some sort of proxy) itself would act as a client to an iTop installation with the server in this extension enabled.
+						// It could make a call to: https://127.0.0.1:8182/iTop-clients/web/pages/exec.php?&exec_module=jb-news&exec_page=index.php&exec_env=production-news&operation=get_messages_for_instance&version=1.0 
+						// and it would also need the originally appended parameters sent to 'itop-news.domain.org'.
+						$sParameters = explode('?', $sNewsUrl)[1];
+						parse_str($sParameters, $aParameters);
+						
+						$aPostRequestData = array_merge($aPostRequestData, $aParameters);
+						
+						
+					}
+					
+					$oProcess->Trace('. Url: '.$sNewsUrl);
+					$oProcess->Trace('. Data: '.json_encode($aPostRequestData, JSON_PRETTY_PRINT));
+
+					$cURLConnection = curl_init($sNewsUrl);
+					curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, $aPostRequestData);
+					curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
+					
+					// Only here to test on local installations. Not meant to be enforced!
+					// curl_setopt($cURLConnection, CURLOPT_SSL_VERIFYPEER, false);
+					// curl_setopt($cURLConnection, CURLOPT_SSL_VERIFYHOST, false);
+
+					$sApiResponse = curl_exec($cURLConnection);
+					
+					if(curl_errno($cURLConnection)) {
+						
+						$sErrorMessage = curl_error($cURLConnection);
+						
+						$oProcess->Trace('. Error: cURL connection to '.$sNewsUrl.' failed: '.$sErrorMessage);
+						
+						// Abort. Otherwise messages might just get deleted while they shouldn't.
+						return;
+						
+					}
+
+					curl_close($cURLConnection);
+		
+					// Not interested in the response.
+					
+				
+				}
+				
 			
 			return;
 			
@@ -617,6 +660,69 @@
 			
 		}
 		
+		/**
+		 * Returns class names of active news sources.
+		 *
+		 * @return \String[]
+		 */
+		public function GetSources() {
+
+
+			$aSources = [];
+			$aDisabledSources = MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'debug_disable_sources', []);
+				
+			foreach(get_declared_classes() as $sClassName) {
+				
+				$aImplementations = class_implements($sClassName);
+				if(in_array('jb_itop_extensions\NewsProvider\iNewsSource', $aImplementations) == true || in_array('iNewsSource', class_implements($sClassName)) == true) {
+					
+					// Skip source if temporarily disabled (perhaps advised at some point for some reason, without needing to disable or uninstall the extension completely)
+					$sThirdPartyName = $sClassName::GetThirdPartyName();
+					if(in_array($sThirdPartyName, $aDisabledSources) == true) {
+						$oProcess->Trace('. Source '.$sThirdPartyName.' is disabled.');
+						continue;
+					}
+					
+					$aSources[] = $sClassName;
+				}
+				
+			}
+			
+			return $aSources;
+			
+		}
 		
+		/**
+		 * Returns default POST data.
+		 *
+		 * @param \String $sOperation Operation
+		 *
+		 * @return \Array Hash table
+		 */
+		public function GetDefaultPostParameters($sOperation ) {
+			
+			
+			$sApp = defined('ITOP_APPLICATION') ? ITOP_APPLICATION : 'unknown';
+			$sVersion = defined('ITOP_VERSION') ? ITOP_VERSION : 'unknown';
+			
+			$sInstanceHash = static::GetInstanceHash();
+			$sInstanceHash2 = static::GetInstanceHash2();
+			$sDBUid = static::GetDatabaseUID();
+			
+			$sEncryptionLib = static::GetEncryptionLibrary();
+			
+			return [
+				'operation' => $sOperation,
+				'instance_hash' => $sInstanceHash,
+				'instance_hash2' => $sInstanceHash2,
+				'db_uid' => $sDBUid,
+				'env' =>  utils::GetCurrentEnvironment(),
+				'app_name' => $sApp,
+				'app_version' => $sVersion,
+				'encryption_library' => $sEncryptionLib,
+				'api_version' => NewsRoomHelper::DEFAULT_API_VERSION
+			];
+			
+		}
 		
 	}

@@ -84,7 +84,7 @@
 				</field>
 				<field id="oql" xsi:type="AttributeOQL">
 					<sql>oql</sql>
-					<default_value><![CDATA[SELECT User AS u JOIN URP_UserProfile AS up ON up.userid = u.id WHERE up.profileid_friendlyname = 'Administrator']]></default_value>
+					<default_value><![CDATA[SELECT User AS u JOIN URP_UserProfile AS up ON up.userid = u.id JOIN Person AS p ON u.contactid = p.id WHERE up.profileid_friendlyname = 'Administrator' AND p.status = 'active' AND u.status = 'enabled']]></default_value>
 					<is_null_allowed>false</is_null_allowed>
 				</field>
 				<field id="translations_list" xsi:type="AttributeLinkedSet">

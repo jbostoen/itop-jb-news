@@ -47,7 +47,6 @@ try {
 	if(class_exists('DownloadPage') == true) {
 		// Modern 3.0
 		$oPage = new DownloadPage('');
-		$oPage->SetContentType('application/json');
 	}
 	else {
 		// Legacy 2.7
@@ -55,6 +54,7 @@ try {
 	}
 	
 	$oPage->no_cache();
+	$oPage->SetContentType('application/json');
 
 	// Retrieve global parameters
 	$sVersion = utils::ReadParam('api_version', NewsroomHelper::DEFAULT_API_VERSION);
@@ -120,6 +120,7 @@ try {
 					$sOutput = json_encode([
 						'encryption_library' => 'Sodium',
 						'messages' => $aMessages,
+						'vesion' => NewsServer::GetApiVersion(),
 						'signature' => sodium_bin2base64($sSignature, SODIUM_BASE64_VARIANT_URLSAFE)
 					]);					
 					
@@ -133,15 +134,20 @@ try {
 				}
 
 				// Regular JSON here, not JSONP
-				$oPage->SetContentType('application/json');
 				$oPage->add($sOutput);
 				
 			}
 			
 			break;
 			
+		case 'report_read_statistics':
+		
+			// Read statistics to be stored somewhere. 
+			// For now, just ignore.
+			$oPage->add('[]');
+			
 		default:
-			$oPage->p('Invalid query.');
+			$oPage->add(['error' => 'Invalid query.']);
 			break;
 	}
 
