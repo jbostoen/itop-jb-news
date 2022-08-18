@@ -332,13 +332,13 @@
 				</default_search>
 			</presentation>
 		</class>
-		<class id="ThirdPartyMessageToUser" _delta="define">
+		<class id="ThirdPartyMessageReadStatus" _delta="define">
 			<is_link>1</is_link>
 			<parent>cmdbAbstractObject</parent>
 			<properties>
 				<category>grant_by_profile</category>
 				<abstract>false</abstract>
-				<db_table>thirdparty_messagetouser</db_table>
+				<db_table>thirdparty_messagereadstatus</db_table>
 				<naming>
 					<attributes>
 						<attribute id="user_id"/>
@@ -428,7 +428,7 @@
 				<classes>
 					<class id="ThirdPartyNewsRoomMessage"/>
 					<class id="ThirdPartyNewsRoomMessageTranslation"/>
-					<class id="ThirdPartyMessageToUser"/>
+					<class id="ThirdPartyMessageReadStatus"/>
 				</classes>
 			</group>
 		</groups>

@@ -45,10 +45,10 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Class:ThirdPartyNewsRoomMessageTranslation/Attribute:language+' => 'Targeted user language',
 	'Class:ThirdPartyNewsRoomMessageTranslation/UniquenessRule:unique_language' => 'Language for this translation must be unique for each message.',
 	
-	'Class:ThirdPartyMessageToUser' => 'Link Third party Newsroom Message to User',
-	'Class:ThirdPartyMessageToUser/Attribute:user_id' => 'User ID',
-	'Class:ThirdPartyMessageToUser/Attribute:message_id' => 'Message ID',
-	'Class:ThirdPartyMessageToUser/Attribute:read_date' => 'Date',
+	'Class:ThirdPartyMessageReadStatus' => 'Link Third party Newsroom Message to User',
+	'Class:ThirdPartyMessageReadStatus/Attribute:user_id' => 'User ID',
+	'Class:ThirdPartyMessageReadStatus/Attribute:message_id' => 'Message ID',
+	'Class:ThirdPartyMessageReadStatus/Attribute:read_date' => 'Date',
 	
 	'UI:News:AllMessages' => 'All messages',
 	'UI:News:MoreInfo' => 'More info',

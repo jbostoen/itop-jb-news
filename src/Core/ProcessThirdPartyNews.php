@@ -44,7 +44,6 @@ class ProcessThirdPartyNews implements iBackgroundProcess {
 		try {
 			
 			NewsClient::RetrieveFromRemoteServer($this);
-			NewsClient::SyncLinks();
 			NewsClient::PostToRemoteServer($this);
 			
 		}

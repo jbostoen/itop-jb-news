@@ -9,11 +9,13 @@
 
 namespace jb_itop_extensions\NewsProvider;
 
+// Generic
+use \Exception;
+
 // iTop internals
 use \DBObjectSearch;
 use \DBObjectSet;
 use \Dict;
-use \Exception;
 use \MetaModel;
 use \User;
 use \UserRights;
@@ -23,7 +25,7 @@ use \WebPage;
 // iTop classes
 use \ThirdPartyNewsRoomMessage;
 use \ThirdPartyNewsRoomMessageTranslation;
-use \ThirdPartyMessageToUser;
+use \ThirdPartyMessageReadStatus;
 
 // Custom classes
 use \jb_itop_extensions\NewsProvider\NewsRoomWebPage;
@@ -56,7 +58,7 @@ class NewsRoomHelper {
 	 * @throws \MySQLException
 	 * @throws \OQLException
 	 */
-	public static function GetAllMessagesForCurrentUser() {
+	public static function GetAllMessagesForUser() {
 		
 		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsRoomMessage WHERE start_date <= NOW() AND (ISNULL(end_date) OR end_date >= NOW())');
 		$oSearch->AllowAllData();
@@ -98,7 +100,7 @@ class NewsRoomHelper {
 		$sMessageIconAttCode = 'icon';
 
 		$aSearchParams = ['user_id' => $oUser->GetKey()];
-		$oSearch = DBObjectSearch::FromOQL('SELECT M FROM ThirdPartyNewsRoomMessage AS M JOIN ThirdPartyMessageToUser AS LUM ON LUM.message_id = M.id WHERE LUM.user_id = :user_id AND M.start_date <= NOW() AND (ISNULL(M.end_date) OR M.end_date >= NOW()) AND ISNULL(LUM.read_date)', $aSearchParams);
+		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsRoomMessage AS M WHERE M.id NOT IN (SELECT ThirdPartyNewsRoomMessage AS M2 JOIN ThirdPartyMessageReadStatus AS RS ON RS.message_id = M2.id WHERE RS.user_id = :user_id) AND M.start_date <= NOW() AND (ISNULL(M.end_date) OR M.end_date >= NOW())', $aSearchParams);
 		$oSearch->AllowAllData();
 		$oSet = new DBObjectSet($oSearch);
 		$oSet->SetLimit(50); // Limit messages count to avoid server crash
@@ -125,7 +127,7 @@ class NewsRoomHelper {
 			// Prepare url redirection
 			$sUrl = utils::GetAbsoluteUrlExecPage().'?exec_module='.static::MODULE_CODE.'&exec_page=index.php&operation=redirect&message_id='.$oMessage->GetKey().'&user='.$oUser->GetKey();
 
-			$oTranslation = static::GetTranslation($oMessage);
+			$oTranslation = static::GetTranslationForUser($oMessage);
 			
 			if($oTranslation !== null) {
 
@@ -160,28 +162,46 @@ class NewsRoomHelper {
 	 */
 	public static function MarkAllMessagesAsReadForUser() {
 		
-		$oUser = UserRights::GetUserObject();
-		$aSearchParams = array('user_id' => $oUser->GetKey());
-		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyMessageToUser WHERE user_id = :user_id AND ISNULL(read_date)', $aSearchParams);
-		$oSet = new DBObjectSet($oSearch);
-		$oSet->SetLimit(50); // Limit messages count to avoid server crash
-		$oSet->OptimizeColumnLoad(array());
-
-		while($oMessage = $oSet->Fetch()) {
+		// Get previously unread messages
+		$aSearchParams = ['user_id' => UserRights::GetUserId()];
+		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsRoomMessage AS M WHERE M.id NOT IN (SELECT ThirdPartyNewsRoomMessage AS M2 JOIN ThirdPartyMessageReadStatus AS RS ON RS.message_id = M2.id WHERE RS.user_id = :user_id) AND M.start_date <= NOW() AND (ISNULL(M.end_date) OR M.end_date >= NOW())', $aSearchParams);
+		$oSearch->AllowAllData();
+		$oSetMessages = new DBObjectSet($oSearch);
+		
+		$iCount = 0;
+		
+		while($oMessage = $oSetMessages->Fetch()) {
 			
-			$oMessage->Set('read_date', date('Y-m-d H:i:s'));
-			$oMessage->DBUpdate();
+			
+			try {
+				
+				$oReadStatus = MetaModel::NewObject('ThirdPartyMessageReadStatus', [
+					'message_id' => $oMessage->GetKey(),
+					'user_id' => UserRights::GetUserId(),
+					'read_date' => date('Y-m-d H:i:s')
+				]);
+			
+				$oReadStatus->DBInsert();
+			
+				$iCount += 1;
+				
+			}
+			catch(Exception $e) {
+				// Probably too late / duplicate
+			}
 			
 		}
 
-		return $oSet->Count();
+		return $iCount;
 	}
 
 	/**
 	 * Marks the message of $iMessageId ID as read for $oUser.
 	 * Returns true if the message could be marked as read, false otherwise (already read for example).
 	 *
-	 * @param int $iMessageId
+	 * @param \Integer $iMessageId
+	 *
+	 * @return \Boolean
 	 *
 	 * @return bool
 	 * @throws \CoreException
@@ -191,27 +211,28 @@ class NewsRoomHelper {
 	 * @throws \OQLException
 	 */
 	public static function MarkMessageAsReadForUser($iMessageId) {
-		
-		$oUser = UserRights::GetUserObject();
-		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyMessageToUser WHERE message_id = :message_id AND user_id = :user_id AND ISNULL(read_date)', [
-			'message_id' => $iMessageId, 
-			'user_id' => $oUser->GetKey()
-		]);
-		$oSet = new DBObjectSet($oSearch);
 
-		$oMessage = $oSet->Fetch();
-		if($oMessage !== null) {
+		$bRet = false;
+
+		try {
 			
-			$oMessage->Set('read_date', date('Y-m-d H:i:s'));
-			$oMessage->DBUpdate();
-			return true;
+			$oReadStatus = MetaModel::NewObject('ThirdPartyMessageReadStatus', [
+				'message_id' => $iMessageId,
+				'user_id' => UserRights::GetUserId(),
+				'read_date' => date('Y-m-d H:i:s')
+			]);
+		
+			$oReadStatus->DBInsert();
+		
+			$bRet = true;
 			
 		}
-		else {
-			
-			return false;
-			
+		catch(Exception $e) {
+			// Probably too late / duplicate
 		}
+		
+		return $bRet;
+		
 	}
 
 	/**
@@ -231,21 +252,7 @@ class NewsRoomHelper {
 
 		// Retrieve messages
 		$aJsonMessages = [];
-		$oSetMessages = static::GetAllMessagesForCurrentUser();
-		
-		$aContextArgs = [];
-		$oUser = UserRights::GetUserObject();
-		$oContact = UserRights::GetContactObject();
-	
-		// Defensive programming. Not sure if there are cases where $oUser or $oContact would be null here.
-		if($oUser !== null) {
-			$aContextArgs = array_merge($aContextArgs, $oUser->ToArgs('current_user'));
-		}
-		
-		if($oContact !== null) {
-			$aContextArgs = array_merge($aContextArgs, $oContact->ToArgs('current_contact'));
-		}
-		
+		$oSetMessages = static::GetAllMessagesForUser();
 		
 		while($oMessage = $oSetMessages->Fetch()) {
 			
@@ -259,24 +266,16 @@ class NewsRoomHelper {
 				$sIconUrl = MetaModel::GetAttributeDef('ThirdPartyNewsRoomMessage', $sMessageIconAttCode)->Get('default_image');
 			}
 			
-			$oTranslation = static::GetTranslation($oMessage);
+			$oTranslation = static::GetTranslationForUser($oMessage);
 
 			if($oTranslation !== null) {
 				
-				$sUrl = $oTranslation->Get('url'); // Leave this URL intact, it's shown in an overview.
-				$sTitle = $oTranslation->Get('title');
-				$sText = $oTranslation->Get('text');
-				
-				$sUrl = MetaModel::ApplyParams($sUrl, $aContextArgs);
-				$sTitle = MetaModel::ApplyParams($sTitle, $aContextArgs);
-				$sText = MetaModel::ApplyParams($sText, $aContextArgs);
-				
 				$aJsonMessages[] = [
-					'url' => $sUrl,
-					'icon' => $sIconUrl,
 					'start_date' => $oMessage->Get('start_date'),
-					'title' => $sTitle,
-					'text' => $sText
+					'title' => $oTranslation->Get('title'),
+					'text' => $oTranslation->Get('text'),
+					'url' => $oTranslation->Get('url'), // Leave this URL intact, it's shown in an overview.
+					'icon' => $sIconUrl
 				];
 			
 			}
@@ -344,13 +343,13 @@ JS
 	}
 
 	/**
-	 * Gets translation for current user
+	 * Gets translation for current user. Mind that variables/placeholders also get replaced here.
 	 *
 	 * @param \ThirdPartyNewsRoomMessage $oMessage Third party newsroom message
 	 *
 	 * @return \ThirdPartyNewsRoomMessageTranslation
 	 */
-	public static function GetTranslation($oMessage) {
+	public static function GetTranslationForUser($oMessage) {
 		
 		/** @var \ormLinkSet $oSetTranslations */
 		$oSetTranslations = $oMessage->Get('translations_list');
@@ -379,6 +378,28 @@ JS
 			}
 			
 		}
+		
+		// Replace variables/placeholders
+		
+			$aContextArgs = [];
+			$oUser = UserRights::GetUserObject();
+			$oContact = UserRights::GetContactObject();
+		
+			// Defensive programming. Not sure if there are cases where $oUser or $oContact would be null here.
+			if($oUser !== null) {
+				$aContextArgs = array_merge($aContextArgs, $oUser->ToArgs('current_user'));
+			}
+			
+			if($oContact !== null) {
+				$aContextArgs = array_merge($aContextArgs, $oContact->ToArgs('current_contact'));
+			}
+			
+			// Prepare
+			foreach(['title', 'text', 'url'] as $sAttCode) {
+				
+				$this->Set($sAttCode, MetaModel::ApplyParams($this->Get($sAttCode), $aContextArgs));
+			
+			}
 		
 		return $oTranslation;
 		

@@ -33,16 +33,16 @@ In iTop's configuration file, these settings are available:
 
 * A background task retrieves the third party newsroom messages from a remote news source.
   * If a new third party newsroom message has been published:
-    * A copy is stored on the local iTop instance
-    * A record is created for every user to keep track of the read status of the message - no matter whether the user is within the target audience or not.
+    * A copy is stored on the local iTop instance.
   * If a third party newsroom message is no longer returned by the remote news source:
     * The copy will be deleted from the local iTop instance. (use case: mistakes)
   * If a third party newsroom message has changed on the remote source:
-    * The local copy will be updated
-	* The message will NOT be marked as "unread" again (as it might simply be fixing a typo)
+    * The local copy will be updated.
+	* The "read status" of a user for a message will not be reset (as it might simply be fixing a typo).
   * If Sodium is available, the messages can be verified using a known public Sodium key. This is a security-measure to prevent man-in-the-middle-attacks.
 * On the local instance, when the front-end newsroom checks for messages, it does so against its local data.
-  * If a newsroom message has been displayed, the "read time" attribute will be updated for the record linking the user and the message.
+  * If a newsroom message has been displayed and the user has clicked on a single message (and is redirected to the URL), a "read status" will be created for this user.
+  * If the user has displayed the page with all the messages for this news source, this will also trigger the creation of "read status" objects for this user for each message.
   * Language of the message is chosen in this preference order:
     * Same as user's language
 	* English

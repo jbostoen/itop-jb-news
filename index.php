@@ -32,6 +32,7 @@ require_once(APPROOT.'/application/loginwebpage.class.inc.php');
 
 require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news/src/Core/NewsRoomWebPage.php');
 require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news/src/Core/NewsServer.php');
+require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news/src/Core/NewsRoomHelper.php');
 
 use \jb_itop_extensions\NewsProvider\NewsRoomWebPage;
 use \jb_itop_extensions\NewsProvider\NewsServer;
@@ -59,9 +60,9 @@ try {
 	}
 	
 	// Retrieve global parameters
-	$sVersion = utils::ReadParam('api_version', NewsroomHelper::DEFAULT_API_VERSION);
-	$sAppName = utils::ReadParam('app_name', NewsroomHelper::DEFAULT_APP_NAME, false, 'raw_data');
-	$sAppVersion = utils::ReadParam('app_version', NewsroomHelper::DEFAULT_APP_VERSION, false, 'raw_data');
+	$sVersion = utils::ReadParam('api_version', NewsRoomHelper::DEFAULT_API_VERSION);
+	$sAppName = utils::ReadParam('app_name', NewsRoomHelper::DEFAULT_APP_NAME, false, 'raw_data');
+	$sAppVersion = utils::ReadParam('app_version', NewsRoomHelper::DEFAULT_APP_VERSION, false, 'raw_data');
 
 	// Check global parameters
 	if(empty($sOperation) || empty($sVersion)) {
@@ -105,7 +106,7 @@ try {
 		case 'fetch':
 		
 			// Retrieve messages
-			$aMessages = NewsroomHelper::GetUnreadMessagesForUser();
+			$aMessages = NewsRoomHelper::GetUnreadMessagesForUser();
 			$sMessagesJSON = json_encode($aMessages);
 
 			// Prepare response
@@ -118,10 +119,10 @@ try {
 		case 'mark_all_as_read':
 		
 			// Mark messages as read
-			$iMessageCount = NewsroomHelper::MarkAllMessagesAsReadForUser();
+			$iMessageCount = NewsRoomHelper::MarkAllMessagesAsReadForUser();
 			$sMessageCountJSON = json_encode(array(
 				'counter' => $iMessageCount,
-				'message' => $iMessageCount . ' message(s) marked as viewed',
+				'message' => $iMessageCount . ' message(s) marked as read',
 			));
 
 			// Prepare response
@@ -134,22 +135,22 @@ try {
 		case 'view_all':
 		
 			$oPage = new NewsRoomWebPage('All messages');
-			NewsroomHelper::MakeAllMessagesPage($oPage);
-			NewsroomHelper::MarkAllMessagesAsReadForUser(); // Open for discussion: when all messages are rendered on an overview page: should they be marked as read?
+			NewsRoomHelper::MakeAllMessagesPage($oPage);
+			NewsRoomHelper::MarkAllMessagesAsReadForUser(); // Open for discussion: when all messages are rendered on an overview page: should they be marked as read?
 			break;
 
 		case 'redirect':
 		
-			// Mark message as read
-			$bMarked = NewsroomHelper::MarkMessageAsReadForUser($iMessageId);
+			// Mark message as read upon clicking to see the details
+			$bMarked = NewsRoomHelper::MarkMessageAsReadForUser($iMessageId);
 
 			// Redirect to final URL
 			$oMessage = MetaModel::GetObject('ThirdPartyNewsRoomMessage', $iMessageId);
 			
 			if($oMessage !== null && NewsRoomHelper::MessageIsApplicable($oMessage) == true) {
 				
-				$oTranslation = NewsRoomHelper::GetTranslation($oMessage);
-				header('Location: ' . $oTranslation->Get('url'));
+				$oTranslation = NewsRoomHelper::GetTranslationForUser($oMessage);
+				header('Location: '.$oTranslation->Get('url'));
 			
 			}
 			
