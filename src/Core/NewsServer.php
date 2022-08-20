@@ -49,7 +49,7 @@
 		 *
 		 * @return \String
 		 */
-		protected static function GetApiVersion() {
+		public static function GetApiVersion() {
 			
 			return static::$sApiVersion;
 			
@@ -62,12 +62,30 @@
 		 */
 		public static function GetMessagesForInstance() {
 			
-			$sAppName = utils::ReadParam('app_name', '');
-			$sAppVersion = utils::ReadParam('app_name', '');
-			$sInstanceId = utils::ReadParam('instance_hash', '');
-			$sInstanceId2 = utils::ReadParam('instance_hash2', '');
-			$sApiVersion = utils::ReadParam('api_version', '1.0');
 			
+			if(utils::ReadParam('api_version', '1.0') == '1.0') {
+				
+				// Deprecated, to be removed soon.
+				$sAppName = utils::ReadParam('app_name', '');
+				$sAppVersion = utils::ReadParam('app_name', '');
+				$sInstanceId = utils::ReadParam('instance_hash', '');
+				$sInstanceId2 = utils::ReadParam('instance_hash2', '');
+				$sApiVersion = utils::ReadParam('api_version', '1.0');
+			
+			}
+			else {
+				
+				$aPayload = json_decode(base64_decode(utils::ReadParam('payload', '[]')), true);
+				
+				$sAppName = $aPayload['app_name'];
+				$sAppVersion = $aPayload['app_version'];
+				$sInstanceId = $aPayload['instance_hash'];
+				$sInstanceId2 = $aPayload['instance_hash2'];
+				$sApiVersion = $aPayload['api_version'];
+				
+			}
+			
+		
 			// Output all messages with their translations
 			// Theoretically additional filtering could be applied to reduce JSON size;
 			// for instance to only return messages if certain extensions are installed

@@ -6,9 +6,7 @@
  * @version     2.7.220607
  *
  */
-
-
-
+ 
 @include_once('../approot.inc.php');
 @include_once('../../approot.inc.php');
 @include_once('../../../approot.inc.php');
@@ -39,6 +37,7 @@ use \jb_itop_extensions\NewsProvider\NewsRoomHelper;
 
 try {
 	
+	
 	require_once APPROOT . '/application/startup.inc.php';
 	
 	// Check user rights and prompt if needed
@@ -56,31 +55,63 @@ try {
 	$oPage->no_cache();
 	$oPage->SetContentType('application/json');
 
-	// Retrieve global parameters
-	$sVersion = utils::ReadParam('api_version', NewsroomHelper::DEFAULT_API_VERSION);
-	$sAppName = utils::ReadParam('app_name', NewsroomHelper::DEFAULT_APP_NAME, false, 'raw_data');
-	$sAppVersion = utils::ReadParam('app_version', NewsroomHelper::DEFAULT_APP_VERSION, false, 'raw_data');
-	
-	$sEncryptionLib =  utils::ReadParam('encryption_library', 'none', false, 'raw_data');
-
 	// Check global parameters
-	if(empty($sOperation) || empty($sVersion)) {
-		throw new Exception('Missing mandatory parameters "operation" and "version".');
+	if(empty($sOperation)) {
+		throw new Exception('Missing mandatory parameter "operation" .');
 	}
 
-	// Check operation parameters
+	
 	switch($sOperation) {
 		
 		case 'get_messages_for_instance':
 		
-			$sInstanceHash = utils::ReadParam('instance_hash', '');
-			$sInstanceHash2 = utils::ReadParam('instance_hash2', '');
+			$sApiVersion = utils::ReadPostedParam('api_version', '1.0', 'raw_data');
+			
+			if($sApiVersion === '1.0') {
+				
+				// Deprecated, to be removed soon.
+				$sInstanceHash = utils::ReadParam('instance_hash', '');
+				$sInstanceHash2 = utils::ReadParam('instance_hash2', '');
+				
+				$sVersion = utils::ReadParam('api_version', NewsroomHelper::DEFAULT_API_VERSION);
+				$sAppName = utils::ReadParam('app_name', NewsroomHelper::DEFAULT_APP_NAME, false, 'raw_data');
+				$sAppVersion = utils::ReadParam('app_version', NewsroomHelper::DEFAULT_APP_VERSION, false, 'raw_data');
+				
+				$sEncryptionLib =  utils::ReadParam('encryption_library', 'none', false, 'raw_data');
+				
+				// Avoid warnings
+				$aPayload = [];
+				$sPayload = 'not applicable';
+			
+			}
+			else {
+				
+				$sPayload = utils::ReadPostedParam('payload', '', 'raw_data');
+				
+				if($sPayload == '') {
+					throw new Exception('Missing parameters for operation "get_messages_for_instance". Payload is empty.');
+				}
+				
+				$aPayload = json_decode(base64_decode($sPayload), true);
+				
+				$sInstanceHash = $aPayload['instance_hash'];
+				$sInstanceHash2 = $aPayload['instance_hash2'];
+				$sVersion = $aPayload['version'];
+				$sAppName = $aPayload['app_name'];
+				$sAppVersion = $aPayload['app_version'];
+				$sEncryptionLib = $aPayload['encryption_library'];
+				
+			}
+
 		
+			
 			// Check parameters
 			if($sInstanceHash == '' || $sInstanceHash2 == '') {
-				throw new Exception('Missing parameters for requested operation.');
+				
+				throw new Exception('Missing parameters for operation "get_messages_for_instance". API version: '.$sApiVersion.' - Payload: '.$sPayload.' - Post data: '.json_encode($_POST).' - '.json_encode($aPayload));
+				
 			}
-		
+
 			if(MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'enabled', false) == false) {
 
 				$oPage->add('News extension not enabled.');
@@ -137,7 +168,9 @@ try {
 				$oPage->add($sOutput);
 				
 			}
-			
+
+	
+		
 			break;
 			
 		case 'report_read_statistics':
@@ -145,9 +178,10 @@ try {
 			// Read statistics to be stored somewhere. 
 			// For now, just ignore.
 			$oPage->add('[]');
+			break;
 			
 		default:
-			$oPage->add(['error' => 'Invalid query.']);
+			$oPage->add(['error' => 'Invalid operation: '.$sOperation]);
 			break;
 	}
 

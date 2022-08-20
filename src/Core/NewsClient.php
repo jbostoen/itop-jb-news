@@ -39,11 +39,11 @@
 		 * Returns additional post parameters. For instance, you can specify an API version here.
 		 *
 		 * @details Mind that by default certain parameters are already included in the POST request to the news source.
-		 * @see NewsClient::GetDefaultPostParameters())
+		 * @see NewsClient::GetPostPayload())
 		 *
 		 * @return \Array
 		 */
-		public static function GetPostParameters();
+		public static function GetPostPayload($sOperation);
 		
 		/**
 		 * Returns URL of news source
@@ -137,6 +137,8 @@
 		 */
 		public static function RetrieveFromRemoteServer(ProcessThirdPartyNews $oProcess) {
 			
+			$sOperation = 'get_messages_for_instance';
+			
 			$oProcess->Trace('. Retrieve messages from remote news sources...');
 			
 			$sEncryptionLib = static::GetEncryptionLibrary();
@@ -153,57 +155,14 @@
 				foreach($aSources as $sSourceClass) {
 					
 					// Only return data for news messages from this source.
-										
-					$sNewsUrl = $sSourceClass::GetUrl();
 					$sThirdPartyName = $sSourceClass::GetThirdPartyName();
 					
-					// All messages will be requested.
-					// It may be necessary to retract/delete some messages at some point.
-					// These are default parameters, which can be overridden.
-					$aPostRequestData = static::GetDefaultPostParameters('get_messages_for_instance');
-					$aPostRequestData = array_merge($aPostRequestData, $sSourceClass::GetPostParameters());
+					$aPayload = static::GetPostPayload($sSourceClass, $sOperation);
 					
-					if(strpos($sNewsUrl, '?') !== false) {
-						
-						// To understand the part below:
-						// Mind that to make things look more pretty, the URL for a news source could point to a generic domain: 'itop-news.domain.org'.
-						// This could be an index.php file which simply calls an iTop instance itself, the index.php script (some sort of proxy) itself would act as a client to an iTop installation with the server in this extension enabled.
-						// It could make a call to: https://127.0.0.1:8182/iTop-clients/web/pages/exec.php?&exec_module=jb-news&exec_page=index.php&exec_env=production-news&operation=get_messages_for_instance&version=1.0 
-						// and it would also need the originally appended parameters sent to 'itop-news.domain.org'.
-						$sParameters = explode('?', $sNewsUrl)[1];
-						parse_str($sParameters, $aParameters);
-						
-						$aPostRequestData = array_merge($aPostRequestData, $aParameters);
-						
-						
-					}
+					$sNewsUrl = $sSourceClass::GetUrl();
 					
-					$oProcess->Trace('. Url: '.$sNewsUrl);
-					$oProcess->Trace('. Data: '.json_encode($aPostRequestData));
-
-					$cURLConnection = curl_init($sNewsUrl);
-					curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, $aPostRequestData);
-					curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
+					$sApiResponse = static::DoPost($oProcess, $sNewsUrl, $sOperation, $aPayload);
 					
-					// Only here to test on local installations. Not meant to be enforced!
-					// curl_setopt($cURLConnection, CURLOPT_SSL_VERIFYPEER, false);
-					// curl_setopt($cURLConnection, CURLOPT_SSL_VERIFYHOST, false);
-
-					$sApiResponse = curl_exec($cURLConnection);
-					
-					if(curl_errno($cURLConnection)) {
-						
-						$sErrorMessage = curl_error($cURLConnection);
-						
-						$oProcess->Trace('. Error: cURL connection to '.$sNewsUrl.' failed: '.$sErrorMessage);
-						
-						// Abort. Otherwise messages might just get deleted while they shouldn't.
-						return;
-						
-					}
-
-					curl_close($cURLConnection);
-
 
 					// Assume these messages are in the correct format.
 					// If the format has changed in a backwards not compatible way, the API should simply not return any more messages
@@ -474,6 +433,8 @@
 		 */
 		public static function PostToRemoteServer(ProcessThirdPartyNews $oProcess) {
 			
+			$sOperation = 'report_read_statistics';
+			
 			$oProcess->Trace('. Send statistical (anonymous) data to remote news sources...');
 			
 			// Other hooks may have ran already.
@@ -499,8 +460,6 @@
 			// Request messages
 			// -
 			
-				$aPostRequestData = static::GetDefaultPostParameters('report_read_statistics');
-				
 				$aSources = static::GetSources();
 				
 				foreach($aSources as $sSourceClass) {
@@ -560,57 +519,17 @@
 						
 					}
 					
-					
-					$aCustomData = [
-						'read_status' => base64_encode(json_encode([
+					// - Build request
+						
+						$aPayload = static::GetPostPayload($sSourceClass, $sOperation);
+						
+						$aPayload['read_status'] = [
 							'target_oql_users' => $aCurrentAudienceUserIds,
 							'messages' => $aMessages
-						]))
-					];
+						];
 					
-					
-					$aPostRequestData = array_merge($aPostRequestData, $sSourceClass::GetPostParameters(), $aCustomData);
-					
-					if(strpos($sNewsUrl, '?') !== false) {
-						
-						// To understand the part below:
-						// Mind that to make things look more pretty, the URL for a news source could point to a generic domain: 'itop-news.domain.org'.
-						// This could be an index.php file which simply calls an iTop instance itself, the index.php script (some sort of proxy) itself would act as a client to an iTop installation with the server in this extension enabled.
-						// It could make a call to: https://127.0.0.1:8182/iTop-clients/web/pages/exec.php?&exec_module=jb-news&exec_page=index.php&exec_env=production-news&operation=get_messages_for_instance&version=1.0 
-						// and it would also need the originally appended parameters sent to 'itop-news.domain.org'.
-						$sParameters = explode('?', $sNewsUrl)[1];
-						parse_str($sParameters, $aParameters);
-						
-						$aPostRequestData = array_merge($aPostRequestData, $aParameters);
-						
-						
-					}
-					
-					$oProcess->Trace('. Url: '.$sNewsUrl);
-					$oProcess->Trace('. Data: '.json_encode($aPostRequestData, JSON_PRETTY_PRINT));
 
-					$cURLConnection = curl_init($sNewsUrl);
-					curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, $aPostRequestData);
-					curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
-					
-					// Only here to test on local installations. Not meant to be enforced!
-					// curl_setopt($cURLConnection, CURLOPT_SSL_VERIFYPEER, false);
-					// curl_setopt($cURLConnection, CURLOPT_SSL_VERIFYHOST, false);
-
-					$sApiResponse = curl_exec($cURLConnection);
-					
-					if(curl_errno($cURLConnection)) {
-						
-						$sErrorMessage = curl_error($cURLConnection);
-						
-						$oProcess->Trace('. Error: cURL connection to '.$sNewsUrl.' failed: '.$sErrorMessage);
-						
-						// Abort. Otherwise messages might just get deleted while they shouldn't.
-						return;
-						
-					}
-
-					curl_close($cURLConnection);
+					static::DoPost($oProcess, $sNewsUrl, $sOperation, $aPayload);
 		
 					// Not interested in the response.
 					
@@ -695,12 +614,14 @@
 		/**
 		 * Returns default POST data.
 		 *
+		 * @param \String $sSourceClass Name of news source class
 		 * @param \String $sOperation Operation
 		 *
-		 * @return \Array Hash table
+		 * @return \Array Key/value
 		 */
-		public function GetDefaultPostParameters($sOperation ) {
+		public function GetPostPayload($sSourceClass, $sOperation) {
 			
+			$sNewsUrl = $sSourceClass::GetUrl();
 			
 			$sApp = defined('ITOP_APPLICATION') ? ITOP_APPLICATION : 'unknown';
 			$sVersion = defined('ITOP_VERSION') ? ITOP_VERSION : 'unknown';
@@ -711,7 +632,7 @@
 			
 			$sEncryptionLib = static::GetEncryptionLibrary();
 			
-			return [
+			$aPayload = [
 				'operation' => $sOperation,
 				'instance_hash' => $sInstanceHash,
 				'instance_hash2' => $sInstanceHash2,
@@ -723,6 +644,75 @@
 				'api_version' => NewsRoomHelper::DEFAULT_API_VERSION
 			];
 			
+			if(strpos($sNewsUrl, '?') !== false) {
+				
+				// To understand the part below:
+				// Mind that to make things look more pretty, the URL for a news source could point to a generic domain: 'itop-news.domain.org'.
+				// This could be an index.php file which simply calls an iTop instance itself, the index.php script (some sort of proxy) itself would act as a client to an iTop installation with the server in this extension enabled.
+				// It could make a call to: https://127.0.0.1:8182/iTop-clients/web/pages/exec.php?&exec_module=jb-news&exec_page=index.php&exec_env=production-news&operation=get_messages_for_instance&version=1.0 
+				// and it would also need the originally appended parameters sent to 'itop-news.domain.org'.
+				$sParameters = explode('?', $sNewsUrl)[1];
+				parse_str($sParameters, $aParameters);
+				$aPayload = array_merge($aPayload, $aParameters);
+				
+			}
+			
+			// These are default parameters, which can be overridden.
+			return array_merge($aPayload, $sSourceClass::GetPostPayload($sOperation));
+					
+		}
+		
+		
+		/**
+		 * Do a HTTP POST request to an end point.
+		 *
+		 * @param \ProcessThirdPartyNews $oProcess Process.
+		 * @param \String $sNewsUrl Endpoint URL.
+		 * @param \String $sOperation Operation
+		 * @param \Array $aPayload Will first be JSON encoded and then base64 encoded, to be sent as 'payload' parameter.
+		 *
+		 * @return \String
+		 *
+		 * @throws \Exception
+		 */
+		public static function DoPost($oProcess, $sNewsUrl, $sOperation, $aPayload) {
+	
+			
+			$oProcess->Trace('. Url: '.$sNewsUrl);
+			$oProcess->Trace('. Data: '.json_encode($aPayload));
+			
+			$aPostData = [
+				'operation' => $sOperation,
+				'api_version' => NewsRoomHelper::DEFAULT_API_VERSION,
+				'payload' => base64_encode(json_encode($aPayload))
+			];
+			
+			$cURLConnection = curl_init($sNewsUrl);
+			curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, $aPostData);
+			curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
+			
+			// Only here to test on local installations. Not meant to be enforced!
+			// curl_setopt($cURLConnection, CURLOPT_SSL_VERIFYPEER, false);
+			// curl_setopt($cURLConnection, CURLOPT_SSL_VERIFYHOST, false);
+
+			
+			
+			$sApiResponse = curl_exec($cURLConnection);
+			
+			if(curl_errno($cURLConnection)) {
+				
+				$sErrorMessage = curl_error($cURLConnection);
+				$oProcess->Trace('. Error: cURL connection to '.$sNewsUrl.' failed: '.$sErrorMessage);
+				
+				// Abort. Otherwise messages might just get deleted while they shouldn't.
+				return;
+				
+			}
+
+			curl_close($cURLConnection);
+			
+			return $sApiResponse;
+
 		}
 		
 	}

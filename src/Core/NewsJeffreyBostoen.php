@@ -27,7 +27,7 @@
 		/**
 		 * @inheritDoc
 		 */
-		public static function GetPostParameters() {
+		public static function GetPostPayload($sOperation) {
 
 			return [];
 			
