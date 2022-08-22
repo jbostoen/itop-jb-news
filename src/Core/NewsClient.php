@@ -292,6 +292,7 @@
 								'start_date' => $aMessage['start_date'],
 								'end_date' => $aMessage['end_date'] ?? '',
 								'priority' => $aMessage['priority'],
+								'manually_created' => 'no',
 								
 								// Calls to a server which has not implemented API version 1.1.0 will not return anything.
 								'oql' => $aMessage['oql'] ?? 'SELECT User',
@@ -325,6 +326,11 @@
 							while($oMessage = $oSetMessages->Fetch()) {
 								
 								if($oMessage->Get('thirdparty_message_id') == $aMessage['thirdparty_message_id']) {
+									
+									// Do not intervene if the message on the current instance was manually created.
+									if($oMessage->Get('manually_created') == 'yes') {
+										continue;
+									}
 									
 									$iInstanceMsgId = $oMessage->GetKey();
 									
@@ -411,6 +417,11 @@
 					// Check whether message has been pulled
 					$oSetMessages->Rewind();
 					while($oMessage = $oSetMessages->Fetch()) {
+						
+						// Do not intervene if the message on the current instance was manually created.
+						if($oMessage->Get('manually_created') == 'yes') {
+							continue;
+						}
 						
 						if(in_array($oMessage->Get('thirdparty_message_id'), $aRetrievedMessageIds) == false) {
 							$oMessage->DBDelete();
