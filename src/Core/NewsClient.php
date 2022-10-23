@@ -595,7 +595,7 @@
 		 *
 		 * @return \String[]
 		 */
-		public function GetSources() {
+		public static function GetSources() {
 
 
 			$aSources = [];
@@ -630,7 +630,7 @@
 		 *
 		 * @return \Array Key/value
 		 */
-		public function GetPostPayload($sSourceClass, $sOperation) {
+		public static function GetPostPayload($sSourceClass, $sOperation) {
 			
 			$sNewsUrl = $sSourceClass::GetUrl();
 			
