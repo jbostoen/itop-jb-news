@@ -8,7 +8,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'jb-news/2.7.221023',
+	'jb-news/2.7.221206',
 	array(
 		// Identification
 		//
@@ -58,6 +58,7 @@ SetupWebPage::AddModule(
 			'server' => false,
 			'ttl' => 3600,
 			'oql_target_users' => 'SELECT User',
+			'private_key_file' => '/somepath/sodium_priv.key',
 		),
 	)
 );

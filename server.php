@@ -139,8 +139,13 @@ try {
 				if($sEncryptionLib == 'Sodium' && $bFunctionExists == true) {
 					
 					// Get private key
-					$sFolder = dirname(__FILE__);
-					$sKey = file_get_contents($sFolder.'/keys/sodium_priv.key');
+					$sPrivateKeyFile = MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'private_key_file', '');
+					
+					if(file_exists($sPrivateKeyFile) == false) {
+						throw new Exception('Missing private key file.');
+					}
+					
+					$sKey = file_get_contents($sPrivateKeyFile);
 					
 					$sSodium_PrivBase64 = sodium_base642bin($sKey, SODIUM_BASE64_VARIANT_URLSAFE);
 					

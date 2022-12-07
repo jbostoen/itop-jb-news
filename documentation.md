@@ -26,6 +26,9 @@ In iTop's configuration file, these settings are available:
 		// OQL which should return User objects. Allows the administrator to restrict who sees the news sources provided by this extension.
 		// Note: if messages were obtained before, they may be present in the localStorage of the browser; and still be displayed for a brief time.
 		'oql_target_users' => 'SELECT User',
+		
+		// Path to private key
+		'private_key_file' => '/some/path/sodium_priv.key',
 	),
 ```
 
