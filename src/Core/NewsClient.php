@@ -521,8 +521,8 @@
 							
 							if($oStatus->Get('message_id') == $oMessage->GetKey()) {
 						
-								$aMessages[(String)$oMessage->Get('thirdparty_message_id')]['users'] = $oStatus->Get('user_id');
-								$aMessages[(String)$oMessage->Get('thirdparty_message_id')]['read_date'] = $oStatus->Get('read_date');
+								$aMessages[(String)$oMessage->Get('thirdparty_message_id')]['users'][] = $oStatus->Get('user_id');
+								$aMessages[(String)$oMessage->Get('thirdparty_message_id')]['read_date'][] = $oStatus->Get('read_date');
 								
 							}
 						
