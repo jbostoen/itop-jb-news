@@ -71,6 +71,7 @@ Servers should not provide a newer response, so there's no need for the client t
   It has been replaced by the more functional "oql" that can be specified to target an audience.
 * The API version also contains a 'minor release' version number now, so small changes can be implemented more easily.
 * In the server response, the server's API version is also specified. ( `api_version` )
+* Introduction of "operation" parameter. Currently two operations are supported: get_messages_for_instance, report_read_statistics
 
 
 ### Version 1.0

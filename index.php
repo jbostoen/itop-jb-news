@@ -7,6 +7,7 @@
  *
  */
 
+// This is the endpoint for iTop users, to retrieve messages from their own instance.
 
 @include_once('../approot.inc.php');
 @include_once('../../approot.inc.php');

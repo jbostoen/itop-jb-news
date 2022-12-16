@@ -473,6 +473,11 @@
 			
 				$aSources = static::GetSources();
 				
+				// Read statuses may include IDs of users who have seen the message, but may no longer be part of the possible target audience (message OQL - ignoring global OQL here).
+				$oFilterStatuses = DBObjectSearch::FromOQL('SELECT ThirdPartyMessageReadStatus');
+				$oFilterStatuses->AllowAllData();
+				$oSetStatuses = new DBObjectSet($oFilterStatuses);
+				
 				foreach($aSources as $sSourceClass) {
 										
 					$sNewsUrl = $sSourceClass::GetUrl();
@@ -484,10 +489,6 @@
 					$oFilterMessages->AllowAllData();
 					$oSetMessages = new DBObjectSet($oFilterMessages);
 					
-					// Read statuses may include IDs of users who have seen the message, but may no longer be part of the possible target audience (message OQL - ignoring global OQL here).
-					$oFilterStatuses = DBObjectSearch::FromOQL('SELECT ThirdPartyMessageReadStatus');
-					$oFilterStatuses->AllowAllData();
-					$oSetStatuses = new DBObjectSet($oFilterStatuses);
 					
 					$aMessages = [];
 					
