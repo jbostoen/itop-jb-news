@@ -27,7 +27,7 @@
 		/**
 		 * @inheritDoc
 		 */
-		public static function GetPostPayload($sOperation) {
+		public static function GetPayload($sOperation) {
 
 			return [];
 			

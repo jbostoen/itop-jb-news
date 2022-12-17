@@ -36,14 +36,14 @@
 		public static function GetThirdPartyName();
 		
 		/**
-		 * Returns additional post parameters. For instance, you can specify an API version here.
+		 * Returns additional data to send to news source. For instance, you can specify an API version here.
 		 *
-		 * @details Mind that by default certain parameters are already included in the POST request to the news source.
-		 * @see NewsClient::GetPostPayload())
+		 * @details Mind that by default certain parameters are already included in the HTTP request to the news source.
+		 * @see NewsClient::GetPayload())
 		 *
 		 * @return \Array
 		 */
-		public static function GetPostPayload($sOperation);
+		public static function GetPayload($sOperation);
 		
 		/**
 		 * Returns URL of news source
@@ -148,16 +148,13 @@
 			
 				$aSources = static::GetSources();
 				
-			// Request messages
+			// Request messages from each news source
 			// -
 			
 			
 				foreach($aSources as $sSourceClass) {
 					
-					// Only return data for news messages from this source.
-					$sThirdPartyName = $sSourceClass::GetThirdPartyName();
-					
-					$aPayload = static::GetPostPayload($sSourceClass, $sOperation);
+					$aPayload = static::GetPayload($sSourceClass, $sOperation);
 					
 					$sNewsUrl = $sSourceClass::GetUrl();
 					
@@ -253,6 +250,9 @@
 						$aMessages = $aData;
 						
 					}
+					
+					// Only return data for news messages from this source.
+					$sThirdPartyName = $sSourceClass::GetThirdPartyName();
 					
 					// Get messages currently in database for this third party source
 					$oFilterMessages = new DBObjectSearch('ThirdPartyNewsRoomMessage');
@@ -533,7 +533,7 @@
 					
 					// - Build request
 						
-						$aPayload = static::GetPostPayload($sSourceClass, $sOperation);
+						$aPayload = static::GetPayload($sSourceClass, $sOperation);
 						
 						$aPayload['read_status'] = [
 							'target_oql_users' => $aCurrentAudienceUserIds,
@@ -631,7 +631,7 @@
 		 *
 		 * @return \Array Key/value
 		 */
-		public static function GetPostPayload($sSourceClass, $sOperation) {
+		public static function GetPayload($sSourceClass, $sOperation) {
 			
 			$sNewsUrl = $sSourceClass::GetUrl();
 			
@@ -660,7 +660,8 @@
 				
 				// To understand the part below:
 				// Mind that to make things look more pretty, the URL for a news source could point to a generic domain: 'itop-news.domain.org'.
-				// This could be an index.php file which simply calls an iTop instance itself, the index.php script (some sort of proxy) itself would act as a client to an iTop installation with the server in this extension enabled.
+				// This could be an index.php file which simply calls an iTop instance itself.
+				// The index.php script (some sort of proxy) itself could act as a client to an iTop installation with the server component in this extension set to enabled.
 				// It could make a call to: https://127.0.0.1:8182/iTop-clients/web/pages/exec.php?&exec_module=jb-news&exec_page=index.php&exec_env=production-news&operation=get_messages_for_instance&version=1.0 
 				// and it would also need the originally appended parameters sent to 'itop-news.domain.org'.
 				$sParameters = explode('?', $sNewsUrl)[1];
@@ -670,13 +671,13 @@
 			}
 			
 			// These are default parameters, which can be overridden.
-			return array_merge($aPayload, $sSourceClass::GetPostPayload($sOperation));
+			return array_merge($aPayload, $sSourceClass::GetPayload($sOperation));
 					
 		}
 		
 		
 		/**
-		 * Do a HTTP POST request to an end point.
+		 * Do an HTTP POST request to an end point.
 		 *
 		 * @param \ProcessThirdPartyNews $oProcess Process.
 		 * @param \String $sNewsUrl Endpoint URL.
