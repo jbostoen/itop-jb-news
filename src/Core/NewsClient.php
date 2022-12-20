@@ -66,6 +66,60 @@
 	abstract class NewsClient {
 		
 		/**
+		 * Returns the timestamp on which the news messages were last retrieved successfully from a particular news source.
+		 *
+		 * @return \DBObjectSet Object set of key values
+		 */
+		protected static function GetLastRetrieved() {
+			
+			$oFilter = DBObjectSearch::FromOQL('SELECT KeyValueStore WHERE key_name = :key_name AND namespace = :namespace', [
+				'namespace' => 'news'
+			]);
+			$oSet = new DBObjectSet($oFilter);
+			$oKeyValue = $oSet->Fetch();
+			
+			return $oSet;
+			
+		}
+		
+		
+		/**
+		 * Sets the timestamp on which the news messages were last retrieved successfully for a particular news source.
+		 *
+		 * @param \String $sNewsSource Name of the news source.
+		 *
+		 * @return void
+		 */
+		protected static function SetLastRetrieved($sNewsSource) {
+			
+			$sKeyName = 'news_'. preg_replace('/[^a-zA-Z0-9]+/', '', $sNewsSource);
+			
+			$oFilter = DBObjectSearch::FromOQL('SELECT KeyValueStore WHERE key_name = :key_name AND namespace = :namespace', [
+				'namespace' => 'news',
+				'key_name' => $sKeyName
+			]);
+			$oSet = new DBObjectSet($oFilter);
+			$oKeyValue = $oSet->Fetch();
+			
+			if($oKeyValue !== null) {
+				
+				$oKeyValue->Set('value', date('Y-m-d H:i:s'));
+				$oKeyValue->DBUpdate();
+				
+			}
+			
+			$oKeyValue = MetaModel::NewObject('KeyValueStore', [
+				'namespace' => 'news',
+				'key_name' => $sKeyName
+			]);
+			$oKeyValue->DBInsert();
+			
+		}
+		
+		
+		
+		
+		/**
 		 * Returns hash of user
 		 */
 		protected static function GetUserHash() {
