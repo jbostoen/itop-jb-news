@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2022 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.220607
+ * @version     2.7.221220
  *
  */
 
@@ -70,9 +70,9 @@
 		 *
 		 * @return \DBObjectSet Object set of key values
 		 */
-		protected static function GetLastRetrieved() {
+		public static function GetLastRetrieved() {
 			
-			$oFilter = DBObjectSearch::FromOQL('SELECT KeyValueStore WHERE key_name = :key_name AND namespace = :namespace', [
+			$oFilter = DBObjectSearch::FromOQL('SELECT KeyValueStore WHERE namespace = :namespace', [
 				'namespace' => 'news'
 			]);
 			$oSet = new DBObjectSet($oFilter);
@@ -90,7 +90,7 @@
 		 *
 		 * @return void
 		 */
-		protected static function SetLastRetrieved($sNewsSource) {
+		public static function SetLastRetrieved($sNewsSource) {
 			
 			$sKeyName = 'news_'. preg_replace('/[^a-zA-Z0-9]+/', '', $sNewsSource);
 			
@@ -120,9 +120,9 @@
 		
 		
 		/**
-		 * Returns hash of user
+		 * Returns hash of user.
 		 */
-		protected static function GetUserHash() {
+		public static function GetUserHash() {
 		
 			$sUserId = UserRights::GetUserId();
 			$sUserHash = hash('fnv1a64', $sUserId);
@@ -131,7 +131,7 @@
 		}
 			
 		/**
-		 * Returns hash of instance
+		 * Returns hash of instance.
 		 */
 		public static function GetInstanceHash() {
 		

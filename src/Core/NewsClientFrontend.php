@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2022 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.220607
+ * @version     2.7.221220
  *
  */
  
@@ -11,10 +11,10 @@
 	
 	use \iBackofficeReadyScriptExtension;
 	use \MetaModel;
-	
+	 
 	// As of iTop 3.0.0
-	if(class_exists('iBackofficeReadyScriptExtension') == true) {
-		
+	if(interface_exists('iBackofficeReadyScriptExtension') == true) {
+	
 		/**
 		 * @inheritDoc
 		 * @since 3.0.0
@@ -24,16 +24,21 @@
 			/**
 			 * @inheritDoc
 			 */
-			public function GetReadyScript() {
+			public function GetReadyScript() : string {
 				
-				$sCode = '';
+				$sCode = 
+<<<JS
+	// News sources (if any)
+	
+JS;
+
 				$sOperation = 'get_messages_for_instance';
-				$sEncryptionLib = static::GetEncryptionLibrary();
+				$sEncryptionLib = NewsClient::GetEncryptionLibrary();
 				
 				// Build list of news sources.
 				// -
 				
-					$aSources = static::GetSources();
+					$aSources = NewsClient::GetSources();
 					
 					$oSetLastRetrieved = NewsClient::GetLastRetrieved();
 				
@@ -60,7 +65,7 @@
 							}
 							
 							// Last retrieval using scheduled task (cron job) seems to have worked
-							if(strtotime($sLastRetrieved) >= strtotime('-'.(Int)(MetaModel::GetModuleSetting(static::MODULE_CODE, 'frequency', 60) * 60).' minutes')) {
+							if(strtotime($sLastRetrieved) >= strtotime('-'.(Int)(MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'frequency', 60) * 60).' minutes')) {
 								
 								continue; // Skip and process next source
 								
@@ -69,7 +74,7 @@
 						// Build call to external news source
 						// -
 						
-						$aPayload = static::GetPayload($sSourceClass, $sOperation);
+						$aPayload = NewsClient::GetPayload($sSourceClass, $sOperation);
 						$sNewsUrl = $sSourceClass::GetUrl();
 						
 						$aData = [
@@ -89,7 +94,7 @@
 								url: '{$sNewsUrl}',
 								dataType: 'jsonp',
 								data: {$sData},
-								type: 'POST',
+								type: 'GET',
 								jsonpCallback: '{$sKeyName}',
 								contentType: 'application/json; charset=utf-8',
 								success: function (result, status, xhr) {
@@ -104,14 +109,14 @@ JS;
 						
 					}
 				
+				// Return result.
+				// -
 				
-					return $sCode;
-				
-				}
-				
+				return $sCode;
 			}
 			
 		}
+
 
 	}
 	

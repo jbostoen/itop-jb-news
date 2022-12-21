@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2022 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.220607
+ * @version     2.7.221220
  *
  */
  
@@ -86,7 +86,8 @@ try {
 			}
 			else {
 				
-				$sPayload = utils::ReadPostedParam('payload', '', 'raw_data');
+				// Since supporting JSONP: the payload may not longer be in a $_POST request.
+				$sPayload = utils::ReadParam('payload', '', 'raw_data');
 				
 				if($sPayload == '') {
 					throw new Exception('Missing parameters for operation "get_messages_for_instance". Payload is empty.');
@@ -108,7 +109,7 @@ try {
 			// Check parameters
 			if($sInstanceHash == '' || $sInstanceHash2 == '') {
 				
-				throw new Exception('Missing parameters for operation "get_messages_for_instance". API version: '.$sApiVersion.' - Payload: '.$sPayload.' - Post data: '.json_encode($_POST).' - '.json_encode($aPayload));
+				throw new Exception('Missing parameters for operation "get_messages_for_instance". API version: '.$sApiVersion.' - Payload: '.$sPayload.' - POST: '.json_encode($_POST).' - GET: '.json_encode($_GET).' - '.json_encode($aPayload));
 				
 			}
 
@@ -169,7 +170,14 @@ try {
 					
 				}
 
-				// Regular JSON here, not JSONP
+				$sCallBackMethod = utils::ReadParam('callback', '', false, 'variable_name');
+				if($sCallBackMethod != '') {
+
+					$sOutput = $sCallBackMethod.'('.$sOutput.');';
+				
+				}
+
+				// Return data
 				$oPage->add($sOutput);
 				
 			}

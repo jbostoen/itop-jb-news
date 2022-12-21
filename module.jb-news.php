@@ -8,7 +8,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'jb-news/2.7.221216',
+	'jb-news/2.7.221220',
 	array(
 		// Identification
 		//
@@ -29,6 +29,7 @@ SetupWebPage::AddModule(
 		'datamodel' => array(
 			'model.jb-news.php',
 			'src/Core/NewsClient.php',
+			'src/Core/NewsClientFrontend.php',
 			'src/Core/NewsRoomCSS.php',
 			'src/Core/NewsRoomHelper.php',
 			'src/Core/NewsRoomProvider.php',
