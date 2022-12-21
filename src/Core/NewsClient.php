@@ -110,7 +110,8 @@
 			
 			$oKeyValue = MetaModel::NewObject('KeyValueStore', [
 				'namespace' => 'news',
-				'key_name' => $sKeyName
+				'key_name' => $sKeyName,
+				'value' => date('Y-m-d H:i:s')
 			]);
 			$oKeyValue->DBInsert();
 			
@@ -482,6 +483,9 @@
 						}
 						
 					}
+					
+					// Mark as properly processed
+					static::SetLastRetrieved($sThirdPartyName);
 				
 				}
 				
