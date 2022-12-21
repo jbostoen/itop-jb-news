@@ -55,7 +55,7 @@ JS;
 							$oSetLastRetrieved->Rewind();
 							while($oLastRetrieved = $oSetLastRetrieved->Fetch()) {
 								
-								if($oLastRetrieved->Get('key') == $sKeyName) {
+								if($oLastRetrieved->Get('key_name') == $sKeyName) {
 								
 									$sLastRetrieved = $oLastRetrieved->Get('value');
 									break;

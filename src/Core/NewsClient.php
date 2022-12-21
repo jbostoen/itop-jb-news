@@ -65,6 +65,9 @@
 	 */
 	abstract class NewsClient {
 		
+		/** @var \Array $aCachedPayloads used to cache some payloads which are the same for multiple news sources. */
+		public static $aCachedPayloads = [];
+		
 		/**
 		 * Returns the timestamp on which the news messages were last retrieved successfully from a particular news source.
 		 *
@@ -209,13 +212,8 @@
 			
 				foreach($aSources as $sSourceClass) {
 					
-					$aPayload = static::GetPayload($sSourceClass, $sOperation);
+					$sApiResponse = static::DoPost($oProcess, $sSourceClass, $sOperation);
 					
-					$sNewsUrl = $sSourceClass::GetUrl();
-					
-					$sApiResponse = static::DoPost($oProcess, $sNewsUrl, $sOperation, $aPayload);
-					
-
 					// Assume these messages are in the correct format.
 					// If the format has changed in a backwards not compatible way, the API should simply not return any more messages
 					// (except for one to recommend to upgrade the extension)
@@ -526,88 +524,18 @@
 				
 			
 				
-			// Request messages
+			// Post statistics on messages
 			// -
 			
 				$aSources = static::GetSources();
 				
-				// Read statuses may include IDs of users who have seen the message, but may no longer be part of the possible target audience (message OQL - ignoring global OQL here).
-				$oFilterStatuses = DBObjectSearch::FromOQL('SELECT ThirdPartyMessageReadStatus');
-				$oFilterStatuses->AllowAllData();
-				$oSetStatuses = new DBObjectSet($oFilterStatuses);
-				
 				foreach($aSources as $sSourceClass) {
-										
-					$sNewsUrl = $sSourceClass::GetUrl();
-					$sThirdPartyName = $sSourceClass::GetThirdPartyName();
 					
-					$oFilterMessages = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsRoomMessage WHERE thirdparty_name = :thirdparty_name', [
-						'thirdparty_name' => $sThirdPartyName
-					]);
-					$oFilterMessages->AllowAllData();
-					$oSetMessages = new DBObjectSet($oFilterMessages);
-					
-					
-					$aMessages = [];
-					
-					while($oMessage = $oSetMessages->Fetch()) {
-						
-						// Determine users targeted by the newsroom message (might be restricted because of the global "oql_target_users")
-						
-							$oFilterTargetUsers = DBObjectSearch::FromOQL($oMessage->Get('oql'));
-							$oFilterTargetUsers->AllowAllData();
-							$oSetUsers = new DBObjectSet($oFilterTargetUsers);
-							
-							$aTargetUsers = [];
-							
-							/** @var \User $oUser An iTop user */
-							while($oUser = $oSetUsers->Fetch()) {
-								
-								$aTargetUsers[] = $oUser->GetKey();
-								
-							}
-							
-							$aMessages[(String)$oMessage->Get('thirdparty_message_id')] = [
-								'target_users' => $aTargetUsers,
-								'users' => [], // Each user who actually "read" the message
-								'read_date' => [], // See users above - this is the read date for each user
-							];
-						
-						// Report when messages were read (users stay anonymous, only IDs are shared)
-						
-						$oSetStatuses->Rewind();
-						while($oStatus = $oSetStatuses->Fetch()) {
-							
-							if($oStatus->Get('message_id') == $oMessage->GetKey()) {
-						
-								$aMessages[(String)$oMessage->Get('thirdparty_message_id')]['users'][] = $oStatus->Get('user_id');
-								$aMessages[(String)$oMessage->Get('thirdparty_message_id')]['read_date'][] = $oStatus->Get('read_date');
-								
-							}
-						
-						}
-						
-					}
-					
-					// - Build request
-						
-						$aPayload = static::GetPayload($sSourceClass, $sOperation);
-						
-						$aPayload['read_status'] = [
-							'target_oql_users' => $aCurrentAudienceUserIds,
-							'messages' => $aMessages
-						];
-					
-
-					static::DoPost($oProcess, $sNewsUrl, $sOperation, $aPayload);
+					// Not interested in the response of this call:
+					static::DoPost($oProcess, $sSourceClass, $sOperation);
 		
-					// Not interested in the response.
-					
-				
 				}
 				
-			
-			return;
 			
 		}
 			
@@ -682,12 +610,14 @@
 		}
 		
 		/**
-		 * Returns default POST data.
+		 * Returns the default (essential) payload info.
 		 *
 		 * @param \String $sSourceClass Name of news source class
 		 * @param \String $sOperation Operation
 		 *
 		 * @return \Array Key/value
+		 *
+		 * @details Mind that this is executed over and over for each news source.
 		 */
 		public static function GetPayload($sSourceClass, $sOperation) {
 			
@@ -728,27 +658,136 @@
 				
 			}
 			
+			 
+			if($sOperation == 'report_read_statistics') {
+				
+				// - Get generic info.
+				
+					if(isset(static::$aCachedPayloads['report_read_statistics']) == true) {
+						
+						/** @var \Integer[] $aExtTargetUsers Array to store user IDs of users for who the news extension is enabled. */
+						$aExtTargetUsers = static::$aCachedPayloads['report_read_statistics']['target_users'];
+						
+						/** @var \DBObjectSet[] $oSetStatuses Object set of ThirdPartyMessageReadStatus. */
+						$oSetStatuses = static::$aCachedPayloads['report_read_statistics']['read_states'];
+						
+					}
+					else {
+						
+						// - Build list of target users (news extension)
+							
+							$sOQL = MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'oql_target_users', 'SELECT User');
+							$oFilterUsers = DBObjectSearch::FromOQL($sOQL);
+							$oSetUsers = new DBObjectSet($oFilterUsers);
+							
+							$aExtTargetUsers = [];
+							
+							while($oUser = $oSetUsers->Fetch()) {
+								
+								// By default, there is no 'last login' data unfortunately, unless explicitly stated.
+								$aExtTargetUsers[] = $oUser->GetKey();
+								
+							}
+							
+							static::$aCachedPayloads['report_read_statistics']['target_users'] = $aExtTargetUsers;
+							
+						// - Get set of ThirdPartyMessageReadStatus (will be used to loop over each time)
+							
+							$oFilterStatuses = DBObjectSearch::FromOQL('SELECT ThirdPartyMessageReadStatus');
+							$oFilterStatuses->AllowAllData();
+							$oSetStatuses = new DBObjectSet($oFilterStatuses);
+							static::$aCachedPayloads['report_read_statistics']['read_states'] = $oSetStatuses;
+							
+					}
+					
+				// - Get ThirdPartyNewsRoomMessage of this source and obtain specific info.
+				
+				
+					$sThirdPartyName = $sSourceClass::GetThirdPartyName();
+					
+					$oFilterMessages = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsRoomMessage WHERE thirdparty_name = :thirdparty_name', [
+						'thirdparty_name' => $sThirdPartyName
+					]);
+					$oFilterMessages->AllowAllData();
+					$oSetMessages = new DBObjectSet($oFilterMessages);
+					
+					
+					$aMessages = [];
+					
+					while($oMessage = $oSetMessages->Fetch()) {
+						
+						// Determine users targeted by the newsroom message (might be restricted because of the global "oql_target_users")
+						
+							$oFilterTargetUsers = DBObjectSearch::FromOQL($oMessage->Get('oql'));
+							$oFilterTargetUsers->AllowAllData();
+							$oSetUsers = new DBObjectSet($oFilterTargetUsers);
+							
+							$aTargetUsers = [];
+							
+							/** @var \User $oUser An iTop user */
+							while($oUser = $oSetUsers->Fetch()) {
+								
+								$aTargetUsers[] = $oUser->GetKey();
+								
+							}
+							
+							$aMessages[(String)$oMessage->Get('thirdparty_message_id')] = [
+								'target_users' => $aTargetUsers,
+								'users' => [], // Each user who actually "read" the message
+								'read_date' => [], // See users above - this is the read date for each user
+							];
+						
+						// Report when messages were read (users stay anonymous, only IDs are shared)
+						
+						$oSetStatuses->Rewind();
+						while($oStatus = $oSetStatuses->Fetch()) {
+							
+							if($oStatus->Get('message_id') == $oMessage->GetKey()) {
+						
+								$aMessages[(String)$oMessage->Get('thirdparty_message_id')]['users'][] = $oStatus->Get('user_id');
+								$aMessages[(String)$oMessage->Get('thirdparty_message_id')]['read_date'][] = $oStatus->Get('read_date');
+								
+							}
+						
+						}
+						
+					}
+					
+
+				// - Add this info to the payload
+				
+					$aPayload['read_status'] = [
+						'target_oql_users' => $aExtTargetUsers,
+						'messages' => $aMessages
+					];
+				
+			}
+			
+			
 			// These are default parameters, which can be overridden.
 			return array_merge($aPayload, $sSourceClass::GetPayload($sOperation));
 					
 		}
 		
 		
+		
+		
 		/**
 		 * Do an HTTP POST request to an end point.
 		 *
 		 * @param \ProcessThirdPartyNews $oProcess Process.
-		 * @param \String $sNewsUrl Endpoint URL.
-		 * @param \String $sOperation Operation
-		 * @param \Array $aPayload Will first be JSON encoded and then base64 encoded, to be sent as 'payload' parameter.
+		 * @param \String $sSourceClass News source class.
+		 * @param \String $sOperation Operation.
 		 *
 		 * @return \String
 		 *
 		 * @throws \Exception
 		 */
-		public static function DoPost($oProcess, $sNewsUrl, $sOperation, $aPayload) {
+		public static function DoPost($oProcess, $sSourceClass, $sOperation) {
 	
-			
+			$aPayload = static::GetPayload($sSourceClass, $sOperation);
+			$sNewsUrl = $sSourceClass::GetUrl();
+					
 			$oProcess->Trace('. Url: '.$sNewsUrl);
 			$oProcess->Trace('. Data: '.json_encode($aPayload));
 			
