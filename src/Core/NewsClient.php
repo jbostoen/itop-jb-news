@@ -51,12 +51,20 @@
 		public static function GetUrl();
 		
 		/**
-		 * Returns the base64 encoded public key for a Sodium implementation. 
+		 * Returns the base64 encoded public key for a Sodium implementation (crypto box). 
+		 * A news source should share this, so the public key can be used to seal data which can then only be read by the news server.
+		 *
+		 * @return \Boolean
+		 */
+		public static function GetPublicKeySodiumCryptoBox();
+		
+		/**
+		 * Returns the base64 encoded public key for a Sodium implementation (crypto sign). 
 		 * A news source should share this, so the public key can be used to verify the news message contents of the source.
 		 *
 		 * @return \Boolean
 		 */
-		public static function GetPublicKeySodium();
+		public static function GetPublicKeySodiumCryptoSign();
 		
 	}
 	
@@ -251,10 +259,10 @@
 								
 									$aMessages = $aData['messages'];
 									$sSignature = sodium_base642bin($aData['signature'], SODIUM_BASE64_VARIANT_URLSAFE);
-									$sKey = sodium_base642bin($sSourceClass::GetPublicKeySodium(), SODIUM_BASE64_VARIANT_URLSAFE);
+									$sPublicKey = sodium_base642bin($sSourceClass::GetPublicKeySodiumCryptoSign(), SODIUM_BASE64_VARIANT_URLSAFE);
 										
 									// Verify using public key
-									if(sodium_crypto_sign_verify_detached($sSignature, json_encode($aMessages), $sKey)) {
+									if(sodium_crypto_sign_verify_detached($sSignature, json_encode($aMessages), $sPublicKey)) {
 										
 										// Verified
 										$oProcess->Trace('. Signature is valid.');
@@ -791,10 +799,23 @@
 			$oProcess->Trace('. Url: '.$sNewsUrl);
 			$oProcess->Trace('. Data: '.json_encode($aPayload));
 			
+			$sPayload = json_encode($aPayload);
+			
+			// Encryption available?
+			if(static::GetEncryptionLibrary() == 'Sodium') {
+				
+				$sPublicKey = sodium_base642bin($sSourceClass::GetPublicKeySodiumCryptoBox(), SODIUM_BASE64_VARIANT_URLSAFE);
+				$sBinData = sodium_base642bin(base64_encode($sPayload), SODIUM_BASE64_VARIANT_URLSAFE);
+				
+				// The payload becomes sealed.
+				$sPayload = sodium_crypto_box_seal($sBinData, $sPublicKey);
+			
+			}
+			
 			$aPostData = [
 				'operation' => $sOperation,
 				'api_version' => NewsRoomHelper::DEFAULT_API_VERSION,
-				'payload' => base64_encode(json_encode($aPayload))
+				'payload' => base64_encode($sPayload)
 			];
 			
 			$cURLConnection = curl_init($sNewsUrl);
@@ -804,9 +825,6 @@
 			// Only here to test on local installations. Not meant to be enforced!
 			// curl_setopt($cURLConnection, CURLOPT_SSL_VERIFYPEER, false);
 			// curl_setopt($cURLConnection, CURLOPT_SSL_VERIFYHOST, false);
-
-			
-			
 			$sApiResponse = curl_exec($cURLConnection);
 			
 			if(curl_errno($cURLConnection)) {

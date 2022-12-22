@@ -59,7 +59,11 @@ SetupWebPage::AddModule(
 			'server' => false,
 			'ttl' => 3600,
 			'oql_target_users' => 'SELECT User',
-			'private_key_file' => '/somepath/sodium_priv.key',
+			'sodium' => [
+				'private_key_crypto_sign' => '/somepath/sodium_sign_priv.key',
+				'private_key_crypto_box' => '/somepath/sodium_box_priv.key',
+				'public_key_crypto_box' => '/somepath/sodium_box_pub.key',
+			]
 		),
 	)
 );

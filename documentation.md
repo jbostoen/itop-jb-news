@@ -27,8 +27,15 @@ In iTop's configuration file, these settings are available:
 		// Note: if messages were obtained before, they may be present in the localStorage of the browser; and still be displayed for a brief time.
 		'oql_target_users' => 'SELECT User',
 		
-		// Path to private key
+		// Path to private key (only required if acting as a news source/server).
 		'private_key_file' => '/some/path/sodium_priv.key',
+		
+		// Path to Sodium keys (only required if acting as a news source/server)
+		'sodium' => [
+			'private_key_crypto_sign' => '/somepath/sodium_sign_priv.key',
+			'private_key_crypto_box' => '/somepath/sodium_box_priv.key',
+			'public_key_crypto_box' => '/somepath/sodium_box_pub.key',
+		]
 	),
 ```
 

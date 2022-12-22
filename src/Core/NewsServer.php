@@ -197,4 +197,40 @@
 			
 		}
 	
+		/**
+		 * Returns Sodium private key.
+		 *
+		 * @param \String $sKeyType Should be one of these: private_key_file_crypto_sign , private_key_file_crypto_box
+		 *
+		 * @return \String
+		 *
+		 * @throws \Exception
+		 */
+		public static function GetKeySodium($sType) {
+			
+	
+			// Get private key
+			$aKeySettings = MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'sodium', []);
+			
+			
+			if(is_array($aKeySettings) == true && array_key_exists($sType, $aKeySettings) == true) {
+				
+				$sKeyFile = $aKeySettings[$sType];
+				
+				if(file_exists($sKeyFile) == false) {
+					throw new Exception('Missing '.$sType.' key file.');
+				}
+				
+				$sKey = file_get_contents($sKeyFile);
+				
+				$sBinKey = sodium_base642bin($sKey, SODIUM_BASE64_VARIANT_URLSAFE);
+				
+				return $sBinKey;
+				
+			}
+			
+			return null;
+					
+		}
+	
 	}

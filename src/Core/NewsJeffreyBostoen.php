@@ -42,15 +42,24 @@
 		
 		}
 		
+		
 		/**
 		 * @inheritDoc
 		 */
-		public static function GetPublicKeySodium() {
+		public static function GetPublicKeySodiumCryptoBox() {
+			
+			return '_MFByYo4dIpQ-Z8j9jy8cwxU4EH5vVXj5HqhVo02PD4=';
+			
+		}
+		
+		/**
+		 * @inheritDoc
+		 */
+		public static function GetPublicKeySodiumCryptoSign() {
 			
 			return 'SafJHvlxp3ktweQDbRnkwvm6ih4dru2H3ydvVaA0xSI=';
 			
 		}
-		
 	}
 	
 	

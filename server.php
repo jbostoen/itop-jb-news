@@ -41,7 +41,7 @@ try {
 	require_once APPROOT . '/application/startup.inc.php';
 	
 	// Check user rights and prompt if needed
-	$sOperation = utils::ReadParam('operation', '');
+	$sOperation = utils::ReadParam('operation', '', false, 'parameter');
 	
 	if(class_exists('DownloadPage') == true) {
 		// Modern 3.0
@@ -65,19 +65,19 @@ try {
 		
 		case 'get_messages_for_instance':
 		
-			$sApiVersion = utils::ReadPostedParam('api_version', '1.0', 'raw_data');
+			$sApiVersion = utils::ReadPostedParam('api_version', '1.0', 'transaction_id');
 			
 			if($sApiVersion === '1.0') {
 				
 				// Deprecated, to be removed soon.
-				$sInstanceHash = utils::ReadParam('instance_hash', '');
-				$sInstanceHash2 = utils::ReadParam('instance_hash2', '');
+				$sInstanceHash = utils::ReadParam('instance_hash', '', false, 'transaction_id');
+				$sInstanceHash2 = utils::ReadParam('instance_hash2', '', false, 'transaction_id');
 				
-				$sVersion = utils::ReadParam('api_version', NewsroomHelper::DEFAULT_API_VERSION);
+				$sVersion = utils::ReadParam('api_version', NewsroomHelper::DEFAULT_API_VERSION, false, 'transaction_id');
 				$sAppName = utils::ReadParam('app_name', NewsroomHelper::DEFAULT_APP_NAME, false, 'raw_data');
 				$sAppVersion = utils::ReadParam('app_version', NewsroomHelper::DEFAULT_APP_VERSION, false, 'raw_data');
 				
-				$sEncryptionLib =  utils::ReadParam('encryption_library', 'none', false, 'raw_data');
+				$sEncryptionLib =  utils::ReadParam('encryption_library', 'none', false, 'parameter');
 				
 				// Avoid warnings
 				$aPayload = [];
@@ -87,13 +87,32 @@ try {
 			else {
 				
 				// Since supporting JSONP: the payload may not longer be in a $_POST request.
-				$sPayload = utils::ReadParam('payload', '', 'raw_data');
+				$sPayload = utils::ReadParam('payload', '', false, 'raw_data');
 				
 				if($sPayload == '') {
 					throw new Exception('Missing parameters for operation "get_messages_for_instance". Payload is empty.');
 				}
 				
-				$aPayload = json_decode(base64_decode($sPayload), true);
+				// Payloads can be either encrypted or unencrypted (Sodium not available on the iTop instance which is requesting news messages).
+				// Either way, they are base64 encoded.
+				$sPayload = base64_decode($sPayload);
+				
+				// Doesn't seem regular JSON yet; try unsealing
+				if(substr($sPayload, 0, 1) !== '{') {
+					
+					$sPrivateKey = NewsServer::GetKeySodium('private_key_crypto_box');
+					$sPublicKey = NewsServer::GetKeySodium('public_key_crypto_box');
+					$sPayload = sodium_crypto_box_seal_open($sPayload, sodium_crypto_box_keypair_from_secretkey_and_publickey($sPrivateKey, $sPublicKey));
+					
+					if(substr($sPayload, 0, 1) !== '{') {
+						
+						throw new Exception('Unable to decode payload: '. utils::ReadParam('payload', '', 'raw_data')); // Refer to original data.
+						
+					}
+					
+				}
+				
+				$aPayload = json_decode($sPayload, true);
 				
 				$sInstanceHash = $aPayload['instance_hash'];
 				$sInstanceHash2 = $aPayload['instance_hash2'];
@@ -140,18 +159,10 @@ try {
 				if($sEncryptionLib == 'Sodium' && $bFunctionExists == true) {
 					
 					// Get private key
-					$sPrivateKeyFile = MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'private_key_file', '');
-					
-					if(file_exists($sPrivateKeyFile) == false) {
-						throw new Exception('Missing private key file.');
-					}
-					
-					$sKey = file_get_contents($sPrivateKeyFile);
-					
-					$sSodium_PrivBase64 = sodium_base642bin($sKey, SODIUM_BASE64_VARIANT_URLSAFE);
+					$sPrivateKey = NewsServer::GetKeySodium('private_key_crypto_sign');
 					
 					// Sign using private key
-					$sSignature = sodium_crypto_sign_detached(json_encode($aMessages), $sSodium_PrivBase64);
+					$sSignature = sodium_crypto_sign_detached(json_encode($aMessages), $sPrivateKey);
 					
 					// The data itself is not secret, its authenticity just needs to be able to be verified
 					$sOutput = json_encode([
@@ -159,7 +170,7 @@ try {
 						'messages' => $aMessages,
 						'vesion' => NewsServer::GetApiVersion(),
 						'signature' => sodium_bin2base64($sSignature, SODIUM_BASE64_VARIANT_URLSAFE)
-					]);					
+					]);
 					
 				}
 				// 'none' specified by user or requested encryption library not available on server
@@ -194,7 +205,9 @@ try {
 			break;
 			
 		default:
-			$oPage->add(['error' => 'Invalid operation: '.$sOperation]);
+			$oPage->add([
+				'error' => 'Invalid operation: '.$sOperation
+			]);
 			break;
 	}
 

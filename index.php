@@ -44,7 +44,7 @@ try {
 	require_once APPROOT . '/application/startup.inc.php';
 	
 	// Check user rights and prompt if needed
-	$sOperation = utils::ReadParam('operation', '');
+	$sOperation = utils::ReadParam('operation', '', false, 'parameter');
 	
 	// Authentication is required
 	$sLoginMessage = LoginWebPage::DoLogin();
@@ -61,7 +61,7 @@ try {
 	}
 	
 	// Retrieve global parameters
-	$sVersion = utils::ReadParam('api_version', NewsRoomHelper::DEFAULT_API_VERSION);
+	$sVersion = utils::ReadParam('api_version', NewsRoomHelper::DEFAULT_API_VERSION, false, 'raw_data');
 	$sAppName = utils::ReadParam('app_name', NewsRoomHelper::DEFAULT_APP_NAME, false, 'raw_data');
 	$sAppVersion = utils::ReadParam('app_version', NewsRoomHelper::DEFAULT_APP_VERSION, false, 'raw_data');
 
@@ -76,7 +76,7 @@ try {
 		case 'fetch':
 		case 'mark_all_as_read':
 		
-			$sCallback = utils::ReadParam('callback', '');
+			$sCallback = utils::ReadParam('callback', '', false, 'raw_data');
 
 			// Check parameters
 			if(empty($sCallback))
@@ -87,7 +87,7 @@ try {
 
 		case 'redirect':
 		
-			$iMessageId = (int) utils::ReadParam('message_id', 0);
+			$iMessageId = (int) utils::ReadParam('message_id', 0, false, 'integer');
 			
 			// Check parameters
 			if(empty($iMessageId))
