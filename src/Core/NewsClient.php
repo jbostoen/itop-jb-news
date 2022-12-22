@@ -73,7 +73,7 @@
 	 */
 	abstract class NewsClient {
 		
-		/** @var \ProcessThirdPartyNews Scheduled background process (used for tracing only).
+		/** @var \ProcessThirdPartyNews Scheduled background process (used for tracing only). */
 		public static $oBackgroundProcess = null;
 		
 		/** @var \Array $aCachedPayloads used to cache some payloads which are the same for multiple news sources. */
