@@ -11,7 +11,6 @@
 @include_once('../../approot.inc.php');
 @include_once('../../../approot.inc.php');
 
-use \DownloadPage;
 
 require_once(APPROOT.'/application/application.inc.php');
 
@@ -28,12 +27,11 @@ if(defined('ITOP_VERSION') == true && version_compare(ITOP_VERSION, '3.0', '<'))
 // Still classic
 require_once(APPROOT.'/application/loginwebpage.class.inc.php');
 
-require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news/src/Core/NewsRoomWebPage.php');
-require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news/src/Core/NewsServer.php');
 
+use \jb_itop_extensions\NewsProvider\NewsClient;
+use \jb_itop_extensions\NewsProvider\NewsRoomHelper;
 use \jb_itop_extensions\NewsProvider\NewsRoomWebPage;
 use \jb_itop_extensions\NewsProvider\NewsServer;
-use \jb_itop_extensions\NewsProvider\NewsRoomHelper;
 
 
 try {
@@ -185,6 +183,7 @@ try {
 				$sCallBackMethod = utils::ReadParam('callback', '', false, 'parameter');
 				if($sCallBackMethod != '') {
 
+					$oPage->SetContentType('application/json');
 					$sOutput = $sCallBackMethod.'('.$sOutput.');';
 				
 				}
@@ -202,20 +201,45 @@ try {
 		
 			// Read statistics to be stored somewhere. 
 			// For now, just ignore.
-			$oPage->add('[]');
+			$oPage->add(json_encode([
+			]));
 			break;
 			
-		case 'post_messages_for_instance':
+		case 'post_messages_to_instance':
 		
-			// Validate if this is a known third-party name.
+			$sSourceClass = utils::ReadParam('sourceClass', '', false, 'raw_data');
+			
+			// - Validate if this is a known third-party name.
+				
+				if(class_exists($sSourceClass) === false) {
+					
+					$oPage->add(json_encode([
+						'error' => 'News source does not exist.'
+					]));
+					break;
+					
+				}
+			
+			// - Process response
 		
-			$oPage->add('[]');
+				$sApiResponse = utils::ReadParam('data', '', false, 'raw_data');
+					
+				NewsClient::ProcessRetrievedMessages($sApiResponse, $sSourceClass);
+				
+			// - Return data to post to news source ('report_read_statistics')
+			
+				$aPayload = NewsClient::GetPayload($sSourceClass, 'report_read_statistics');
+				$sPayload = NewsClient::PreparePayload($sSourceClass, $aPayload);
+			
+			$oPage->add(json_encode([
+				'payload' => $sPayload
+			]));
 			break;
 			
 		default:
-			$oPage->add([
+			$oPage->add(json_encode([
 				'error' => 'Invalid operation: '.$sOperation
-			]);
+			]));
 			break;
 	}
 

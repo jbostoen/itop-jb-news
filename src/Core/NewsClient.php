@@ -121,13 +121,16 @@
 				$oKeyValue->DBUpdate();
 				
 			}
-			
-			$oKeyValue = MetaModel::NewObject('KeyValueStore', [
-				'namespace' => 'news',
-				'key_name' => $sKeyName,
-				'value' => date('Y-m-d H:i:s')
-			]);
-			$oKeyValue->DBInsert();
+			else {
+				
+				$oKeyValue = MetaModel::NewObject('KeyValueStore', [
+					'namespace' => 'news',
+					'key_name' => $sKeyName,
+					'value' => date('Y-m-d H:i:s')
+				]);
+				$oKeyValue->DBInsert();
+				
+			}
 			
 		}
 		
@@ -223,7 +226,7 @@
 					
 					$sApiResponse = static::DoPost($sSourceClass, $sOperation);
 					
-					static::ProcessRetrievedMessages($sApiResponse, $sSourceClass::GetThirdPartyName());
+					static::ProcessRetrievedMessages($sApiResponse, $sSourceClass);
 					
 				}
 				
@@ -233,13 +236,14 @@
 		 * Process retrieved messages.
 		 *
 		 * @param \String $sApiResponse API response from the news server.
-		 * @param \String $sThirdPartyName Third party name of the news server.
+		 * @param \String $sSourceClass Name of the news source class.
 		 *
 		 * @return void
 		 *
 		 */
-		public static function ProcessRetrievedMessages($sApiResponse, $sThirdPartyName) {
+		public static function ProcessRetrievedMessages($sApiResponse, $sSourceClass) {
 	
+			$sThirdPartyName = $sSourceClass::GetThirdPartyName();
 	
 			// Assume these messages are in the correct format.
 			// If the format has changed in a backwards not compatible way, the API should simply not return any more messages
@@ -530,23 +534,6 @@
 			
 			// Other hooks may have ran already.
 			// Do not leak sensitive data, OQL queries may contain names etc.
-			
-			// List the CURRENT user IDs which are globally allowed to see messages (if the message OQL allows it).
-				
-				$sOQL = MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'oql_target_users', 'SELECT User');
-				$oFilterUsers = DBObjectSearch::FromOQL($sOQL);
-				$oSetUsers = new DBObjectSet($oFilterUsers);
-				
-				$aCurrentAudienceUserIds = [];
-				
-				while($oUser = $oSetUsers->Fetch()) {
-					
-					// By default, there is no 'last login' data unfortunately, unless explicitly stated.
-					$aCurrentAudienceUserIds[] = $oUser->GetKey();
-					
-				}
-				
-			
 				
 			// Post statistics on messages
 			// -
@@ -793,8 +780,32 @@
 					
 		}
 		
+		/**
+		 * Prepare payload. The payload gets JSON encoded; then base64 encoded. 
+		 * If Sodium is available, it will get encrypted as well.
+		 *
+		 * @param \String $sSourceClass Source class.
+		 * @param \Array $aPayload Payload to be prepared.
+		 *
+		 * @return \String Binary data
+		 */
+		public static function PreparePayload($sSourceClass, $aPayload) {
+			
+			$sPayload = json_encode($aPayload);
+			
+			if(static::GetEncryptionLibrary() == 'Sodium') {
+				
+				$sPublicKey = sodium_base642bin($sSourceClass::GetPublicKeySodiumCryptoBox(), SODIUM_BASE64_VARIANT_URLSAFE);
+				$sBinData = sodium_base642bin(base64_encode($sPayload), SODIUM_BASE64_VARIANT_URLSAFE);
+				
+				// The payload becomes sealed.
+				$sPayload = sodium_crypto_box_seal($sBinData, $sPublicKey);
+			
+			}
+			
+			return base64_encode($sPayload);
 		
-		
+		}
 		
 		/**
 		 * Do an HTTP POST request to an end point.
@@ -808,29 +819,20 @@
 		 */
 		public static function DoPost($sSourceClass, $sOperation) {
 	
+			// Unencrypted payload (easier for debugging)
 			$aPayload = static::GetPayload($sSourceClass, $sOperation);
 			$sNewsUrl = $sSourceClass::GetUrl();
 					
 			static::Trace('. Url: '.$sNewsUrl);
 			static::Trace('. Data: '.json_encode($aPayload));
 			
-			$sPayload = json_encode($aPayload);
-			
-			// Encryption available?
-			if(static::GetEncryptionLibrary() == 'Sodium') {
-				
-				$sPublicKey = sodium_base642bin($sSourceClass::GetPublicKeySodiumCryptoBox(), SODIUM_BASE64_VARIANT_URLSAFE);
-				$sBinData = sodium_base642bin(base64_encode($sPayload), SODIUM_BASE64_VARIANT_URLSAFE);
-				
-				// The payload becomes sealed.
-				$sPayload = sodium_crypto_box_seal($sBinData, $sPublicKey);
-			
-			}
+			// Encode and - if available - encrypt.
+			$sPayload = static::PreparePayload($sSourceClass, $aPayload);
 			
 			$aPostData = [
 				'operation' => $sOperation,
 				'api_version' => NewsRoomHelper::DEFAULT_API_VERSION,
-				'payload' => base64_encode($sPayload)
+				'payload' => $sPayload
 			];
 			
 			$cURLConnection = curl_init($sNewsUrl);
@@ -881,7 +883,7 @@
 		public static function Trace($sTraceLog) {
 		
 			if(static::$oBackgroundProcess !== null) {
-				$oBackgroundProcess->Trace($sTraceLog);
+				static::$oBackgroundProcess->Trace($sTraceLog);
 			}
 			
 		}

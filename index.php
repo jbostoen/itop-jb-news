@@ -31,10 +31,6 @@ if(defined('ITOP_VERSION') == true && version_compare(ITOP_VERSION, '3.0', '<'))
 // Still classic
 require_once(APPROOT.'/application/loginwebpage.class.inc.php');
 
-require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news/src/Core/NewsRoomWebPage.php');
-require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news/src/Core/NewsServer.php');
-require_once(APPROOT.'env-'.utils::GetCurrentEnvironment().'/jb-news/src/Core/NewsRoomHelper.php');
-
 use \jb_itop_extensions\NewsProvider\NewsRoomWebPage;
 use \jb_itop_extensions\NewsProvider\NewsServer;
 use \jb_itop_extensions\NewsProvider\NewsRoomHelper;
@@ -113,7 +109,7 @@ try {
 			// Prepare response
 			$sOutput = $sCallback . '(' . $sMessagesJSON . ')';
 
-			$oPage->SetContentType('application/jsonp');
+			$oPage->SetContentType('application/json');
 			$oPage->add($sOutput);
 			break;
 
@@ -129,7 +125,7 @@ try {
 			// Prepare response
 			$sOutput = $sCallback . '(' . $sMessageCountJSON . ')';
 
-			$oPage->SetContentType('application/jsonp');
+			$oPage->SetContentType('application/json');
 			$oPage->add($sOutput);
 			break;
 

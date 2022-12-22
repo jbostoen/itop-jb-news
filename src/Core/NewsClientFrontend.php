@@ -11,6 +11,7 @@
 	
 	use \iBackofficeReadyScriptExtension;
 	use \MetaModel;
+	use \utils;
 	 
 	// As of iTop 3.0.0
 	if(interface_exists('iBackofficeReadyScriptExtension') == true) {
@@ -66,7 +67,7 @@ JS;
 							}
 							
 							// Last retrieval using scheduled task (cron job) seems to have worked
-							if(strtotime($sLastRetrieved) >= strtotime('-'.(Int)(MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'frequency', 60) * 60).' minutes')) {
+							if(strtotime($sLastRetrieved) >= strtotime('-'.(Int)(MetaModel::GetModuleSetting(NewsRoomHelper::MODULE_CODE, 'frequency', 60) * 60).' minutes').' -5 minutes') {
 								
 								continue; // Skip and process next source
 								
@@ -76,12 +77,16 @@ JS;
 						// -
 						
 							$aPayload = NewsClient::GetPayload($sSourceClass, $sOperation);
+							$sPayload = NewsClient::PreparePayload($sSourceClass, $aPayload);
+							
 							$sNewsUrl = $sSourceClass::GetUrl();
+							
+							$sApiVersion = NewsRoomHelper::DEFAULT_API_VERSION;
 							
 							$aData = [
 								'operation' => $sOperation,
-								'api_version' => NewsRoomHelper::DEFAULT_API_VERSION,
-								'payload' => base64_encode(json_encode($aPayload)),
+								'api_version' => $sApiVersion,
+								'payload' => $sPayload,
 								'callback' => $sKeyName
 							];
 							
@@ -90,21 +95,64 @@ JS;
 						// - Add call to external news source
 						// - Add call back method to current iTop environment, make sure call back function exists
 						
+							// @todo Could become more compact in the future. But assuming there are not many news sources using this extension at this point, not a priority.
+						
+							$sUrl = utils::GetAbsoluteUrlExecPage().'?exec_module='.NewsRoomHelper::MODULE_CODE.'&exec_page=server.php';
+							$sSourceClassSlashed = addslashes($sSourceClass);
+						
 							$sCode .=
 <<<JS
 								$.ajax({
 									url: '{$sNewsUrl}',
 									dataType: 'jsonp',
 									data: {$sData},
-									type: 'GET',
+									type: 'GET', // JSONP is GET.
 									jsonpCallback: '{$sKeyName}',
 									contentType: 'application/json; charset=utf-8',
 									success: function (result, status, xhr) {
-										console.log('{$sThirdPartyName}');
-										console.log(result);
+										
+										console.log('Retrieved data from {$sThirdPartyName}');
+										
+										// Post response from news source to iTop
+										$.ajax({
+												url: '{$sUrl}',
+												dataType: 'json',
+												data: {
+													operation: 'post_messages_to_instance',
+													api_version: '{$sApiVersion}',
+													sourceClass: '{$sSourceClassSlashed}',
+													data: JSON.stringify(result)
+												},
+												type: 'POST', // Without POST, this is highly likely to result in 414 Request-URI Too Long
+												success: function(result, status, xhr) {
+													
+													// Send statistics from iTop to news source (just try, it may fail if the Request-URI becomes too long).
+													$.ajax({
+														url: '{$sNewsUrl}',
+														dataType: 'jsonp',
+														data: {
+															operation: 'report_read_statistics',
+															api_version: '{$sApiVersion}',
+															payload: result.payload
+														},
+														type: 'GET',
+														crossDomain: true,
+														jsonpCallback: '{$sKeyName}',
+														contentType: 'application/json; charset=utf-8',
+														success: function (result, status, xhr) {
+															
+															// Doesn't matter
+															
+														}
+														
+													});
+													
+												}
+										});
+										
 									},
 									error: function (xhr, status, error) {
-										console.log('Result: ' + status + ' ' + error + ' ' + xhr.status + ' ' + xhr.statusText);
+										console.log('Result for news source {$sThirdPartyName}: ' + status + ' ' + error + ' ' + xhr.status + ' ' + xhr.statusText);
 									}
 								});
 
