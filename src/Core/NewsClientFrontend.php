@@ -50,7 +50,8 @@ JS;
 						// Check if necessary to add
 							
 							$sLastRetrieved = '1970-01-01 00:00:00';
-							$sKeyName = 'news_'. preg_replace('/[^a-zA-Z0-9]+/', '', $sSourceClass::GetThirdPartyName());
+							$sThirdPartyName = $sSourceClass::GetThirdPartyName();
+							$sKeyName = 'news_'. preg_replace('/[^a-zA-Z0-9]+/', '', $sThirdPartyName);
 							
 							$oSetLastRetrieved->Rewind();
 							while($oLastRetrieved = $oSetLastRetrieved->Fetch()) {
@@ -74,36 +75,38 @@ JS;
 						// Build call to external news source
 						// -
 						
-						$aPayload = NewsClient::GetPayload($sSourceClass, $sOperation);
-						$sNewsUrl = $sSourceClass::GetUrl();
-						
-						$aData = [
-							'operation' => $sOperation,
-							'api_version' => NewsRoomHelper::DEFAULT_API_VERSION,
-							'payload' => base64_encode(json_encode($aPayload))
-						];
-						
-						$sData = json_encode($aData);
+							$aPayload = NewsClient::GetPayload($sSourceClass, $sOperation);
+							$sNewsUrl = $sSourceClass::GetUrl();
+							
+							$aData = [
+								'operation' => $sOperation,
+								'api_version' => NewsRoomHelper::DEFAULT_API_VERSION,
+								'payload' => base64_encode(json_encode($aPayload)),
+								'callback' => $sKeyName
+							];
+							
+							$sData = json_encode($aData);
 						
 						// - Add call to external news source
 						// - Add call back method to current iTop environment, make sure call back function exists
 						
-						$sCode .=
+							$sCode .=
 <<<JS
-							$.ajax({
-								url: '{$sNewsUrl}',
-								dataType: 'jsonp',
-								data: {$sData},
-								type: 'GET',
-								jsonpCallback: '{$sKeyName}',
-								contentType: 'application/json; charset=utf-8',
-								success: function (result, status, xhr) {
-									console.log(result);
-								},
-								error: function (xhr, status, error) {
-									console.log('Result: ' + status + ' ' + error + ' ' + xhr.status + ' ' + xhr.statusText);
-								}
-							});
+								$.ajax({
+									url: '{$sNewsUrl}',
+									dataType: 'jsonp',
+									data: {$sData},
+									type: 'GET',
+									jsonpCallback: '{$sKeyName}',
+									contentType: 'application/json; charset=utf-8',
+									success: function (result, status, xhr) {
+										console.log('{$sThirdPartyName}');
+										console.log(result);
+									},
+									error: function (xhr, status, error) {
+										console.log('Result: ' + status + ' ' + error + ' ' + xhr.status + ' ' + xhr.statusText);
+									}
+								});
 
 JS;
 						

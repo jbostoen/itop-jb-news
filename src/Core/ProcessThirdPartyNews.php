@@ -43,8 +43,9 @@ class ProcessThirdPartyNews implements iBackgroundProcess {
 		
 		try {
 			
-			NewsClient::RetrieveFromRemoteServer($this);
-			NewsClient::PostToRemoteServer($this);
+			NewsClient::SetBackgroundProcess($this); // Necessary for tracing
+			NewsClient::RetrieveFromRemoteServer();
+			NewsClient::PostToRemoteServer();
 			
 		}
 		catch(Exception $e) {
@@ -65,7 +66,7 @@ class ProcessThirdPartyNews implements iBackgroundProcess {
 	 */
 	public function Trace($sMessage, $sType = 'info') {
 		
-		// Nothing
+		// Output info in the cron log.
 		echo $sMessage.PHP_EOL;
 		
 	}

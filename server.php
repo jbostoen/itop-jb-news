@@ -35,6 +35,7 @@ use \jb_itop_extensions\NewsProvider\NewsRoomWebPage;
 use \jb_itop_extensions\NewsProvider\NewsServer;
 use \jb_itop_extensions\NewsProvider\NewsRoomHelper;
 
+
 try {
 	
 	
@@ -181,7 +182,7 @@ try {
 					
 				}
 
-				$sCallBackMethod = utils::ReadParam('callback', '', false, 'variable_name');
+				$sCallBackMethod = utils::ReadParam('callback', '', false, 'parameter');
 				if($sCallBackMethod != '') {
 
 					$sOutput = $sCallBackMethod.'('.$sOutput.');';
@@ -201,6 +202,13 @@ try {
 		
 			// Read statistics to be stored somewhere. 
 			// For now, just ignore.
+			$oPage->add('[]');
+			break;
+			
+		case 'post_messages_for_instance':
+		
+			// Validate if this is a known third-party name.
+		
 			$oPage->add('[]');
 			break;
 			

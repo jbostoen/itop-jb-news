@@ -73,6 +73,9 @@
 	 */
 	abstract class NewsClient {
 		
+		/** @var \ProcessThirdPartyNews Scheduled background process (used for tracing only).
+		public static $oBackgroundProcess = null;
+		
 		/** @var \Array $aCachedPayloads used to cache some payloads which are the same for multiple news sources. */
 		public static $aCachedPayloads = [];
 		
@@ -195,17 +198,15 @@
 		}
 		
 		/**
-		 * Gets all the relevant messages for this instance
-		 *
-		 * @param \ProcessThirdPartyNews $oProcess Scheduled background process
+		 * Gets all the relevant messages for this instance.
 		 *
 		 * @return void
 		 */
-		public static function RetrieveFromRemoteServer(ProcessThirdPartyNews $oProcess) {
+		public static function RetrieveFromRemoteServer() {
 			
 			$sOperation = 'get_messages_for_instance';
 			
-			$oProcess->Trace('. Retrieve messages from remote news sources...');
+			static::Trace('. Retrieve messages from remote news sources...');
 			
 			$sEncryptionLib = static::GetEncryptionLibrary();
 			
@@ -220,297 +221,312 @@
 			
 				foreach($aSources as $sSourceClass) {
 					
-					$sApiResponse = static::DoPost($oProcess, $sSourceClass, $sOperation);
+					$sApiResponse = static::DoPost($sSourceClass, $sOperation);
 					
-					// Assume these messages are in the correct format.
-					// If the format has changed in a backwards not compatible way, the API should simply not return any more messages
-					// (except for one to recommend to upgrade the extension)
-					$aData = json_decode($sApiResponse, true);
+					static::ProcessRetrievedMessages($sApiResponse, $sSourceClass::GetThirdPartyName());
 					
-					// Upon getting invalid data: abort
-					if($aData === null) {
-						$oProcess->Trace('. Invalid data received:');
-						$oProcess->Trace(str_repeat('*', 25));
-						$oProcess->Trace($sApiResponse);
-						$oProcess->Trace(str_repeat('*', 25));
-						return;
-					}
-										
-					$oProcess->Trace('. Response: '.PHP_EOL.json_encode($aData, JSON_PRETTY_PRINT));
-					
-					
-					// Check if modern implementation is in place
-					if(array_key_exists('messages', $aData) == true) {
-						
-						if(array_key_exists('encryption_library', $aData) == true && array_key_exists('signature', $aData) == true) {
-
-							// Check if the server responded in the proper way (e.g. client indicates it supports and expects Sodium: server should return data that can be verified with Sodium)
-							// It could also mean that the extension (or NewsSource class) is out of date
-							if($sEncryptionLib != $aData['encryption_library']) {
-								
-								$oProcess->Trace('. Requested encryption library "'.$sEncryptionLib.'", but the response does not match the requested library.');
-								return;
-						
-							}
-							else {
-								
-								// Implement supported libraries. For now, only Sodium
-								if($sEncryptionLib == 'Sodium') {
-								
-									$aMessages = $aData['messages'];
-									$sSignature = sodium_base642bin($aData['signature'], SODIUM_BASE64_VARIANT_URLSAFE);
-									$sPublicKey = sodium_base642bin($sSourceClass::GetPublicKeySodiumCryptoSign(), SODIUM_BASE64_VARIANT_URLSAFE);
-										
-									// Verify using public key
-									if(sodium_crypto_sign_verify_detached($sSignature, json_encode($aMessages), $sPublicKey)) {
-										
-										// Verified
-										$oProcess->Trace('. Signature is valid.');
-										
-									} 
-									else {
-										
-										$oProcess->Trace('. Unable to verify the signature using the public key for '.$sSourceClass);
-										return;
-										
-									}   
-								
-									
-								}
-								else {
-									
-									$oProcess->Trace('. Unexpected path: suddenly using an unsupported encryption library.');
-									
-								}
-								
-							}
-							
-						}
-						else {
-						
-							// It seems required keys (encryption_library, signature) were missing in the response
-							// It could also mean that the extension (or NewsSource class) is out of date
-							$oProcess->Trace('. Invalid response - encryption_library and signature are missing.');
-							$oProcess->Trace(str_repeat('*', 25));
-							$oProcess->Trace($sApiResponse);
-							$oProcess->Trace(str_repeat('*', 25));
-							return;
-							
-						}
-						
-					}
-					elseif($sEncryptionLib != 'none' && array_key_exists('messages', $aData) == false) {
-						
-						$oProcess->Trace('. Invalid response - messages is missing while a signed response is expected.');
-						return;
-						
-					}
-					elseif($sEncryptionLib == 'none') {
-						
-						// Legacy implementation
-						$aMessages = $aData;
-						
-					}
-					
-					// Only return data for news messages from this source.
-					$sThirdPartyName = $sSourceClass::GetThirdPartyName();
-					
-					// Get messages currently in database for this third party source
-					$oFilterMessages = new DBObjectSearch('ThirdPartyNewsRoomMessage');
-					$oFilterMessages->AddCondition('thirdparty_name', $sThirdPartyName, '=');
-					$oSetMessages = new DBObjectSet($oFilterMessages);
-					
-					$aKnownMessageIds = [];
-					while($oMessage = $oSetMessages->Fetch()) {
-						$aKnownMessageIds[] = $oMessage->Get('thirdparty_message_id');
-					}
-					
-					$aRetrievedMessageIds = [];
-					foreach($aMessages as $aMessage) {
-						
-						$aIcon = $aMessage['icon'];
-						
-						/** @var \ormDocument|null $oDoc Document (image) */
-						$oDoc = null;
-						if($aIcon['data'] != '' && $aIcon['mimetype'] != '' && $aIcon['filename'] != '') {
-							$oDoc = new ormDocument(base64_decode($aIcon['data']), $aIcon['mimetype'], $aIcon['filename']);
-						}
-						
-						// Ensure backward compatibility for client API 1.1.0 getting response from server API 1.0
-						// Note: in real world cases, this shouldn't be a problem; as the server should always take care of this and even prefer to NOT return messages rather than causing issues.
-						if(array_key_exists('target_profiles', $aMessage) == true) {
-							unset($aMessage['target_profiles']);
-							$aMessage['oql'] = 'SELECT User AS u JOIN URP_UserProfile AS up ON up.userid = u.id JOIN Person AS p ON u.contactid = p.id WHERE up.profileid_friendlyname = "Administrator" AND p.status = "active" AND u.status = "enabled"'; // Assume only administrators can see this
-						}
-						
-						if(in_array($aMessage['thirdparty_message_id'], $aKnownMessageIds) == false) {
-							
-							// Enrich
-							$oMessage = MetaModel::NewObject('ThirdPartyNewsRoomMessage', [
-								'thirdparty_name' => $sThirdPartyName,
-								'thirdparty_message_id' => $aMessage['thirdparty_message_id'],
-								'title' => $aMessage['title'],
-								'start_date' => $aMessage['start_date'],
-								'end_date' => $aMessage['end_date'] ?? '',
-								'priority' => $aMessage['priority'],
-								'manually_created' => 'no',
-								
-								// Calls to a server which has not implemented API version 1.1.0 will not return anything.
-								'oql' => $aMessage['oql'] ?? 'SELECT User',
-							]);
-							
-							if($oDoc !== null) {
-								$oMessage->Set('icon', $oDoc);
-							}
-							
-							$oMessage->AllowWrite(true);
-							$iInstanceMsgId = $oMessage->DBInsert();
-							
-							foreach($aMessage['translations_list'] as $aTranslation) {
-
-								$oTranslation = MetaModel::NewObject('ThirdPartyNewsRoomMessageTranslation', [
-									'message_id' => $iInstanceMsgId, // Remap
-									'language' => $aTranslation['language'],
-									'title' => $aTranslation['title'],
-									'text' => $aTranslation['text'],
-									'url' => $aTranslation['url']
-								]);
-								$oTranslation->AllowWrite(true);
-								$oTranslation->DBInsert();
-							
-							}
-							
-						}
-						else {
-							
-							$oSetMessages->Rewind();
-							while($oMessage = $oSetMessages->Fetch()) {
-								
-								if($oMessage->Get('thirdparty_message_id') == $aMessage['thirdparty_message_id']) {
-									
-									// Do not intervene if the message on the current instance was manually created.
-									if($oMessage->Get('manually_created') == 'yes') {
-										continue;
-									}
-									
-									$iInstanceMsgId = $oMessage->GetKey();
-									
-									foreach($aMessage as $sAttCode => $sValue) {
-										
-										switch($sAttCode) {
-											
-											case 'translations_list':
-												
-												// Get translations currently in database
-												$oFilterTranslations = new DBObjectSearch('ThirdPartyNewsRoomMessageTranslation');
-												$oFilterTranslations->AddCondition('message_id', $oMessage->GetKey(), '=');
-												$oSetTranslations = new DBObjectSet($oFilterTranslations);
-												
-												foreach($aMessage['translations_list'] as $aTranslation) {
-													
-													// Looping through this set a couple of times
-													$oSetTranslations->Rewind();
-													
-													while($oTranslation = $oSetTranslations->Fetch()) {
-														
-														if($oTranslation->Get('language') == $aTranslation['language']) {
-															
-															// message_id and language won't change.
-															foreach(['text', 'title', 'url'] as $sAttCode) {
-																
-																$oTranslation->Set($sAttCode, $aTranslation[$sAttCode]);
-																
-															}
-															
-															$oTranslation->AllowWrite(true);
-															$oTranslation->DBUpdate();
-															continue 2; // Continue processing translations_list since this one has been updated (it existed)
-													
-														}
-													
-													}
-													
-													// Translation is new
-													$oTranslation = MetaModel::NewObject('ThirdPartyNewsRoomMessageTranslation', [
-														'message_id' => $iInstanceMsgId, // Remap
-														'language' => $aTranslation['language'],
-														'title' => $aTranslation['title'],
-														'text' => $aTranslation['text'],
-														'url' => $aTranslation['url']
-													]);
-													$oTranslation->AllowWrite(true);
-													$oTranslation->DBInsert();
-												
-													
-												}
-												
-												break;
-											
-											case 'icon':
-											
-												// @todo Check if 'icon' can be null
-												if($oDoc !== null) {
-													$oMessage->Set('icon', $oDoc);
-												}
-												break;
-												
-											default:
-												$oMessage->Set($sAttCode, $sValue ?? '');
-												break;
-										
-										}
-										
-									}
-									
-									$oMessage->AllowWrite(true);
-									$oMessage->DBUpdate();
-									
-								}
-								
-							}
-							
-						}
-						
-						$aRetrievedMessageIds[] = $aMessage['thirdparty_message_id'];
-						
-					}
-					
-					// Check whether message has been pulled
-					$oSetMessages->Rewind();
-					while($oMessage = $oSetMessages->Fetch()) {
-						
-						// Do not intervene if the message on the current instance was manually created.
-						if($oMessage->Get('manually_created') == 'yes') {
-							continue;
-						}
-						
-						if(in_array($oMessage->Get('thirdparty_message_id'), $aRetrievedMessageIds) == false) {
-							$oMessage->DBDelete();
-						}
-						
-					}
-					
-					// Mark as properly processed
-					static::SetLastRetrieved($sThirdPartyName);
-				
 				}
 				
 		}
 		
 		/**
-		 * Send the info back to the news server, such as statistics about (un)read messages.
+		 * Process retrieved messages.
 		 *
-		 * @param \ProcessThirdPartyNews $oProcess Scheduled background process
+		 * @param \String $sApiResponse API response from the news server.
+		 * @param \String $sThirdPartyName Third party name of the news server.
+		 *
+		 * @return void
+		 *
+		 */
+		public static function ProcessRetrievedMessages($sApiResponse, $sThirdPartyName) {
+	
+	
+			// Assume these messages are in the correct format.
+			// If the format has changed in a backwards not compatible way, the API should simply not return any more messages
+			// (except for one to recommend to upgrade the extension)
+			$aData = json_decode($sApiResponse, true);
+			
+			// Upon getting invalid data: abort
+			if($aData === null) {
+				static::Trace('. Invalid data received:');
+				static::Trace(str_repeat('*', 25));
+				static::Trace($sApiResponse);
+				static::Trace(str_repeat('*', 25));
+				return;
+			}
+								
+			static::Trace('. Response: '.PHP_EOL.json_encode($aData, JSON_PRETTY_PRINT));
+			
+			$sEncryptionLib = static::GetEncryptionLibrary();
+			
+			// Check if modern implementation is in place
+			if(array_key_exists('messages', $aData) == true) {
+				
+				if(array_key_exists('encryption_library', $aData) == true && array_key_exists('signature', $aData) == true) {
+
+					// Check if the server responded in the proper way (e.g. client indicates it supports and expects Sodium: server should return data that can be verified with Sodium)
+					// It could also mean that the extension (or NewsSource class) is out of date
+					if($sEncryptionLib != $aData['encryption_library']) {
+						
+						static::Trace('. Requested encryption library "'.$sEncryptionLib.'", but the response does not match the requested library.');
+						return;
+				
+					}
+					else {
+						
+						// Implement supported libraries. For now, only Sodium
+						if($sEncryptionLib == 'Sodium') {
+						
+							$aMessages = $aData['messages'];
+							$sSignature = sodium_base642bin($aData['signature'], SODIUM_BASE64_VARIANT_URLSAFE);
+							$sPublicKey = sodium_base642bin($sSourceClass::GetPublicKeySodiumCryptoSign(), SODIUM_BASE64_VARIANT_URLSAFE);
+								
+							// Verify using public key
+							if(sodium_crypto_sign_verify_detached($sSignature, json_encode($aMessages), $sPublicKey)) {
+								
+								// Verified
+								static::Trace('. Signature is valid.');
+								
+							} 
+							else {
+								
+								static::Trace('. Unable to verify the signature using the public key for '.$sSourceClass);
+								return;
+								
+							}   
+						
+							
+						}
+						else {
+							
+							static::Trace('. Unexpected path: suddenly using an unsupported encryption library.');
+							
+						}
+						
+					}
+					
+				}
+				else {
+				
+					// It seems required keys (encryption_library, signature) were missing in the response
+					// It could also mean that the extension (or NewsSource class) is out of date
+					static::Trace('. Invalid response - encryption_library and signature are missing.');
+					static::Trace(str_repeat('*', 25));
+					static::Trace($sApiResponse);
+					static::Trace(str_repeat('*', 25));
+					return;
+					
+				}
+				
+			}
+			elseif($sEncryptionLib != 'none' && array_key_exists('messages', $aData) == false) {
+				
+				static::Trace('. Invalid response - messages is missing while a signed response is expected.');
+				return;
+				
+			}
+			elseif($sEncryptionLib == 'none') {
+				
+				// Legacy implementation
+				$aMessages = $aData;
+				
+			}
+			
+			// Only return data for news messages from this source.
+			$sThirdPartyName = $sSourceClass::GetThirdPartyName();
+			
+			// Get messages currently in database for this third party source
+			$oFilterMessages = new DBObjectSearch('ThirdPartyNewsRoomMessage');
+			$oFilterMessages->AddCondition('thirdparty_name', $sThirdPartyName, '=');
+			$oSetMessages = new DBObjectSet($oFilterMessages);
+			
+			$aKnownMessageIds = [];
+			while($oMessage = $oSetMessages->Fetch()) {
+				$aKnownMessageIds[] = $oMessage->Get('thirdparty_message_id');
+			}
+			
+			$aRetrievedMessageIds = [];
+			foreach($aMessages as $aMessage) {
+				
+				$aIcon = $aMessage['icon'];
+				
+				/** @var \ormDocument|null $oDoc Document (image) */
+				$oDoc = null;
+				if($aIcon['data'] != '' && $aIcon['mimetype'] != '' && $aIcon['filename'] != '') {
+					$oDoc = new ormDocument(base64_decode($aIcon['data']), $aIcon['mimetype'], $aIcon['filename']);
+				}
+				
+				// Ensure backward compatibility for client API 1.1.0 getting response from server API 1.0
+				// Note: in real world cases, this shouldn't be a problem; as the server should always take care of this and even prefer to NOT return messages rather than causing issues.
+				if(array_key_exists('target_profiles', $aMessage) == true) {
+					unset($aMessage['target_profiles']);
+					$aMessage['oql'] = 'SELECT User AS u JOIN URP_UserProfile AS up ON up.userid = u.id JOIN Person AS p ON u.contactid = p.id WHERE up.profileid_friendlyname = "Administrator" AND p.status = "active" AND u.status = "enabled"'; // Assume only administrators can see this
+				}
+				
+				if(in_array($aMessage['thirdparty_message_id'], $aKnownMessageIds) == false) {
+					
+					// Enrich
+					$oMessage = MetaModel::NewObject('ThirdPartyNewsRoomMessage', [
+						'thirdparty_name' => $sThirdPartyName,
+						'thirdparty_message_id' => $aMessage['thirdparty_message_id'],
+						'title' => $aMessage['title'],
+						'start_date' => $aMessage['start_date'],
+						'end_date' => $aMessage['end_date'] ?? '',
+						'priority' => $aMessage['priority'],
+						'manually_created' => 'no',
+						
+						// Calls to a server which has not implemented API version 1.1.0 will not return anything.
+						'oql' => $aMessage['oql'] ?? 'SELECT User',
+					]);
+					
+					if($oDoc !== null) {
+						$oMessage->Set('icon', $oDoc);
+					}
+					
+					$oMessage->AllowWrite(true);
+					$iInstanceMsgId = $oMessage->DBInsert();
+					
+					foreach($aMessage['translations_list'] as $aTranslation) {
+
+						$oTranslation = MetaModel::NewObject('ThirdPartyNewsRoomMessageTranslation', [
+							'message_id' => $iInstanceMsgId, // Remap
+							'language' => $aTranslation['language'],
+							'title' => $aTranslation['title'],
+							'text' => $aTranslation['text'],
+							'url' => $aTranslation['url']
+						]);
+						$oTranslation->AllowWrite(true);
+						$oTranslation->DBInsert();
+					
+					}
+					
+				}
+				else {
+					
+					$oSetMessages->Rewind();
+					while($oMessage = $oSetMessages->Fetch()) {
+						
+						if($oMessage->Get('thirdparty_message_id') == $aMessage['thirdparty_message_id']) {
+							
+							// Do not intervene if the message on the current instance was manually created.
+							if($oMessage->Get('manually_created') == 'yes') {
+								continue;
+							}
+							
+							$iInstanceMsgId = $oMessage->GetKey();
+							
+							foreach($aMessage as $sAttCode => $sValue) {
+								
+								switch($sAttCode) {
+									
+									case 'translations_list':
+										
+										// Get translations currently in database
+										$oFilterTranslations = new DBObjectSearch('ThirdPartyNewsRoomMessageTranslation');
+										$oFilterTranslations->AddCondition('message_id', $oMessage->GetKey(), '=');
+										$oSetTranslations = new DBObjectSet($oFilterTranslations);
+										
+										foreach($aMessage['translations_list'] as $aTranslation) {
+											
+											// Looping through this set a couple of times
+											$oSetTranslations->Rewind();
+											
+											while($oTranslation = $oSetTranslations->Fetch()) {
+												
+												if($oTranslation->Get('language') == $aTranslation['language']) {
+													
+													// message_id and language won't change.
+													foreach(['text', 'title', 'url'] as $sAttCode) {
+														
+														$oTranslation->Set($sAttCode, $aTranslation[$sAttCode]);
+														
+													}
+													
+													$oTranslation->AllowWrite(true);
+													$oTranslation->DBUpdate();
+													continue 2; // Continue processing translations_list since this one has been updated (it existed)
+											
+												}
+											
+											}
+											
+											// Translation is new
+											$oTranslation = MetaModel::NewObject('ThirdPartyNewsRoomMessageTranslation', [
+												'message_id' => $iInstanceMsgId, // Remap
+												'language' => $aTranslation['language'],
+												'title' => $aTranslation['title'],
+												'text' => $aTranslation['text'],
+												'url' => $aTranslation['url']
+											]);
+											$oTranslation->AllowWrite(true);
+											$oTranslation->DBInsert();
+										
+											
+										}
+										
+										break;
+									
+									case 'icon':
+									
+										// @todo Check if 'icon' can be null
+										if($oDoc !== null) {
+											$oMessage->Set('icon', $oDoc);
+										}
+										break;
+										
+									default:
+										$oMessage->Set($sAttCode, $sValue ?? '');
+										break;
+								
+								}
+								
+							}
+							
+							$oMessage->AllowWrite(true);
+							$oMessage->DBUpdate();
+							
+						}
+						
+					}
+					
+				}
+				
+				$aRetrievedMessageIds[] = $aMessage['thirdparty_message_id'];
+				
+			}
+			
+			// Check whether message has been pulled
+			$oSetMessages->Rewind();
+			while($oMessage = $oSetMessages->Fetch()) {
+				
+				// Do not intervene if the message on the current instance was manually created.
+				if($oMessage->Get('manually_created') == 'yes') {
+					continue;
+				}
+				
+				if(in_array($oMessage->Get('thirdparty_message_id'), $aRetrievedMessageIds) == false) {
+					$oMessage->DBDelete();
+				}
+				
+			}
+			
+			// Mark as properly processed
+			static::SetLastRetrieved($sThirdPartyName);
+					
+		}
+		
+		/**
+		 * Send the info back to the news server, such as statistics about (un)read messages.
 		 *
 		 * @return void
 		 *
 		 * @details This could be used to post statistics to the server.
 		 */
-		public static function PostToRemoteServer(ProcessThirdPartyNews $oProcess) {
+		public static function PostToRemoteServer() {
 			
 			$sOperation = 'report_read_statistics';
 			
-			$oProcess->Trace('. Send statistical (anonymous) data to remote news sources...');
+			static::Trace('. Send statistical (anonymous) data to remote news sources...');
 			
 			// Other hooks may have ran already.
 			// Do not leak sensitive data, OQL queries may contain names etc.
@@ -540,7 +556,7 @@
 				foreach($aSources as $sSourceClass) {
 					
 					// Not interested in the response of this call:
-					static::DoPost($oProcess, $sSourceClass, $sOperation);
+					static::DoPost($sSourceClass, $sOperation);
 		
 				}
 				
@@ -604,7 +620,7 @@
 					// Skip source if temporarily disabled (perhaps advised at some point for some reason, without needing to disable or uninstall the extension completely)
 					$sThirdPartyName = $sClassName::GetThirdPartyName();
 					if(in_array($sThirdPartyName, $aDisabledSources) == true) {
-						$oProcess->Trace('. Source '.$sThirdPartyName.' is disabled.');
+						static::Trace('. Source '.$sThirdPartyName.' is disabled.');
 						continue;
 					}
 					
@@ -783,7 +799,6 @@
 		/**
 		 * Do an HTTP POST request to an end point.
 		 *
-		 * @param \ProcessThirdPartyNews $oProcess Process.
 		 * @param \String $sSourceClass News source class.
 		 * @param \String $sOperation Operation.
 		 *
@@ -791,13 +806,13 @@
 		 *
 		 * @throws \Exception
 		 */
-		public static function DoPost($oProcess, $sSourceClass, $sOperation) {
+		public static function DoPost($sSourceClass, $sOperation) {
 	
 			$aPayload = static::GetPayload($sSourceClass, $sOperation);
 			$sNewsUrl = $sSourceClass::GetUrl();
 					
-			$oProcess->Trace('. Url: '.$sNewsUrl);
-			$oProcess->Trace('. Data: '.json_encode($aPayload));
+			static::Trace('. Url: '.$sNewsUrl);
+			static::Trace('. Data: '.json_encode($aPayload));
 			
 			$sPayload = json_encode($aPayload);
 			
@@ -830,7 +845,7 @@
 			if(curl_errno($cURLConnection)) {
 				
 				$sErrorMessage = curl_error($cURLConnection);
-				$oProcess->Trace('. Error: cURL connection to '.$sNewsUrl.' failed: '.$sErrorMessage);
+				static::Trace('. Error: cURL connection to '.$sNewsUrl.' failed: '.$sErrorMessage);
 				
 				// Abort. Otherwise messages might just get deleted while they shouldn't.
 				return;
@@ -841,6 +856,34 @@
 			
 			return $sApiResponse;
 
+		}
+		
+		/**
+		 * Set BackgroundProcess.
+		 *
+		 * @param \ProcessThirdPartyNews $oProcess Scheduled background process.
+		 *
+		 * @return void
+		 */
+		public static function SetBackgroundProcess(ProcessThirdPartyNews $oProcess) {
+		
+			static::$oBackgroundProcess = $oProcess;
+			
+		}
+		
+		/**
+		 * Trace.
+		 *
+		 * @param \String $sTraceLog Line to add to trace log.
+		 *
+		 * @return void
+		 */
+		public static function Trace($sTraceLog) {
+		
+			if(static::$oBackgroundProcess !== null) {
+				$oBackgroundProcess->Trace($sTraceLog);
+			}
+			
 		}
 		
 	}
