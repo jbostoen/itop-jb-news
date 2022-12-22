@@ -564,7 +564,7 @@
 				$sEncryptionLib = 'none';
 			}
 
-			// This extension only supports  Sodium or none
+			// This extension currently only supports 'Sodium' or 'none'
 			if($sEncryptionLib != 'Sodium') {
 			
 				$bFunctionExists = function_exists('sodium_crypto_box_keypair');
