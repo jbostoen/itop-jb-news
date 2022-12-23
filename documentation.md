@@ -65,6 +65,10 @@ In iTop's configuration file, these settings are available:
 
 * Publish an English translation for each message.
 
+## Privacy / GDPR
+
+* Connections will be made from the iTop server to the news source server.
+* Be aware: upon longer failure, this may be shifted to one of the iTop back-office users. Communicate this to your users.
 
 
 ## Evolution of the API
