@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2022 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.221223
+ * @version     2.7.221226
  *
  */
  
@@ -64,17 +64,14 @@ try {
 		
 		case 'get_messages_for_instance':
 		
-			$sApiVersion = utils::ReadPostedParam('api_version', '1.0', 'transaction_id');
+			$sApiVersion = utils::ReadParam('api_version', '1.0', false, 'transaction_id');
 			
+			// @todo Remove 1.0 when no client uses this anymore.
 			if($sApiVersion === '1.0') {
 				
 				// Deprecated, to be removed soon.
 				$sInstanceHash = utils::ReadParam('instance_hash', '', false, 'transaction_id');
 				$sInstanceHash2 = utils::ReadParam('instance_hash2', '', false, 'transaction_id');
-				
-				$sVersion = utils::ReadParam('api_version', NewsroomHelper::DEFAULT_API_VERSION, false, 'transaction_id');
-				$sAppName = utils::ReadParam('app_name', NewsroomHelper::DEFAULT_APP_NAME, false, 'raw_data');
-				$sAppVersion = utils::ReadParam('app_version', NewsroomHelper::DEFAULT_APP_VERSION, false, 'raw_data');
 				
 				$sEncryptionLib =  utils::ReadParam('encryption_library', 'none', false, 'parameter');
 				
@@ -87,37 +84,11 @@ try {
 				
 				// Since supporting JSONP: the payload may not longer be in a $_POST request.
 				$sPayload = utils::ReadParam('payload', '', false, 'raw_data');
-				
-				if($sPayload == '') {
-					throw new Exception('Missing parameters for operation "get_messages_for_instance". Payload is empty.');
-				}
-				
-				// Payloads can be either encrypted or unencrypted (Sodium not available on the iTop instance which is requesting news messages).
-				// Either way, they are base64 encoded.
-				$sPayload = base64_decode($sPayload);
-				
-				// Doesn't seem regular JSON yet; try unsealing
-				if(substr($sPayload, 0, 1) !== '{') {
-					
-					$sPrivateKey = NewsServer::GetKeySodium('private_key_crypto_box');
-					$sPublicKey = NewsServer::GetKeySodium('public_key_crypto_box');
-					$sPayload = sodium_crypto_box_seal_open($sPayload, sodium_crypto_box_keypair_from_secretkey_and_publickey($sPrivateKey, $sPublicKey));
-					
-					if(substr($sPayload, 0, 1) !== '{') {
-						
-						throw new Exception('Unable to decode payload: '. utils::ReadParam('payload', '', 'raw_data')); // Refer to original data.
-						
-					}
-					
-				}
-				
-				$aPayload = json_decode($sPayload, true);
+				$aPayload = NewsServer::GetPlainPayload($sPayload);
 				
 				$sInstanceHash = $aPayload['instance_hash'];
 				$sInstanceHash2 = $aPayload['instance_hash2'];
-				$sVersion = $aPayload['version'];
-				$sAppName = $aPayload['app_name'];
-				$sAppVersion = $aPayload['app_version'];
+				
 				$sEncryptionLib = $aPayload['encryption_library'];
 				
 			}
@@ -146,8 +117,8 @@ try {
 				// Retrieve messages
 				$aMessages = NewsServer::GetMessagesForInstance();
 				
-				// Run third party processors
-				NewsServer::RunThirdPartyProcessors();
+				// Run third-party processors
+				NewsServer::RunThirdPartyProcessors($sOperation, $aPayload);
 				
 				// Prepare response
 				// Note: the encryption library is appended in the response.
@@ -199,44 +170,57 @@ try {
 			
 		case 'report_read_statistics':
 		
+			$sApiVersion = utils::ReadParam('api_version', '1.0', false, 'transaction_id');
+			
+			// @todo Remove 1.0 when no client uses this anymore.
+			if($sApiVersion === '1.0') {
+				
+				// Avoid warnings
+				$aPayload = [];
+			
+			}
+			else {
+				
+				// Since supporting JSONP: the payload may not longer be in a $_POST request.
+				$sPayload = utils::ReadParam('payload', '', false, 'raw_data');
+				$aPayload = NewsServer::GetPlainPayload($sPayload);
+				
+			}
+			
+			NewsServer::RunThirdPartyProcessors($sOperation, $aPayload);
+
 			// Read statistics to be stored somewhere. 
 			// For now, just ignore.
 			$oPage->add(json_encode([
 			]));
 			break;
 			
-		case 'post_messages_to_instance':
-		
-			$sSourceClass = utils::ReadParam('sourceClass', '', false, 'raw_data');
-			
-			// - Validate if this is a known third-party name.
-				
-				if(class_exists($sSourceClass) === false) {
-					
-					$oPage->add(json_encode([
-						'error' => 'News source does not exist.'
-					]));
-					break;
-					
-				}
-			
-			// - Process response
-		
-				$sApiResponse = utils::ReadParam('data', '', false, 'raw_data');
-					
-				NewsClient::ProcessRetrievedMessages($sApiResponse, $sSourceClass);
-				
-			// - Return data to post to news source ('report_read_statistics')
-			
-				$aPayload = NewsClient::GetPayload($sSourceClass, 'report_read_statistics');
-				$sPayload = NewsClient::PreparePayload($sSourceClass, $aPayload);
-			
-			$oPage->add(json_encode([
-				'payload' => $sPayload
-			]));
-			break;
+
 			
 		default:
+		
+		
+			$sApiVersion = utils::ReadParam('api_version', '1.0', false, 'transaction_id');
+			
+			// @todo Remove 1.0 when no client uses this anymore.
+			if($sApiVersion === '1.0') {
+				
+				// Avoid warnings
+				$aPayload = [];
+			
+			}
+			else {
+				
+				// Since supporting JSONP: the payload may not longer be in a $_POST request.
+				$sPayload = utils::ReadParam('payload', '', false, 'raw_data');
+				$aPayload = NewsServer::GetPlainPayload($sPayload);
+				
+			}
+			
+			NewsServer::RunThirdPartyProcessors($sOperation, $aPayload);
+			
+			
+		
 			$oPage->add(json_encode([
 				'error' => 'Invalid operation: '.$sOperation
 			]));

@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2022 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.221223
+ * @version     2.7.221226
  *
  */
 
@@ -25,12 +25,15 @@
 		
 		/**
 		 * Processes some custom actions.
-		 * Example: keep track of which instances last connected, process custom info from iNewsSource::GetPostParameters()
+		 * Example: keep track of which instances last connected, process custom info from iNewsSource::GetPayload()
+		 *
+		 * @param \String $sOperation Operation.
+		 * @param \Array $aPlainPayload Plain payload.
 		 *
 		 * @return void
 		 *
 		 */
-		public static function Process();
+		public static function Process($sOperation, $aPlainPayload = []);
 		
 	}
 	
@@ -166,11 +169,15 @@
 		}
 		
 		/**
-		 * Processes each third party implementation of iNewsServerProcessor. 
+		 * Processes each third party implementation of iNewsServerProcessor.
+		 * Currently, these run after executing the normal actions for an 'operation'.
+		 *
+		 * @param \String $sOperation Operation.
+		 * @param \Array $aPlainPayload Plain payload.
 		 *
 		 * @return void
 		 */
-		public static function RunThirdPartyProcessors() {
+		public static function RunThirdPartyProcessors($sOperation, $aPlainPayload = []) {
 			
 		
 			// Build list of news sources
@@ -180,9 +187,9 @@
 				foreach(get_declared_classes() as $sClassName) {
 					$aImplementations = class_implements($sClassName);
 					if(in_array('jb_itop_extensions\NewsProvider\iNewsServerProcessor', $aImplementations) == true || in_array('iNewsServerProcessor', class_implements($sClassName)) == true) {
-						if($sClassName::IsEnabled() == true) {
-							$aProcessors[] = $sClassName;
-						}
+						
+						$aProcessors[] = $sClassName;
+						
 					}
 				}
 				
@@ -191,7 +198,7 @@
 				
 				foreach($aProcessors as $sProcessor) {
 					
-					$sProcessor::Process();
+					$sProcessor::Process($sOperation, $aPlainPayload);
 					
 				}
 			
@@ -231,6 +238,44 @@
 			
 			return null;
 					
+		}
+		
+		/**
+		 * Gets the plain payload that was sent to the server.
+		 *
+		 * @param \String $sPayload Payload
+		 *
+		 * @return \Array Hash table.
+		 */
+		public static function GetPlainPayload($sPayload) {
+		
+			if($sPayload == '') {
+				throw new Exception('Payload is empty.');
+			}
+			
+			// Payloads can be either encrypted or unencrypted (Sodium not available on the iTop instance which is requesting news messages).
+			// Either way, they are base64 encoded.
+			$sPayload = base64_decode($sPayload);
+			
+			// Doesn't seem regular JSON yet; try unsealing
+			if(substr($sPayload, 0, 1) !== '{') {
+				
+				$sPrivateKey = static::GetKeySodium('private_key_crypto_box');
+				$sPublicKey = static::GetKeySodium('public_key_crypto_box');
+				$sPayload = sodium_crypto_box_seal_open($sPayload, sodium_crypto_box_keypair_from_secretkey_and_publickey($sPrivateKey, $sPublicKey));
+				
+				if(substr($sPayload, 0, 1) !== '{') {
+					
+					throw new Exception('Unable to decode payload: '. utils::ReadParam('payload', '', 'raw_data')); // Refer to original data.
+					
+				}
+				
+			}
+			
+			$aPayload = json_decode($sPayload, true);
+			
+			return $aPayload;
+			
 		}
 	
 	}

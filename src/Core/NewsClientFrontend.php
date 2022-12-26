@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2022 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.221223
+ * @version     2.7.221226
  *
  */
  
@@ -79,7 +79,7 @@ JS;
 							$aPayload = NewsClient::GetPayload($sSourceClass, $sOperation);
 							$sPayload = NewsClient::PreparePayload($sSourceClass, $aPayload);
 							
-							$sNewsUrl = $sSourceClass::GetUrl();
+							$sServerUrl = $sSourceClass::GetUrl();
 							
 							$sApiVersion = NewsRoomHelper::DEFAULT_API_VERSION;
 							
@@ -97,13 +97,13 @@ JS;
 						
 							// @todo Could become more compact in the future. But assuming there are not many news sources using this extension at this point, not a priority.
 						
-							$sUrl = utils::GetAbsoluteUrlExecPage().'?exec_module='.NewsRoomHelper::MODULE_CODE.'&exec_page=server.php';
+							$sClientUrl = utils::GetAbsoluteUrlExecPage().'?exec_module='.NewsRoomHelper::MODULE_CODE.'&exec_page=index.php';
 							$sSourceClassSlashed = addslashes($sSourceClass);
 						
 							$sCode .=
 <<<JS
 								$.ajax({
-									url: '{$sNewsUrl}',
+									url: '{$sServerUrl}',
 									dataType: 'jsonp',
 									data: {$sData},
 									type: 'GET', // JSONP is GET.
@@ -115,7 +115,7 @@ JS;
 										
 										// Post response from news source to iTop
 										$.ajax({
-												url: '{$sUrl}',
+												url: '{$sClientUrl}',
 												dataType: 'json',
 												data: {
 													operation: 'post_messages_to_instance',
@@ -128,7 +128,7 @@ JS;
 													
 													// Send statistics from iTop to news source (just try, it may fail if the Request-URI becomes too long).
 													$.ajax({
-														url: '{$sNewsUrl}',
+														url: '{$sServerUrl}',
 														dataType: 'jsonp',
 														data: {
 															operation: 'report_read_statistics',

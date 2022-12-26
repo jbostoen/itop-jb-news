@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2022 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.221223
+ * @version     2.7.221226
  *
  */
 
@@ -92,6 +92,7 @@ try {
 			}
 			break;
 
+		case 'post_messages_to_instance':
 		case 'view_all':
 
 			break;
@@ -151,6 +152,37 @@ try {
 			
 			}
 			
+			break;
+
+		case 'post_messages_to_instance':
+		
+			$sSourceClass = utils::ReadParam('sourceClass', '', false, 'raw_data');
+			
+			// - Validate if this is a known third-party name.
+				
+				if(class_exists($sSourceClass) === false) {
+					
+					$oPage->add(json_encode([
+						'error' => 'News source does not exist.'
+					]));
+					break;
+					
+				}
+			
+			// - Process response
+		
+				$sApiResponse = utils::ReadParam('data', '', false, 'raw_data');
+					
+				NewsClient::ProcessRetrievedMessages($sApiResponse, $sSourceClass);
+				
+			// - Return data to post to news source ('report_read_statistics')
+			
+				$aPayload = NewsClient::GetPayload($sSourceClass, 'report_read_statistics');
+				$sPayload = NewsClient::PreparePayload($sSourceClass, $aPayload);
+			
+			$oPage->add(json_encode([
+				'payload' => $sPayload
+			]));
 			break;
 			
 		default:
