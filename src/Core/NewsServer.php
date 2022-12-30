@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2022 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.221226
+ * @version     2.7.221230
  *
  */
 
@@ -180,7 +180,7 @@
 		public static function RunThirdPartyProcessors($sOperation, $aPlainPayload = []) {
 			
 		
-			// Build list of news sources
+			// Build list of processors.
 			// -
 			
 				$aProcessors = [];
@@ -193,7 +193,7 @@
 					}
 				}
 				
-			// Run each processor
+			// Run each processor.
 			// -
 				
 				foreach($aProcessors as $sProcessor) {

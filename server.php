@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2022 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.221226
+ * @version     2.7.221230
  *
  */
  
@@ -64,20 +64,28 @@ try {
 		
 		case 'get_messages_for_instance':
 		
-			$sApiVersion = utils::ReadParam('api_version', '1.0', false, 'transaction_id');
+			$sApiVersion = utils::ReadParam('api_version', '1.0', false, 'raw_data');
 			
 			// @todo Remove 1.0 when no client uses this anymore.
 			if($sApiVersion === '1.0') {
 				
 				// Deprecated, to be removed soon.
-				$sInstanceHash = utils::ReadParam('instance_hash', '', false, 'transaction_id');
-				$sInstanceHash2 = utils::ReadParam('instance_hash2', '', false, 'transaction_id');
+				$sInstanceHash = utils::ReadParam('instance_hash', '', false, 'raw_data');
+				$sInstanceHash2 = utils::ReadParam('instance_hash2', '', false, 'raw_data');
 				
 				$sEncryptionLib =  utils::ReadParam('encryption_library', 'none', false, 'parameter');
 				
-				// Avoid warnings
-				$aPayload = [];
-				$sPayload = 'not applicable';
+				// Create fake payload for iNewsServerProcessor::Process()
+				$aPayload = [
+					'instance_hash' =>utils::ReadParam('instance_hash', '', false, 'raw_data'),
+					'instance_hash2' => utils::ReadParam('instance_hash2', '', false, 'raw_data'),
+					'db_uid' => utils::ReadParam('db_uid', '', false, 'raw_data'),
+					'env' => utils::ReadParam('env', '', false, 'raw_data'),
+					'app_name' => utils::ReadParam('app_name', '', false, 'raw_data'),
+					'app_version' => utils::ReadParam('app_version', '', false, 'raw_data'),
+					'encryption_library' => utils::ReadParam('encryption_library', '', false, 'raw_data'),
+					'api_version' => utils::ReadParam('api_version', '', false, 'raw_data')
+				];
 			
 			}
 			else {
@@ -170,13 +178,22 @@ try {
 			
 		case 'report_read_statistics':
 		
-			$sApiVersion = utils::ReadParam('api_version', '1.0', false, 'transaction_id');
+			$sApiVersion = utils::ReadParam('api_version', '1.0', false, 'raw_data');
 			
 			// @todo Remove 1.0 when no client uses this anymore.
 			if($sApiVersion === '1.0') {
 				
-				// Avoid warnings
-				$aPayload = [];
+				// Create fake payload for iNewsServerProcessor::Process()
+				$aPayload = [
+					'instance_hash' =>utils::ReadParam('instance_hash', '', false, 'raw_data'),
+					'instance_hash2' => utils::ReadParam('instance_hash2', '', false, 'raw_data'),
+					'db_uid' => utils::ReadParam('db_uid', '', false, 'raw_data'),
+					'env' => utils::ReadParam('env', '', false, 'raw_data'),
+					'app_name' => utils::ReadParam('app_name', '', false, 'raw_data'),
+					'app_version' => utils::ReadParam('app_version', '', false, 'raw_data'),
+					'encryption_library' => utils::ReadParam('encryption_library', '', false, 'raw_data'),
+					'api_version' => utils::ReadParam('api_version', '', false, 'raw_data')
+				];
 			
 			}
 			else {
@@ -200,7 +217,7 @@ try {
 		default:
 		
 		
-			$sApiVersion = utils::ReadParam('api_version', '1.0', false, 'transaction_id');
+			$sApiVersion = utils::ReadParam('api_version', '1.0', false, 'raw_data');
 			
 			// @todo Remove 1.0 when no client uses this anymore.
 			if($sApiVersion === '1.0') {
