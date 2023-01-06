@@ -53,6 +53,7 @@ SetupWebPage::AddModule(
 		//
 		'settings' => array(
 			// Module specific settings go here, if any
+			'trace_log' => false,
 			'enabled' => true,
 			'client' => true,
 			'frequency' => 60,

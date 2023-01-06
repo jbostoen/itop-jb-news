@@ -67,7 +67,9 @@ class ProcessThirdPartyNews implements iBackgroundProcess {
 	public function Trace($sMessage, $sType = 'info') {
 		
 		// Output info in the cron log.
-		echo $sMessage.PHP_EOL;
+		if(MetaModel::GetModuleSetting(static::MODULE_CODE, 'trace_log', false) == true) {
+			echo $sMessage.PHP_EOL;
+		}
 		
 	}
 	

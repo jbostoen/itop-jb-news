@@ -14,6 +14,8 @@
 @include_once('../../../approot.inc.php');
 
 
+use \jb_itop_extensions\NewsProvider\NewsClient;
+
 require_once(APPROOT.'/application/application.inc.php');
 
 // use \DownloadPage;
