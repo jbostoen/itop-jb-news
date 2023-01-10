@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2023 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.230106
+ * @version     2.7.230110
  *
  */
 
@@ -729,7 +729,17 @@
 						
 						// Determine users targeted by the newsroom message (might be restricted because of the global "oql_target_users")
 						
-							$oFilterTargetUsers = DBObjectSearch::FromOQL($oMessage->Get('oql'));
+							try {
+								$oFilterTargetUsers = DBObjectSearch::FromOQL($oMessage->Get('oql'));
+							}
+							catch(Exception $e) {
+
+								// Upon failure (upgrading from an old version where "oql_target_users" is not supported, actually very few instances will be in this case.
+								$oAttDef = MetaModel::GetAttributeDef('ThirdPartyNewsRoomMessage', 'oql_target_users');
+								$oFilterTargetUsers = DBObjectSearch::FromOQL($oAttDef->GetDefaultValue());
+								
+							}
+							
 							$oFilterTargetUsers->AllowAllData();
 							$oSetUsers = new DBObjectSet($oFilterTargetUsers);
 							

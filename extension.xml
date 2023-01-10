@@ -5,8 +5,8 @@
 	<author><![CDATA[Jeffrey Bostoen]]></author>
 	<label><![CDATA[Tools: News client - Jeffrey Bostoen]]></label>
 	<description><![CDATA[Get notified of extensions releases & updates directly in iTop]]></description>
-	<version>2.7.230106</version>
-	<release_date>2023-01-06</release_date>
+	<version>2.7.230110</version>
+	<release_date>2023-01-10</release_date>
 	<version_description><![CDATA[]]></version_description>
 	<itop_version_min>2.7.0</itop_version_min>
 	<status>stable</status>
