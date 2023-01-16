@@ -66,7 +66,7 @@
 		public static function GetMessagesForInstance() {
 			
 			
-			if(utils::ReadParam('api_version', '1.0') == '1.0') {
+			if(utils::ReadParam('api_version', '1.0') === '1.0') {
 				
 				// Deprecated, to be removed soon.
 				$sAppName = utils::ReadParam('app_name', '');
