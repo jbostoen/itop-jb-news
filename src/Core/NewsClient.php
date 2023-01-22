@@ -729,18 +729,19 @@
 						
 						// Determine users targeted by the newsroom message (based on "oql" attribute, but might *also* be restricted because of the global "oql_target_users")
 						
-							try {
-								$oFilterTargetUsers = DBObjectSearch::FromOQL($oMessage->Get('oql'));
-							}
-							catch(Exception $e) {
-
-								// Upon failure (upgrading from an old version where "oql" is not supported, actually very few instances will be in this case.
+							$oFilterTargetUsers = DBObjectSearch::FromOQL($oMessage->Get('oql'));
+							
+							if($oFilterTargetUsers === null) {
+								
+								// Upon failure - likely when upgrading from an old version where "oql" is not supported, actually very few instances will be in this case.
+								// Could also happen when an OQL query turns out to be invalid.
 								$oAttDef = MetaModel::GetAttributeDef('ThirdPartyNewsRoomMessage', 'oql');
 								$oFilterTargetUsers = DBObjectSearch::FromOQL($oAttDef->GetDefaultValue());
 								
 							}
 							
 							$oFilterTargetUsers->AllowAllData();
+							
 							$oSetUsers = new DBObjectSet($oFilterTargetUsers);
 							
 							$aTargetUsers = [];
