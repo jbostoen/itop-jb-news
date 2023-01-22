@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2023 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.230116
+ * @version     2.7.230122
  *
  */
 
@@ -397,7 +397,7 @@ JS
 			// Prepare
 			foreach(['title', 'text', 'url'] as $sAttCode) {
 				
-				$this->Set($sAttCode, MetaModel::ApplyParams($this->Get($sAttCode), $aContextArgs));
+				$oMessage->Set($sAttCode, MetaModel::ApplyParams($this->oMessage($sAttCode), $aContextArgs));
 			
 			}
 		
