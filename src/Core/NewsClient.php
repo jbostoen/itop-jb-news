@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2023 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.230122
+ * @version     2.7.230305
  *
  */
 
@@ -822,7 +822,7 @@
 		 * Do an HTTP POST request to an end point.
 		 *
 		 * @param \String $sSourceClass News source class.
-		 * @param \String $sOperation Operation.
+		 * @param \String $sOperation Operation. Current operations: get_messages_for_instance, report_read_statistics.
 		 *
 		 * @return \String
 		 *

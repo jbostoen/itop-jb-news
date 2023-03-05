@@ -3,12 +3,14 @@
 /**
  * @copyright   Copyright (c) 2019-2023 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.230122
+ * @version     2.7.230305
  *
  */
 
 	namespace jb_itop_extensions\NewsProvider;
 	
+	// iTop internals
+	use \MetaModel;
 	
 	/**
 	 * Class NewsSourceJeffreyBostoen. A news source.
@@ -28,6 +30,14 @@
 		 * @inheritDoc
 		 */
 		public static function GetPayload($sOperation) {
+
+			if($sOperation == 'get_messages_for_instance') {
+			
+				return [
+					'app_root_url' => MetaModel::GetConfig()->Get('app_root_url')
+				];
+				
+			}
 
 			return [];
 			
