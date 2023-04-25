@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2023 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.230305
+ * @version     2.7.230425
  *
  */
 
@@ -345,11 +345,11 @@ JS
 	/**
 	 * Gets translation for current user. Mind that variables/placeholders also get replaced here.
 	 *
-	 * @param \ThirdPartyNewsRoomMessage $oMessage Third party newsroom message
+	 * @param \ThirdPartyNewsRoomMessage $oMessage Third party newsroom message.
 	 *
 	 * @return \ThirdPartyNewsRoomMessageTranslation
 	 */
-	public static function GetTranslationForUser($oMessage) {
+	public static function GetTranslationForUser(ThirdPartyNewsRoomMessage $oMessage) {
 		
 		/** @var \ormLinkSet $oSetTranslations */
 		$oSetTranslations = $oMessage->Get('translations_list');
@@ -363,14 +363,17 @@ JS
 			
 			switch(true) {
 				
-				// Matches user language
+				// Matches user language.
 				case ($oCurrentTranslation->Get('language') == UserRights::GetUserLanguage()):
-					return $oCurrentTranslation;
+					$oTranslation = $oCurrentTranslation;
+				
+					// No need to continue searching. Break switch and while. 
+					break 2;
 					
-				// Text is empty, but English string has been found
+				// Text is empty, but English string has been found.
 				case ($oCurrentTranslation->Get('language') == 'EN US'):
 				
-				// Take first available language if English or user language hasn't been found yet
+				// Take first available language if English or user language hasn't been found yet.
 				case $oTranslation == null:
 					$oTranslation = $oCurrentTranslation;
 					break;
@@ -379,7 +382,7 @@ JS
 			
 		}
 		
-		// Replace variables/placeholders
+		// Now a translation has been selected: replace variables/placeholders.
 		
 			$aContextArgs = [];
 			$oUser = UserRights::GetUserObject();
@@ -397,7 +400,7 @@ JS
 			// Prepare
 			foreach(['title', 'text', 'url'] as $sAttCode) {
 				
-				$oMessage->Set($sAttCode, MetaModel::ApplyParams($this->oMessage($sAttCode), $aContextArgs));
+				$oTranslation->Set($sAttCode, MetaModel::ApplyParams($oTranslation->Get($sAttCode), $aContextArgs));
 			
 			}
 		
