@@ -1,9 +1,9 @@
 <?php
 
 /**
- * @copyright   Copyright (c) 2019-2023 Jeffrey Bostoen
+ * @copyright   Copyright (c) 2019-2024 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.230425
+ * @version     2.7.240527
  *
  */
 
@@ -408,6 +408,8 @@
 				else {
 					
 					$oSetMessages->Rewind();
+
+					/** @var \ThirdPartyNewsRoomMessage $oMessage Newsroom message. */
 					while($oMessage = $oSetMessages->Fetch()) {
 						
 						if($oMessage->Get('thirdparty_message_id') == $aMessage['thirdparty_message_id']) {
@@ -435,6 +437,7 @@
 											// Looping through this set a couple of times
 											$oSetTranslations->Rewind();
 											
+											/** @var \ThirdPartyNewsRoomMessageTranslation $oTranslation A translation for an iTop news message. */
 											while($oTranslation = $oSetTranslations->Fetch()) {
 												
 												if($oTranslation->Get('language') == $aTranslation['language']) {

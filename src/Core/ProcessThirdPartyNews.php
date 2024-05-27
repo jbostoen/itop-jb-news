@@ -1,9 +1,9 @@
 <?php
 
 /**
- * @copyright   Copyright (c) 2019-2023 Jeffrey Bostoen
+ * @copyright   Copyright (c) 2019-2024 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.230425
+ * @version     2.7.240527
  *
  */
 
@@ -12,6 +12,9 @@ namespace jb_itop_extensions\NewsProvider;
 // iTop internals
 use \iBackgroundProcess;
 use \MetaModel;
+
+// Generic
+use \Exception;
 
 /**
  * Class ProcessThirdPartyNews. a background process which pulls news messages from a third party news source.

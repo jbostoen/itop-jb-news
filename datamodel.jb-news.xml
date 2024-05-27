@@ -265,6 +265,8 @@
 					<validation_pattern/>
 					<tracking_level>all</tracking_level>
 				</field>
+				<!-- This must be AttributeText. MarkDown is used to display these messages. -->
+				<!-- So if line breaks or something are needed, just use the MarkDown language. -->
 				<field id="text" xsi:type="AttributeText">
 					<sql>text</sql>
 					<default_value/>
