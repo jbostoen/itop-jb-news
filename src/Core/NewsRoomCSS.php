@@ -3,23 +3,27 @@
 /**
  * @copyright   Copyright (c) 2019-2024 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.240617
+ * @version     2.7.240828
  *
  * Definition of NewsRoomProvider.
  */
 
-	namespace jb_itop_extensions\NewsProvider;
+namespace jb_itop_extensions\NewsProvider;
+
+// iTop internals
+use \AbstractPageUIExtension;
+use \iTopWebPage;
+use \MetaModel;
+
+/**
+ * Class NewsPageUIExtension. Adds SCSS to pages to improve layout of newsroom messages.  
+ * @todo Remove upon deprecating iTop 2.7.
+ */
+
+ if(class_exists('AbstractPageUIBlockExtension') == false) {
+
 	
-	// iTop internals
-	use \AbstractPageUIExtension;
-	use \iTopWebPage;
-	use \MetaModel;
-	
-	/**
-	 * Class NewsPageUIExtension. Adds SCSS to pages to improve layout of newsroom messages.  
-	 * @todo Remove upon deprecating iTop 2.7.
-	 */
-	 class NewsPageUIExtension extends AbstractPageUIExtension {
+	class NewsPageUIExtension extends AbstractPageUIExtension {
 		
 		/**
 		 * @inheritDoc
@@ -30,7 +34,9 @@
 			return '';
 			
 		}
-		
+
 	}
 	
+}
+
 	

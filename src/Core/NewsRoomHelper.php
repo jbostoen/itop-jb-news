@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2024 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     2.7.240617
+ * @version     2.7.240828
  *
  */
 
@@ -61,8 +61,8 @@ class NewsRoomHelper {
 		$oSearch = DBObjectSearch::FromOQL('SELECT ThirdPartyNewsRoomMessage WHERE start_date <= NOW() AND (ISNULL(end_date) OR end_date >= NOW())');
 		$oSearch->AllowAllData();
 		$oSet = new DBObjectSet($oSearch, [
-			'priority' => false, // Higher priority first
-			'start_date' => false, // Most recent publication first
+			'priority' => true, // Lowest number = highest priority.
+			'start_date' => false, // Most recent publication first.
 		]);
 		
 		$oReturnSet = DBObjectSet::FromScratch('ThirdPartyNewsRoomMessage');
@@ -244,7 +244,7 @@ class NewsRoomHelper {
 	 * @throws \OQLException
 	 * @throws \Exception
 	 */
-	public static function MakeAllMessagesPage(NewsRoomWebPage &$oPage) {
+	public static function MakeAllMessagesPage(NewsRoomWebPage $oPage) {
 		
 		$sMessageIconAttCode = 'icon';
 
@@ -286,8 +286,20 @@ class NewsRoomHelper {
 		$sMoreInfo = Dict::S('UI:News:MoreInfo');
 		
 		// Add libraries
-		$oPage->add_linked_script(utils::GetAbsoluteUrlAppRoot().'js/jquery.min.js');
-		$oPage->add_linked_script(utils::GetAbsoluteUrlAppRoot().'js/showdown.min.js');
+		// @todo Only keep the code to support iTop 3.2 when dropping support for older iTop versions.
+		if(method_exists($oPage, 'LinkScriptFromModule') == true) {
+
+			// iTop 3.2+
+			$oPage->LinkScriptFromAppRoot('/js/jquery.min.js');
+			$oPage->LinkScriptFromAppRoot('js/showdown.min.js');
+
+		}
+		else {
+
+			$oPage->add_linked_script(utils::GetAbsoluteUrlAppRoot().'js/jquery.min.js');
+			$oPage->add_linked_script(utils::GetAbsoluteUrlAppRoot().'js/showdown.min.js');
+
+		}
 
 		// Build markup
 		$oPage->add(
@@ -307,14 +319,14 @@ HTML
 		$oPage->add_ready_script(
 <<<JS
 
-			var oShownDownConverter = new showdown.Converter();
-			var aThirdPartyNewsRoomMessages = {$sJsonMessages}
+			let oShownDownConverter = new showdown.Converter();
+			let aThirdPartyNewsRoomMessages = {$sJsonMessages}
 			
 			$.each(aThirdPartyNewsRoomMessages, function(i) {
 				
-				var msg = aThirdPartyNewsRoomMessages[i];
-				var sTitle = oShownDownConverter.makeHtml(msg.title);
-				var sText = oShownDownConverter.makeHtml(msg.text);
+				let msg = aThirdPartyNewsRoomMessages[i];
+				let sTitle = oShownDownConverter.makeHtml(msg.title);
+				let sText = oShownDownConverter.makeHtml(msg.text);
 				
 				$('.newsroom-messages').append(
 					'<div class="newsroom-message" data-url="' + msg.url + '">' +
@@ -421,7 +433,6 @@ JS
 		
 		$sOQLRestricted = MetaModel::GetModuleSetting(static::MODULE_CODE, 'oql_target_users', 'SELECT User');
 		$oFilterRestricted = DBObjectSearch::FromOQL($sOQLRestricted);
-		$sClassRestricted = MetaModel::GetRootClass($oFilterRestricted->GetClass());
 		
 		if($oFilterRestricted->GetClass() != 'User') {
 			throw new Exception('The OQL for "oql_target_users" should return user objects.');
