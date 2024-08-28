@@ -287,7 +287,7 @@ class NewsRoomHelper {
 		
 		// Add libraries
 		// @todo Only keep the code to support iTop 3.2 when dropping support for older iTop versions.
-		if(method_exists($oPage, 'LinkScriptFromModule') == true) {
+		if(method_exists($oPage, 'LinkScriptFromAppRoot') == true) {
 
 			// iTop 3.2+
 			$oPage->LinkScriptFromAppRoot('/js/jquery.min.js');
