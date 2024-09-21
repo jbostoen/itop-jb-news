@@ -31,15 +31,9 @@
 		 */
 		public static function GetPayload($sOperation) {
 
-			if($sOperation == 'get_messages_for_instance') {
-			
-				return [
-					'app_root_url' => MetaModel::GetConfig()->Get('app_root_url')
-				];
-				
-			}
-
-			return [];
+			return [
+				'app_root_url' => MetaModel::GetConfig()->Get('app_root_url')
+			];
 			
 		}
 		

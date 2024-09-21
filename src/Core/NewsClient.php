@@ -626,8 +626,8 @@
 		/**
 		 * Returns the default (essential) payload info.
 		 *
-		 * @param \String $sSourceClass Name of news source class
-		 * @param \String $sOperation Operation
+		 * @param \String $sSourceClass Name of news source class.
+		 * @param \String $sOperation Operation, e.g.: get_messages_for_instance, report_read_statistics.
 		 *
 		 * @return \Array Key/value
 		 *
