@@ -8,7 +8,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'jb-news/3.2.241010',
+	'jb-news/3.2.241108',
 	array(
 		// Identification
 		//
@@ -18,7 +18,7 @@ SetupWebPage::AddModule(
 		// Setup
 		//
 		'dependencies' => array(
-			'itop-welcome-itil/2.4.0 || itop-structure/3.0.0',
+			'itop-structure/3.2.0',
 		),
 		'mandatory' => true,
 		'visible' => true,
@@ -30,7 +30,6 @@ SetupWebPage::AddModule(
 			'model.jb-news.php',
 			'src/Core/NewsClient.php',
 			'src/Core/NewsClientFrontend.php',
-			'src/Core/NewsRoomCSS.php',
 			'src/Core/NewsRoomHelper.php',
 			'src/Core/NewsRoomProvider.php',
 			'src/Core/NewsRoomWebPage.php',

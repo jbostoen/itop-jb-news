@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2024 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.241010
+ * @version     3.2.241108
  *
  */
  
@@ -93,9 +93,10 @@ JS;
 							$sData = json_encode($aData);
 						
 						// - Add call to external news source
-						// - Add call back method to current iTop environment, make sure call back function exists
-						
-							// @todo Could become more compact in the future. But assuming there are not many news sources using this extension at this point, not a priority.
+						// - Add call back method to current iTop environment. Make sure the call back function exists.
+												
+							// @todo Could become more compact in the future. 
+							// But assuming there are not many news sources using this extension at this point, not a priority.
 						
 							$sClientUrl = utils::GetAbsoluteUrlExecPage().'?exec_module='.NewsRoomHelper::MODULE_CODE.'&exec_page=index.php';
 							$sSourceClassSlashed = addslashes($sSourceClass);

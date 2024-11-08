@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2024 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.241010
+ * @version     3.2.241108
  *
  */
 
@@ -147,18 +147,28 @@
 			return $sUserHash;
 			
 		}
+
+		/**
+		 * Returns UID of instance.
+		 * 
+		 * @return string
+		 */
+		public static function GetInstanceUID() {
+		
+			return (string) trim(@file_get_contents(APPROOT . 'data/instance.txt'), "{} \n");
 			
+		}
+
 		/**
 		 * Returns hash of instance.
 		 */
 		public static function GetInstanceHash() {
 		
-			// Note: not retrieving DB UUID for now as it is not of any use for now.
-			$sITopUUID = (string) trim(@file_get_contents(APPROOT . 'data/instance.txt'), "{} \n");
+			$sUid = static::GetInstanceUID();
 
 			// Prepare a unique hash to identify users and instances across all iTops in order to be able for them 
 			// to tell which news they have already read.
-			$sInstanceId = hash('sha256', $sITopUUID);
+			$sInstanceId = hash('sha256', $sUid);
 			
 			return $sInstanceId;
 			

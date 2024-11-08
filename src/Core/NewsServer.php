@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2024 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.241010
+ * @version     3.2.241108
  *
  */
 
@@ -103,8 +103,6 @@ abstract class NewsServer {
 		
 		while($oMessage = $oSetMessages->Fetch()) {
 			
-			// Unfortunately in iTop 2.7 there's no native function to output all field info of an object
-			
 			$aTranslations = [];
 			
 			/** @var \ormLinkSet $oSetTranslations Translations of a message */
@@ -170,8 +168,8 @@ abstract class NewsServer {
 	 * Processes each third party implementation of iNewsServerProcessor.
 	 * Currently, these run after executing the normal actions for an 'operation'.
 	 *
-	 * @param \String $sOperation Operation.
-	 * @param \Array $aPlainPayload Plain payload.
+	 * @param String $sOperation Operation.
+	 * @param Array $aPlainPayload Plain payload.
 	 *
 	 * @return void
 	 */
@@ -205,11 +203,11 @@ abstract class NewsServer {
 	/**
 	 * Returns Sodium private key.
 	 *
-	 * @param \String $sKeyType Should be one of these: private_key_file_crypto_sign , private_key_file_crypto_box
+	 * @param String $sKeyType Should be one of these: private_key_file_crypto_sign , private_key_file_crypto_box
 	 *
-	 * @return \String
+	 * @return String
 	 *
-	 * @throws \Exception
+	 * @throws Exception
 	 */
 	public static function GetKeySodium($sType) {
 		

@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2024 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.241010
+ * @version     3.2.241108
  *
  */
  
@@ -28,10 +28,8 @@ if(defined('ITOP_VERSION') == true && version_compare(ITOP_VERSION, '3.0', '<'))
 require_once(APPROOT.'/application/loginwebpage.class.inc.php');
 
 
-use \jb_itop_extensions\NewsProvider\NewsClient;
-use \jb_itop_extensions\NewsProvider\NewsRoomHelper;
-use \jb_itop_extensions\NewsProvider\NewsRoomWebPage;
-use \jb_itop_extensions\NewsProvider\NewsServer;
+use jb_itop_extensions\NewsProvider\NewsRoomHelper;
+use jb_itop_extensions\NewsProvider\NewsServer;
 
 
 try {
@@ -42,14 +40,7 @@ try {
 	// Check user rights and prompt if needed
 	$sOperation = utils::ReadParam('operation', '', false, 'parameter');
 	
-	if(class_exists('DownloadPage') == true) {
-		// Modern 3.0
-		$oPage = new DownloadPage('');
-	}
-	else {
-		// Legacy 2.7
-		$oPage = new ajax_page('');
-	}
+	$oPage = new DownloadPage('');
 	
 	$oPage->no_cache();
 	$oPage->SetContentType('application/json');
