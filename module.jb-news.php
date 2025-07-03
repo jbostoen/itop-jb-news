@@ -8,11 +8,11 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'jb-news/3.2.241108',
+	'jb-news/3.2.250701',
 	array(
 		// Identification
 		//
-		'label' => 'Feature: Third Party News Provider - Jeffrey Bostoen',
+		'label' => 'Feature: Third-party news client and server',
 		'category' => 'tools',
 
 		// Setup
@@ -24,18 +24,23 @@ SetupWebPage::AddModule(
 		'visible' => true,
 		'auto_select' => true,
 
+		'installer' => 'NewsInstaller',
+
 		// Components
 		//
 		'datamodel' => array(
 			'model.jb-news.php',
-			'src/Core/NewsClient.php',
-			'src/Core/NewsClientFrontend.php',
-			'src/Core/NewsRoomHelper.php',
-			'src/Core/NewsRoomProvider.php',
-			'src/Core/NewsRoomWebPage.php',
-			'src/Core/NewsServer.php',
-			'src/Core/ProcessThirdPartyNews.php',
-			'src/Core/NewsJeffreyBostoen.php',
+			'vendor/autoload.php',
+			// iTop doesn't handle autoloading very well sometimes (e.g. interfaces).
+			'src/JeffreyBostoenExtensions/News/BackgroundProcess.php',
+			'src/JeffreyBostoenExtensions/News/Client.php',
+			'src/JeffreyBostoenExtensions/News/FrontEndReadyScripts.php',
+			'src/JeffreyBostoenExtensions/News/Helper.php',
+			'src/JeffreyBostoenExtensions/News/Provider.php',
+			'src/JeffreyBostoenExtensions/News/JsonPage.php',
+			'src/JeffreyBostoenExtensions/News/Page.php',
+			'src/JeffreyBostoenExtensions/News/Server.php',
+			'src/JeffreyBostoenExtensions/News/SourceJeffreyBostoen.php',
 		),
 		'webservice' => array(),
 		'data.struct' => array(// add your 'structure' definition XML files here,
@@ -69,3 +74,42 @@ SetupWebPage::AddModule(
 );
 
 
+/**
+ * Class NewsInstaller.
+ * 
+ */
+class NewsInstaller extends ModuleInstallerAPI {
+	
+	/**
+	 * @inheritDoc
+	 */
+	public static function BeforeDatabaseCreation(Config $oConfiguration, $sPreviousVersion, $sCurrentVersion) {
+		
+		// Only applies to upgrades.
+		if($sPreviousVersion != '' && version_compare($sPreviousVersion, '3.2.250701', '<')) {
+		
+			try {
+
+				$aMap = [
+					'thirdparty_newsroommessage' => 'news_3rdparty_message',
+					'thirdparty_newsroommessage_translation' => 'news_3rdparty_message_translation',
+					'thirdparty_newsroommessage_translation' => 'news_3rdparty_message_status',
+				];
+
+				foreach($aMap as $sOrigName => $sNewName) {
+
+					// Rename table in DB.
+					static::RenameTableInDB($sOrigName, $sNewName);
+
+				}
+
+			}
+			catch(Exception $e) {
+				// Fail gracefully.
+			}
+			
+		}
+
+	}
+
+}

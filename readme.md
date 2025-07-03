@@ -18,10 +18,13 @@ This extension will show messages in the newsroom related to my iTop extensions 
 ## Cookbook
 
 PHP: 
-* How to add your own news client
+* How to add your own news client.
 
 ## Credits
 
 Heavily based on work by Guillaume Lajarige ([@Molkobain](https://github.com/Molkobain)) and Combodo's iTop Hub Connector.
 
 
+## Team up?
+
+If you just fork this to create your own version: Why not team up on the generic base of this extension? 😁

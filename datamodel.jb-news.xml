@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <itop_design xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.7">
 	<classes>
-		<class id="ThirdPartyNewsRoomMessage" _delta="define">
+		<class id="ThirdPartyNewsMessage" _delta="define">
 			<parent>cmdbAbstractObject</parent>
 			<properties>
 				<category>grant_by_profile</category>
 				<abstract>false</abstract>
-				<db_table>thirdparty_newsroommessage</db_table>
+				<db_table>news_3rdparty_message</db_table>
 				<naming>
 					<attributes>
 						<attribute id="title"/>
@@ -18,6 +18,19 @@
 					</attributes>
 				</reconciliation>
 				<db_final_class_field>finalclass</db_final_class_field>
+				<order>
+					<columns>
+						<column id="start_date" ascending="false"/>
+					</columns>
+				</order>
+				<uniqueness_rules>
+					<rule id="thirdparty_name_message_id">
+						<attributes>
+							<attribute id="thirdparty_name"/>
+							<attribute id="thirdparty_message_id"/>
+						</attributes>
+					</rule>
+				</uniqueness_rules>
 			</properties>
 			<fields>
 				<field id="thirdparty_name" xsi:type="AttributeString">
@@ -27,7 +40,7 @@
 					<validation_pattern/>
 					<tracking_level>all</tracking_level>
 				</field>
-				<!-- Deliberately a string to allow very flexible options in the future -->
+				<!-- Deliberately a string to allow very flexible options in the future. -->
 				<field id="thirdparty_message_id" xsi:type="AttributeString">
 					<sql>thirdparty_message_id</sql>
 					<default_value/>
@@ -85,11 +98,18 @@
 				</field>
 				<field id="oql" xsi:type="AttributeOQL">
 					<sql>oql</sql>
-					<default_value><![CDATA[SELECT User AS u JOIN URP_UserProfile AS up ON up.userid = u.id JOIN Person AS p ON u.contactid = p.id WHERE up.profileid_friendlyname = 'Administrator' AND p.status = 'active' AND u.status = 'enabled']]></default_value>
+					<default_value><![CDATA[
+						SELECT User AS u 
+						JOIN URP_UserProfile AS up ON up.userid = u.id 
+						JOIN Person AS p ON u.contactid = p.id 
+						WHERE 
+							up.profileid_friendlyname = 'Administrator' AND 
+							p.status = 'active' AND u.status = 'enabled'
+					]]></default_value>
 					<is_null_allowed>false</is_null_allowed>
 				</field>
 				<field id="translations_list" xsi:type="AttributeLinkedSet">
-					<linked_class>ThirdPartyNewsRoomMessageTranslation</linked_class>
+					<linked_class>ThirdPartyNewsMessageTranslation</linked_class>
 					<ext_key_to_me>message_id</ext_key_to_me>
 					<edit_mode>actions</edit_mode>
 				</field>
@@ -118,12 +138,12 @@
 					$sOQL = trim($this->Get('oql'));
 					if($sOQL != '') {
 
-						$oFilterUsers = DBObjectSearch::FromOQL($sOQL);
+						$oFilterUsers = DBObjectSearch::FromOQL_AllData($sOQL);
 						$sOQLClass = $oFilterUsers->GetClass();
 						
 						if(MetaModel::GetRootClass($sOQLClass) != 'User') {
 							
-							$this->m_aCheckIssues[] = Dict::Format('Class:ThirdPartyNewsRoomMessage/Check:OQLMustReturnUser', $sOQLClass);
+							$this->m_aCheckIssues[] = Dict::Format('Class:ThirdPartyNewsMessage/Check:OQLMustReturnUser', $sOQLClass);
 							
 						}
 						
@@ -160,7 +180,7 @@
 						<item id="col:col0">
 							<rank>10</rank>
 							<items>
-								<item id="fieldset:ThirdPartyNewsRoomMessage:info">
+								<item id="fieldset:ThirdPartyNewsMessage:Info">
 									<rank>10</rank>
 									<items>
 										<item id="title">
@@ -179,7 +199,7 @@
 						<item id="col:col1">
 							<rank>20</rank>
 							<items>
-								<item id="fieldset:ThirdPartyNewsRoomMessage:publication">
+								<item id="fieldset:ThirdPartyNewsMessage:Publication">
 									<items>
 										<item id="start_date">
 											<rank>20</rank>
@@ -223,12 +243,12 @@
 				</default_search>
 			</presentation>
 		</class>
-		<class id="ThirdPartyNewsRoomMessageTranslation" _delta="define">
+		<class id="ThirdPartyNewsMessageTranslation" _delta="define">
 			<parent>cmdbAbstractObject</parent>
 			<properties>
 				<category>grant_by_profile</category>
 				<abstract>false</abstract>
-				<db_table>thirdparty_newsroommessage_translation</db_table>
+				<db_table>news_3rdparty_message_translation</db_table>
 				<naming>
 					<attributes>
 						<attribute id="title"/>
@@ -252,7 +272,7 @@
 				<!-- Note: this refers to the message_id that has been created by the client; it's NOT the third party message ID -->
 				<field id="message_id" xsi:type="AttributeExternalKey">
 					<sql>message_id</sql>
-					<target_class>ThirdPartyNewsRoomMessage</target_class>
+					<target_class>ThirdPartyNewsMessage</target_class>
 					<is_null_allowed>false</is_null_allowed>
 					<on_target_delete>DEL_AUTO</on_target_delete>
 					<display_style>list</display_style>
@@ -353,13 +373,13 @@
 				</default_search>
 			</presentation>
 		</class>
-		<class id="ThirdPartyMessageReadStatus" _delta="define">
+		<class id="ThirdPartyMessageUserStatus" _delta="define">
 			<is_link>1</is_link>
 			<parent>cmdbAbstractObject</parent>
 			<properties>
 				<category>grant_by_profile</category>
 				<abstract>false</abstract>
-				<db_table>thirdparty_messagereadstatus</db_table>
+				<db_table>news_3rdparty_message_status</db_table>
 				<naming>
 					<attributes>
 						<attribute id="user_id"/>
@@ -388,8 +408,20 @@
 					<sql>message_id</sql>
 					<default_value/>
 					<is_null_allowed>false</is_null_allowed>
-					<target_class>ThirdPartyNewsRoomMessage</target_class>
+					<target_class>ThirdPartyNewsMessage</target_class>
 					<on_target_delete>DEL_AUTO</on_target_delete>
+					<tracking_level>none</tracking_level>
+				</field>
+				<field id="first_shown_date" xsi:type="AttributeDateTime">
+					<sql>first_shown_date</sql>
+					<default_value/>
+					<is_null_allowed>true</is_null_allowed>
+					<tracking_level>none</tracking_level>
+				</field>
+				<field id="last_shown_date" xsi:type="AttributeDateTime">
+					<sql>last_shown_date</sql>
+					<default_value/>
+					<is_null_allowed>true</is_null_allowed>
 					<tracking_level>none</tracking_level>
 				</field>
 				<field id="read_date" xsi:type="AttributeDateTime">
@@ -409,8 +441,14 @@
 						<item id="message_id">
 							<rank>20</rank>
 						</item>
-						<item id="read_date">
+						<item id="first_shown_date">
 							<rank>30</rank>
+						</item>
+						<item id="last_shown_date">
+							<rank>31</rank>
+						</item>
+						<item id="read_date">
+							<rank>40</rank>
 						</item>
 					</items>
 				</details>
@@ -422,8 +460,14 @@
 						<item id="message_id">
 							<rank>20</rank>
 						</item>
-						<item id="read_date">
+						<item id="first_shown_date">
 							<rank>30</rank>
+						</item>
+						<item id="last_shown_date">
+							<rank>31</rank>
+						</item>
+						<item id="read_date">
+							<rank>40</rank>
 						</item>
 					</items>
 				</list>
@@ -435,8 +479,14 @@
 						<item id="message_id">
 							<rank>20</rank>
 						</item>
-						<item id="read_date">
+						<item id="first_shown_date">
 							<rank>30</rank>
+						</item>
+						<item id="last_shown_date">
+							<rank>31</rank>
+						</item>
+						<item id="read_date">
+							<rank>40</rank>
 						</item>
 					</items>
 				</default_search>
@@ -445,11 +495,11 @@
 	</classes>
 	<user_rights>
 		<groups>
-			<group id="ThirdPartyNewsRoomMessage" _delta="define">
+			<group id="ThirdPartyNewsMessage" _delta="define">
 				<classes>
-					<class id="ThirdPartyNewsRoomMessage"/>
-					<class id="ThirdPartyNewsRoomMessageTranslation"/>
-					<class id="ThirdPartyMessageReadStatus"/>
+					<class id="ThirdPartyNewsMessage"/>
+					<class id="ThirdPartyNewsMessageTranslation"/>
+					<class id="ThirdPartyMessageUserStatus"/>
 				</classes>
 			</group>
 		</groups>

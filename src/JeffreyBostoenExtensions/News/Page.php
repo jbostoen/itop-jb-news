@@ -4,18 +4,17 @@
  * @copyright   Copyright (c) 2019-2024 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
  * @version     3.2.241108
- *
  */
 
-namespace jb_itop_extensions\NewsProvider;
+namespace JeffreyBostoenExtensions\News;
 
-// iTop internals
-use \WebPage;
+// iTop internals.
+use Combodo\iTop\Application\WebPage\WebPage;
 
 /**
- * Web page with some associated CSS and scripts (jquery) for a fancier display
+ * Class Page. Web page with some associated CSS and scripts (jQuery) for a fancier display.
  */
-class NewsRoomWebPage extends WebPage {
+class Page extends WebPage {
 	
 	var $m_aReadyScripts;
 	
@@ -44,7 +43,7 @@ class NewsRoomWebPage extends WebPage {
 	public function output() {
 		
 		//$this->set_base($this->m_sRootUrl.'pages/');
-		if(count($this->m_aReadyScripts)>0) {
+		if(count($this->m_aReadyScripts) > 0) {
 			
 			$this->add_script("\$(document).ready(function() {\n".implode("\n", $this->m_aReadyScripts)."\n});");
 			
