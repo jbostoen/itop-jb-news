@@ -8,26 +8,32 @@
 
 namespace JeffreyBostoenExtensions\News;
 
-// iTop internals.
-use Combodo\iTop\Application\WebPage\WebPage;
-
 /**
- * Class Page. Web page with some associated CSS and scripts (jquery) for a fancier display
+ * Class JsonPage. JSON output only.
  */
-class JsonPage extends WebPage {
-	
-	var $m_aReadyScripts;
-	
+class JsonPage {
+
 	/**
 	 * @inheritDoc
 	 */
-	public function __construct($s_title, $bPrintable = false) {
-		
-		parent::__construct($s_title, $bPrintable);
-		$this->m_aReadyScripts = [];
-		$this->no_cache();
-		$this->SetContentType('application/json');
+	public function __construct() {
+
+		// No cache.
+		header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+		header('Cache-Control: post-check=0, pre-check=0', false);
+		header('Pragma: no-cache');
+
+		// JSON.
+		header('Content-type: application/json; charset=utf-8');
 		
 	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function output($sText) {
+		echo $sText;
+	}
+
 	
 }

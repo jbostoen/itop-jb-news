@@ -12,6 +12,7 @@ namespace JeffreyBostoenExtensions\News;
 // iTop internals.
 use iBackofficeReadyScriptExtension;
 use MetaModel;
+use stdClass;
 use utils;
 	
 
@@ -57,21 +58,20 @@ class FrontEndReadyScripts implements iBackofficeReadyScriptExtension {
 				
 				// - Build request to external news source.
 				
-					$aPayload = Client::GetPayload($sSourceClass, $eOperation);
-					$sPayload = Client::PreparePayload($sSourceClass, $aPayload);
+					$oPayload = Client::GetPayload($sSourceClass, $eOperation);
+					$sPayload = Client::PreparePayload($sSourceClass, $oPayload);
 					
 					$sServerUrl = $sSourceClass::GetUrl();
-					
 					$sApiVersion = eApiVersion::v2_0_0->value;
 					
-					$aData = [
-						'operation' => $sOperation,
-						'api_version' => $sApiVersion,
-						'payload' => $sPayload,
-						'callback' => $sKeyName
-					];
+					// - Prepare data to send to the news source.
+					$oData = new stdClass();
+					$oData->operation = $sOperation;
+					$oData->api_version = $sApiVersion;;
+					$oData->payload = $sPayload;
+					$oData->callback = $sKeyName;
 					
-					$sData = json_encode($aData);
+					$sData = json_encode($oData);
 				
 				// - Add HTTP request to external news source.
 				// - Add callback method to current iTop environment. Make sure the call back function exists.

@@ -34,7 +34,7 @@ enum eApiVersion : string {
 
 	case v1_0_0 = '1.0'; // Deprecated.
 	case v1_1_0 = '1.1.0';
-	case v2_0_0 = '1.2.0'; // As of 1st of July, 2025.
+	case v2_0_0 = '2.0.0'; // As of 1st of July, 2025.
 
 }
 

@@ -9,7 +9,7 @@
 
 namespace JeffreyBostoenExtensions\News;
 
-// iTop classes.
+// iTop internals.
 use DBObjectSearch;
 use DBObjectSet;
 use MetaModel;
@@ -17,11 +17,14 @@ use ormDocument;
 use UserRights;
 use utils;
 
-// Generic.
-use Exception;
+// iTop classes.
 use KeyValueStore;
 use ThirdPartyNewsMessage;
 use ThirdPartyNewsMessageTranslation;
+
+// Generic.
+use Exception;
+use stdClass;
 
 /**
  * Interface iSource. Interface to use when implementing news sources.
@@ -29,17 +32,17 @@ use ThirdPartyNewsMessageTranslation;
 interface iSource {
 	
 	/**
-	 * Returns additional data to send to news source.  
-	 * For instance, an API version can be specified here.
+	 * A source can add extra data to the payload that will be sent from the client to the server.
 	 * 
 	 * @param eOperation $eOperation The operation that is being executed.
+	 * @param stdClass $oPayload The payload that will be sent from the client to the server.
 	 * 
 	 * @details Mind that by default certain parameters are already included in the HTTP request to the news source.
 	 * @see Client::GetPayload()
 	 *
 	 * @return array Key/value pairs to send to the news source.
 	 */
-	public static function GetPayload(eOperation $eOperation);
+	public static function SetPayload(eOperation $eOperation, stdClass $oPayload);
 	
 	/**
 	 * Returns the base64 encoded public key for the Sodium implementation (crypto box).  
@@ -149,12 +152,12 @@ abstract class Client {
 	 */
 	public static function StoreKeyValue(string $sNewsSource, string $sSuffix, string $sValue) : void {
 		
-		$sKeyName = static::GetSanitizedNewsSourceName($sNewsSource).'_'.$sSuffix;
+		$sKeyName = static::GetSanitizedNewsSourceName(basename($sNewsSource)).'_'.$sSuffix;
 		
 		/** @var KeyValueStore $oKeyValueStore */
 		$oKeyValueStore = Helper::GetKeyValueStore($sKeyName) ?? MetaModel::NewObject('KeyValueStore', [
 			'namespace' => Helper::MODULE_CODE,
-			'key_name' => $sKeyName.'_'.$sSuffix,
+			'key_name' => $sKeyName,
 		]);
 		$oKeyValueStore->Set('value', $sValue);
 		$oKeyValueStore->DBWrite();
@@ -202,13 +205,13 @@ abstract class Client {
 	 * 
 	 * In case the HTTP response from the news sserver fails to meet the expected format, it will be logged and the process will be aborted gracefully.
 	 *
-	 * @param array $aResponse The HTTP response from the news server.
+	 * @param stdClass $oResponse The HTTP response from the news server.
 	 * @param string $sSourceClass Name of the news source class.
 	 *
 	 * @return void
 	 *
 	 */
-	public static function ProcessRetrievedMessages(array $aResponse, string $sSourceClass) : void {
+	public static function ProcessRetrievedMessages(stdClass $oResponse, string $sSourceClass) : void {
 
 		$sThirdPartyName = $sSourceClass::GetThirdPartyName();
 
@@ -216,28 +219,28 @@ abstract class Client {
 		// If the format has changed in a backwards incompatible way, the API should simply not return any messages.
 		// (except perhaps for one to recommend to upgrade the extension)
 					
-		Helper::Trace('Response: %1$s', PHP_EOL.json_encode($aResponse, JSON_PRETTY_PRINT));
+		Helper::Trace('Response: %1$s', PHP_EOL.json_encode($oResponse, JSON_PRETTY_PRINT));
 		
 		$eCryptographyLib = Helper::GetCryptographyLibrary();
 			
 		// - Check if a valid data structure is in place (API 1.1.0 specification).
 		
-			if(!array_key_exists('messages', $aResponse)) {
+			if(!property_exists($oResponse, 'messages')) {
 
 				Helper::Trace('No messages found.');
 				return;
 
 			}
 
-		$aMessages = $aResponse['messages'];
+		$aMessages = $oResponse->messages;
 
 		// If cryptography was enabled, the HTTP response must contain the same encryption library and a signature.
-		if(array_key_exists('signature', $aResponse) == true) {
+		if(property_exists($oResponse, 'signature') == true) {
 
 			// Implement supported libraries. For now, only Sodium (so this check is currently a bit redundant).
 			if($eCryptographyLib == eCryptographyLibrary::Sodium) {
 			
-				$sSignature = sodium_base642bin($aResponse['signature'], SODIUM_BASE64_VARIANT_URLSAFE);
+				$sSignature = sodium_base642bin($oResponse->signature, SODIUM_BASE64_VARIANT_URLSAFE);
 				$sPublicKey = sodium_base642bin($sSourceClass::GetPublicKeySodiumCryptoSign(), SODIUM_BASE64_VARIANT_URLSAFE);
 					
 				// Verify using public key.
@@ -266,8 +269,8 @@ abstract class Client {
 		
 		// For easy reference, map the messages by their ID.
 		$aRetrievedMessageIds = array_map(
-			function($aMessage) {
-				return $aMessage['thirdparty_message_id'];
+			function($oMessage) {
+				return $oMessage->thirdparty_message_id;
 			},
 			$aMessages
 		);
@@ -278,17 +281,17 @@ abstract class Client {
 		
 		// - Preprocessing (common things for both insert, update).
 
-			foreach($aMessages as &$aMessage) {
+			foreach($aMessages as $oJsonMessage) {
 				
-				$aIcon = $aMessage['icon'];
+				$aIcon = $oJsonMessage->icon;
 				
 				/** @var ormDocument|null $oIcon The specific icon for the news message. */
 				$oIcon = null;
-				if($aIcon['data'] != '' && $aIcon['mimetype'] != '' && $aIcon['filename'] != '') {
-					$oIcon = new ormDocument(base64_decode($aIcon['data']), $aIcon['mimetype'], $aIcon['filename']);
+				if($aIcon->data != '' && $aIcon->mimetype != '' && $aIcon->filename != '') {
+					$oIcon = new ormDocument(base64_decode($aIcon->data), $aIcon->mimetype, $aIcon->filename);
 				}
 
-				$saMessage['icon'] = $oIcon;
+				$oJsonMessage->icon = $oIcon;
 
 			}
 
@@ -322,25 +325,25 @@ abstract class Client {
 					$oMessage->DBDelete();
 				}
 
-				$aMessages[$oMessage->Get('thirdparty_message_id')]['DBObject'] = $oMessage;
+				$aMessages[$oMessage->Get('thirdparty_message_id')]->DBObject = $oMessage;
 				
 			}
 
 		// - Loop through the messages received in the HTTP response to create ThirdPartyNewsMessage objects.
 
-			foreach($aMessages as &$aMessage) {
+			foreach($aMessages as $oJsonMessage) {
 				
 				// - For the ones without a DBObject, create a new one.
 
-					if(!array_key_exists('DBObject', $aMessage)) {
+					if(!property_exists($oJsonMessage, 'DBObject')) {
 						/** @var ThirdPartyNewsMessage $oMessage */
-						$aMessage['DBObject'] = MetaModel::NewObject('ThirdPartyNewsMessage', []);
+						$oJsonMessage->DBObject = MetaModel::NewObject('ThirdPartyNewsMessage', []);
 					}
 					
 				// - Every message (HTTP response) has a ThirdPartyNewsMessage object associated with it now.
 
 					/** @var ThirdPartyNewsMessage $oMessage */
-					$oMessage = $aMessage['DBObject'];
+					$oMessage = $oJsonMessage->DBObject;
 
 				// - Copy the properties to the DBObject.
 				
@@ -348,25 +351,17 @@ abstract class Client {
 					$oMessage->Set('thirdparty_name', $sThirdPartyName);
 
 					// - Otherwise, trust the source.
-					$oMessage->Set('thirdparty_message_id', $aMessage['thirdparty_message_id']);
-					$oMessage->Set('title', $aMessage['title']);
-					$oMessage->Set('start_date', $aMessage['start_date']);
-					$oMessage->Set('end_date', $aMessage['end_date'] ?? '');
-					$oMessage->Set('priority', $aMessage['priority']);
+					$oMessage->Set('thirdparty_message_id', $oJsonMessage->thirdparty_message_id);
+					$oMessage->Set('title', $oJsonMessage->title);
+					$oMessage->Set('start_date', $oJsonMessage->start_date);
+					$oMessage->Set('end_date', $oJsonMessage->end_date ?? '');
+					$oMessage->Set('priority', $oJsonMessage->priority);
 					$oMessage->Set('manually_created', 'no'); 
 					
 					// - Icon.
-					
-						$aIcon = $aMessage['icon'];
 						
-						/** @var ormDocument|null $oIcon The specific icon for the news message. */
-						$oIcon = null;
-						if($aIcon['data'] != '' && $aIcon['mimetype'] != '' && $aIcon['filename'] != '') {
-							$oIcon = new ormDocument(base64_decode($aIcon['data']), $aIcon['mimetype'], $aIcon['filename']);
-						}
-						
-						if($oIcon !== null) {
-							$oMessage->Set('icon', $oIcon);
+						if($oJsonMessage->icon !== null) {
+							$oMessage->Set('icon', $oJsonMessage->icon);
 						}
 
 				// - Save.
@@ -381,8 +376,8 @@ abstract class Client {
 		// - Fetch the existing translations.
 		
 			$aMessageIds = array_map(
-				function($aMessage) {
-					return $aMessage['DBObject']->GetKey();
+				function(stdClass $oJsonMessage) {
+					return $oJsonMessage->DBObject->GetKey();
 				},
 				$aMessages
 			);
@@ -408,38 +403,39 @@ abstract class Client {
 				
 		// - Process all the translations of every message.
 
-			foreach($aMessages as $aMessage) {
+			foreach($aMessages as $oJsonMessage) {
 
 				// - Process each translation.
-				foreach($aMessage['translations_list'] as $aTranslation) {
+				/** @var stdClass $oJsonTranslation */
+				foreach($oJsonMessage->translations_list as $oJsonTranslation) {
 
 					try {
 							
 						// Check if this translation already exists.
 						if(
 							// No translations at all yet for this message.
-							!array_key_exists($aMessage['thirdparty_message_id'], $aExistingTranslations) || 
+							!array_key_exists($oJsonMessage->thirdparty_message_id, $aExistingTranslations) || 
 							// No translation for this specific language yet.
-							!array_key_exists($aTranslation[], $aExistingTranslations[$aMessage['thirdparty_message_id']])
+							!array_key_exists($oTranslation->language, $aExistingTranslations[$oJsonMessage->thirdparty_message_id])
 						) {
 
 							/** @var ThirdPartyNewsMessageTranslation $oTranslation */
 							$oTranslation = MetaModel::NewObject('ThirdPartyNewsMessageTranslation', [
-								'message_id' => $aMessage['DBObject']->GetKey(), // Remap
-								'language' => $aTranslation['language'],
+								'message_id' => $oJsonMessage->DBObject->GetKey(), // Remap
+								'language' => $oJsonTranslation->language,
 							]);
 
 						}
 						else {
 
 							/** @var ThirdPartyNewsMessageTranslation $oTranslation */
-							$oTranslation = $aExistingTranslations[$aMessage['thirdparty_message_id']][$aTranslation['language']];
+							$oTranslation = $aExistingTranslations[$oJsonMessage->thirdparty_message_id][$oJsonTranslation->language];
 
 						}
 
-						$oTranslation->Set('title', $aTranslation['title']);
-						$oTranslation->Set('text', $aTranslation['text']);
-						$oTranslation->Set('url', $aTranslation['url']);
+						$oTranslation->Set('title', $oJsonTranslation->title);
+						$oTranslation->Set('text', $oJsonTranslation->text);
+						$oTranslation->Set('url', $oJsonTranslation->url);
 						$oTranslation->AllowWrite(true);
 						$oTranslation->DBWrite();
 					
@@ -449,8 +445,8 @@ abstract class Client {
 						// Fail silently.
 						// Could be a 'non supported language' issue?
 						Helper::Trace('Failed to process translation for message ID "%1$s" and language "%2$s": %3$s', 
-							$aMessage['DBObject']->GetKey(), 
-							$aTranslation['language'], 
+							$oJsonMessage->DBObject->GetKey(), 
+							$oJsonTranslation->language, 
 							$e->getMessage()
 						);
 
@@ -462,7 +458,7 @@ abstract class Client {
 		
 		// - Save this as a successful execution (even if some messages or translations were not processed, e.g. because of an error).
 		
-			static::StoreKeyValue($sSourceClass, $sThirdPartyName, date('Y-m-d H:i:s'));
+			static::StoreKeyValue($sSourceClass, 'last_retrieval', date('Y-m-d H:i:s'));
 
 	
 				
@@ -542,11 +538,11 @@ abstract class Client {
 	 * @param string $sSourceClass Name of the news source class.
 	 * @param eOperation $eOperation The operation that is being executed.
 	 *
-	 * @return array Key/value
+	 * @return array stdClass The payload.
 	 *
 	 * @details Mind that this is executed over and over for each news source.
 	 */
-	public static function GetPayload(string $sSourceClass, eOperation $eOperation) {
+	public static function GetPayload(string $sSourceClass, eOperation $eOperation) : stdClass {
 		
 		$sNewsUrl = $sSourceClass::GetUrl();
 		
@@ -559,18 +555,18 @@ abstract class Client {
 		
 		$eCryptographyLib = Helper::GetCryptographyLibrary();
 		
-		$aPayload = [
-			'operation' => $eOperation->value,
-			'instance_hash' => $sInstanceHash,
-			'instance_hash2' => $sInstanceHash2,
-			'db_uid' => $sDBUid,
-			'env' =>  MetaModel::GetEnvironment(), // Note: utils::GetCurrentEnvironment() only returns the correct value on the second call in the same sesssion.
-			'app_name' => $sApp,
-			'app_version' => $sVersion,
-			'crypto_lib' => $eCryptographyLib->value,
-			'api_version' => eApiVersion::v2_0_0->value,
-			'token' => static::GetClientToken($sSourceClass)->Get('value'),
-		];
+		/** @var stdClass $oPayload */
+		$oPayload = new stdClass();
+		$oPayload->operation = $eOperation->value;
+		$oPayload->instance_hash = $sInstanceHash;
+		$oPayload->instance_hash2 = $sInstanceHash2;
+		$oPayload->db_uid = $sDBUid;
+		$oPayload->env =  MetaModel::GetEnvironment(); // Note: utils::GetCurrentEnvironment() only returns the correct value on the second call in the same sesssion.
+		$oPayload->app_name = $sApp;
+		$oPayload->app_version = $sVersion;
+		$oPayload->crypto_lib = $eCryptographyLib->value;
+		$oPayload->api_version = eApiVersion::v2_0_0->value;
+		$oPayload->token = static::GetClientToken($sSourceClass)->Get('value');
 		
 		if(strpos($sNewsUrl, '?') !== false) {
 			
@@ -582,7 +578,10 @@ abstract class Client {
 			// and it would also need the originally appended parameters that were sent to 'itop-news.domain.org'.
 			$sParameters = explode('?', $sNewsUrl)[1];
 			parse_str($sParameters, $aParameters);
-			$aPayload = array_merge($aPayload, $aParameters);
+
+			foreach($aParameters as $sKey => $sValue) {
+				$oPayload->{$sKey} = $sValue;
+			}
 			
 		}
 		
@@ -705,31 +704,34 @@ abstract class Client {
 
 			// - Add this info to the payload.
 			
-				$aPayload['read_status'] = [
-					'target_oql_users' => $aExtTargetUsers,
-					'messages' => $aMessages
-				];
+				$oPayload->read_status =  new stdClass();
+				$oPayload->read_status->target_oql_users = $aExtTargetUsers;
+				$oPayload->read_status->messages = $aMessages;
 			
 		}
 		
 		
-		// These are default parameters, which can be overridden or extended by the provider.
-		return array_merge($aPayload, $sSourceClass::GetPayload($eOperation->value));
+		// -These are default parameters, which can be overridden or extended by the provider.
+			$sSourceClass::SetPayload($eOperation, $oPayload);
+
+		// - Return the final payload.
+
+		return $oPayload;
 				
 	}
 	
 	/**
-	 * Prepare payload. The payload gets JSON encoded; then base64 encoded.  
+	 * Prepare the payload: Perform JSON encoding and then base64 encoding.  
 	 * If Sodium is available, the client attempts to encrypt it before sending it to the server.
 	 *
 	 * @param string $sSourceClass Name of the news source class.
-	 * @param array $aPayload Payload to be prepared.
+	 * @param stdClass $oPayload Payload to be prepared.
 	 *
 	 * @return string Binary data
 	 */
-	public static function PreparePayload($sSourceClass, $aPayload) : string {
+	public static function PreparePayload(string $sSourceClass, stdClass $oPayload) : string {
 		
-		$sPayload = json_encode($aPayload);
+		$sPayload = json_encode($oPayload);
 		
 		if(Helper::GetCryptographyLibrary() == eCryptographyLibrary::Sodium) {
 			
@@ -754,21 +756,21 @@ abstract class Client {
 	 * @param string $sSourceClass Name of the news source class.
 	 * @param eOperation $eOperation The operation that is being executed.
 	 *
-	 * @return array|null Null when there is no response (cURL error occurred); otherwise a string.
+	 * @return stdClass|null Null when there is no response (cURL error occurred); otherwise a string.
 	 *
 	 * @throws Exception
 	 */
-	public static function DoPost(string $sSourceClass, eOperation $eOperation) : array|null {
+	public static function DoPost(string $sSourceClass, eOperation $eOperation) : stdClass|null {
 
 		// Unencrypted payload (easier for debugging).
-		$aPayload = static::GetPayload($sSourceClass, $eOperation);
+		$oPayload = static::GetPayload($sSourceClass, $eOperation);
 		$sUrl = $sSourceClass::GetUrl();
 				
 		Helper::Trace('Url: %1$s', $sUrl);
-		Helper::Trace('Data: %1$s', json_encode($aPayload, JSON_PRETTY_PRINT));
+		Helper::Trace('Data: %1$s', json_encode($oPayload, JSON_PRETTY_PRINT));
 		
 		// Prepare the payload.
-		$sPayload = static::PreparePayload($sSourceClass, $aPayload);
+		$sPayload = static::PreparePayload($sSourceClass, $oPayload);
 		
 		$aPostData = [
 			'operation' => $eOperation->value,
@@ -814,10 +816,11 @@ abstract class Client {
 		// - Common behavior for all requests:
 		//   For any valid response, try to decode and save the token.
 
-			$aResponse = json_decode($sApiResponse);
+			/** @var stdClass|null $oResponse */
+			$oResponse = json_decode($sApiResponse);
 
-			if($aResponse !== null) {
-				static::UpdateClientToken($sSourceClass, $aResponse);
+			if($oResponse !== null) {
+				static::UpdateClientToken($sSourceClass, $oResponse);
 			}
 			else {
 
@@ -826,7 +829,7 @@ abstract class Client {
 
 			}
 
-		return $aResponse;
+		return $oResponse;
 
 	}
 
@@ -843,7 +846,7 @@ abstract class Client {
 		// The client token is initially created by the client, and then sent to the news server.
 		// Any third-party news server processors can use this token to identify the client, and send another one back that should be saved by the client.
 		
-		$sKeyName = static::GetSanitizedNewsSourceName($sSourceClass).'_client_token';
+		$sKeyName = static::GetSanitizedNewsSourceName(basename($sSourceClass)).'_client_token';
 
 		/** @var KeyValueStore $oKeyValueStore */
 		$oKeyValueStore = Helper::GetKeyValueStore($sKeyName) ?? MetaModel::NewObject('KeyValueStore', [
@@ -864,24 +867,25 @@ abstract class Client {
 	 * Update the client token for the specified news source.
 	 * 
 	 * @param string $sSourceClass The name of the news source class.
-	 * @param array $aResponse The response from the news source, which should contain a "refresh_token" key.
+	 * @param stdClass $oResponse The response from the news source, which should contain a "refresh_token" key.
 	 *
 	 * @return void
 	 */
-	public static function UpdateClientToken(string $sSourceClass, array $aResponse) {
+	public static function UpdateClientToken(string $sSourceClass, stdClass $oResponse) : void {
 		
 		// If a "refresh_token" was received (and it should be), store it.
 
-		if(array_key_exists('refresh_token', $aResponse) && is_string($aResponse['refresh_token']) && strlen($aResponse['refresh_token']) == (Helper::CLIENT_TOKEN_BYTES * 2)) {
+		if(property_exists($oResponse, 'refresh_token') && is_string($oResponse->refresh_token) && strlen($oResponse->refresh_token) == (Helper::CLIENT_TOKEN_BYTES * 2)) {
 					
 			// Store the refresh token for this news source.
 			// Do so before any other processing can fail; as it may be used to uniquely identify this instance.
-			static::StoreKeyValue($sSourceClass, 'refresh_token', $aResponse['refresh_token']);
+			static::StoreKeyValue($sSourceClass, 'client_token', $oResponse->refresh_token);
 			
 		}
 		else {
 			
-			// No refresh token received, but it was expected.
+			// No refresh token received, while it was expected.
+			// This can simply mean the server (server extension) does not support this feature yet.
 			Helper::Trace('No valid "refresh_token" received from the news source "%1$s".', $sSourceClass);
 			
 		}

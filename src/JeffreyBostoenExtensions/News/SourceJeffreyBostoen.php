@@ -10,6 +10,7 @@ namespace JeffreyBostoenExtensions\News;
 
 // iTop internals
 use MetaModel;
+use stdClass;
 
 /**
  * Class SourceJeffreyBostoen. A news source.
@@ -28,11 +29,9 @@ abstract class SourceJeffreyBostoen implements iSource {
 	/**
 	 * @inheritDoc
 	 */
-	public static function GetPayload($sOperation) {
+	public static function SetPayload(eOperation $eOperation, stdClass $oPayload) {
 
-		return [
-			'app_root_url' => MetaModel::GetConfig()->Get('app_root_url')
-		];
+		$oPayload->app_root_url = MetaModel::GetConfig()->Get('app_root_url');
 		
 	}
 	

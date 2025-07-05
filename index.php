@@ -107,7 +107,7 @@ try {
 				// Prepare response.
 				$sOutput = $sCallback.'('.$sMessagesJSON.')';
 
-				$oPage = new JsonPage('');
+				$oPage = new JsonPage();
 				$oPage->add($sOutput);
 				break;
 
@@ -123,7 +123,7 @@ try {
 				// Prepare response
 				$sOutput = $sCallback.'('.$sMessageCountJSON.')';
 
-				$oPage = new JsonPage('');
+				$oPage = new JsonPage();
 				$oPage->add($sOutput);
 				break;
 
@@ -154,7 +154,7 @@ try {
 
 			case eUserOperation::PostMessagesToInstance:
 				
-				$oPage = new JsonPage('');
+				$oPage = new JsonPage();
 
 				$sSourceClass = utils::ReadParam('sourceClass', '', false, 'raw_data');
 				
@@ -177,8 +177,8 @@ try {
 					
 				// - Return data to post to news source ('report_read_statistics').
 				
-					$aPayload = Client::GetPayload($sSourceClass, eOperation::ReportReadStatistics);
-					$sPayload = Client::PreparePayload($sSourceClass, $aPayload);
+					$oPayload = Client::GetPayload($sSourceClass, eOperation::ReportReadStatistics);
+					$sPayload = Client::PreparePayload($sSourceClass, $oPayload);
 				
 				$oPage->add(json_encode([
 					'payload' => $sPayload

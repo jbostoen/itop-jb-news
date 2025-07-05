@@ -17,6 +17,7 @@ use utils;
 // Generic.
 use Exception;
 use SodiumException;
+use stdClass;
 use ThirdPartyNewsMessage;
 
 /**
@@ -52,13 +53,13 @@ interface iServerExtension {
 	 *
 	 * @param eApiVersion $eApiVersion API version.
 	 * @param eOperation $eOperation Operation.
-	 * @param array $aPlainPayload Plain payload.
-	 * @param array $aResponseData Response data. This is passed by reference, so it can be modified by the processor.
+	 * @param stdClass $oPayload Plain payload. This is received from the client.
+	 * @param stdClass $oResponse Response data. This will be sent to the client.
 	 *
 	 * @return void
 	 *
 	 */
-	public static function Process(eApiVersion $eApiVersion, eOperation $eOperation, array $aPlainPayload = [], array &$aResponseData = []) : void;
+	public static function Process(eApiVersion $eApiVersion, eOperation $eOperation, stdClass $oPayload, stdClass $oResponse) : void;
 	
 }
 
@@ -195,12 +196,12 @@ abstract class Server {
 	 *
 	 * @param eApiVersion, $eApiVersion API version.
 	 * @param eOperation $eOperation Operation.
-	 * @param array $aPlainPayload Plain payload.
-	 * @param array $aResponse The response that will be sent to the client.
+	 * @param stdClass $oPayload Payload (data) from the client.
+	 * @param stdClass $oResponse The response that will be sent to the client.
 	 *
 	 * @return void
 	 */
-	public static function ExecuteThirdPartyServerExtensions(eApiVersion $eApiVersion, eOperation $eOperation, $aPlainPayload = [], &$aResponse) : void {
+	public static function ExecuteThirdPartyServerExtensions(eApiVersion $eApiVersion, eOperation $eOperation, stdClass $oPayload, stdClass $oResponse) : void {
 		
 	
 		// - Build list of processors.
@@ -219,7 +220,7 @@ abstract class Server {
 			
 			foreach($aProcessors as $sProcessor) {
 				
-				$sProcessor::Process($eApiVersion, $eOperation, $aPlainPayload, $aResponse);
+				$sProcessor::Process($eApiVersion, $eOperation, $oPayload, $oResponse);
 				
 			}
 		
@@ -276,12 +277,16 @@ abstract class Server {
 	
 	/**
 	 * Gets (and if necessary decrypts) the payload that was sent to the server.
+	 * 
+	 * 1) Perform base64 decoding on the payload.
+	 * 2) If it's not a JSON structure yet; try decrypting.
+	 * 3) Decode the JSON structure.
 	 *
 	 * @param string $sPayload Payload
 	 *
-	 * @return array Hash table.
+	 * @return stdClass Hash table.
 	 */
-	public static function GetPlainPayload(string $sPayload) : array {
+	public static function GetPlainPayload(string $sPayload) : stdClass {
 	
 		if(trim($sPayload) == '') {
 			Helper::Trace('Payload is empty.');
@@ -290,7 +295,7 @@ abstract class Server {
 
 		Helper::Trace('Received payload: %1$s', $sPayload);
 		
-		// Payloads can be either encrypted or unencrypted (Sodium not available on the iTop instance which is requesting news messages).
+		// Payloads can be either encrypted or unencrypted (Sodium not available on the iTop instance that is requesting news messages).
 		// Either way, they are base64 encoded.
 		$sPayload = base64_decode($sPayload);
 		
@@ -307,16 +312,18 @@ abstract class Server {
 			
 		}
 		
-		$aPayload = json_decode($sPayload, true);
+		$oPayload = json_decode($sPayload);
 
-		if($aPayload === null) {
+		if($oPayload === null) {
 
 			Helper::Trace('Unable to decode the payload. This is probably not JSON.');
 			throw new Exception('Unable to decode the payload. This is probably not JSON.');
 
 		}
+
+		Helper::Trace('Plain payload: %1$s', json_encode($oPayload, JSON_PRETTY_PRINT));
 		
-		return $aPayload;
+		return $oPayload;
 		
 	}
 
