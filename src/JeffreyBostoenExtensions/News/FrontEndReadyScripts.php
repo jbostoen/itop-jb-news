@@ -58,7 +58,7 @@ class FrontEndReadyScripts implements iBackofficeReadyScriptExtension {
 				
 				// - Build request to external news source.
 				
-					$oPayload = Client::GetPayload($sSourceClass, $eOperation);
+					$oPayload = Client::GetPayload($sSourceClass, $eOperation, eOperationMode::Mitm);
 					$sPayload = Client::PreparePayload($sSourceClass, $oPayload);
 					
 					$sServerUrl = $sSourceClass::GetUrl();

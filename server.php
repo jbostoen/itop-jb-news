@@ -92,7 +92,6 @@ try {
 
 	// - Check if the API version is valid.
 	
-		
 		/** @var string $sApiVersion The API version as requested by the client. */
 		$sClientApiVersion = utils::ReadParam('api_version', eApiVersion::v1_0_0->value, false, 'raw_data');
 
@@ -163,9 +162,10 @@ try {
 
 				if(
 					($eClientApiVersion !== eApiVersion::v1_0_0 && $eClientApiVersion !== eApiVersion::v1_1_0) &&
-					!property_exists($oPayload, 'token') || !is_string($oPayload->token) || strlen($oPayload->token) != (Helper::CLIENT_TOKEN_BYTES * 2)) {
+					(!property_exists($oPayload, 'token') || !is_string($oPayload->token) || strlen($oPayload->token) != (Helper::CLIENT_TOKEN_BYTES * 2))
+				) {
 					
-					throw new Exception('Error: Invalid or missing "token" in payload.');
+					throw new Exception('Error: Invalid or missing "token" in payload. This is required for API version "%1$s".', $eClientApiVersion->value);
 					
 				}
 
@@ -179,11 +179,11 @@ try {
 				$bPhpSodiumEnabled = function_exists('sodium_crypto_sign_detached');
 
 				/** @var eCryptographyLibrary $eClientCryptoLib The encryption library, as specified by the client. */
-				$eClientCryptoLib = eCryptographyLibrary::tryFrom($sClientCryptoLib);
+				$eClientCryptoLib = eCryptographyLibrary::tryFrom(strtolower($sClientCryptoLib));
 
 				if($eClientCryptoLib === null) {
 
-					throw new Exception('The client requested an unsupported cryptography library.');
+					throw new Exception(sprintf('The client requested an unsupported cryptography library: "%1$s".', $sClientCryptoLib));
 
 				} 
 				elseif($eClientCryptoLib == eCryptographyLibrary::Sodium && !$bPhpSodiumEnabled) {

@@ -239,8 +239,6 @@ abstract class Helper {
 		$oSet->SetLimit(50);
 
 		$aMessages = [];
-
-		$aApplicableMessages = [ -1];
 		
 		/** @var ThirdPartyNewsMessage $oMessage */
 		while($oMessage = $oSet->Fetch()) {
@@ -493,7 +491,7 @@ abstract class Helper {
 HTML
 		);
 		
-		$sJsonMessages = json_encode($aJsonMessages);
+		$sJsonMessages = json_encode($aJsonMessages, JSON_PRETTY_PRINT);
 
 		
 		$oPage->add_ready_script(
@@ -512,13 +510,13 @@ HTML
 				
 				$('.newsroom-messages').append(`
 					<div class="newsroom-message" data-url="\${msg.url}" data-priority="\${msg.priority}">
-							<div class="newsroom-m-icon"
-								<img src="\${msg.icon}'" alt="Message icon" />
+							<div class="newsroom-m-icon">
+								<img src="\${msg.icon}" alt="Message icon" />
 							</div>
 							<div class="newsroom-m-content">
 								<div class="newsroom-m-title">\${sTitle}</div>
 								<div class="newsroom-m-text">\${sText}</div>
-								<div class="newsroom-m-date"><p>\${msg.start_date}</p></div> +
+								<div class="newsroom-m-date"><p>\${msg.start_date}</p></div>
 								\${sUrl}
 							</div>
 					</div>`
@@ -543,9 +541,9 @@ JS
 	 * 
 	 * @param ThirdPartyNewsMessage $oMessage Third party newsroom message.
 	 *
-	 * @return ThirdPartyNewsMessageTranslation A translation.
+	 * @return ThirdPartyNewsMessageTranslation|null A translation.
 	 */
-	public static function GetTranslationForUser(ThirdPartyNewsMessage $oMessage) : ThirdPartyNewsMessageTranslation {
+	public static function GetTranslationForUser(ThirdPartyNewsMessage $oMessage) : ThirdPartyNewsMessageTranslation|null {
 		
 		/** @var ormLinkSet $oSetTranslations */
 		$oSetTranslations = $oMessage->Get('translations_list');
@@ -581,13 +579,22 @@ JS
 
 		// - Finalize by filling in the placeholders.
 
-			// Now that above a translation has been selected: 
-			// Replace variables/placeholders (such as the default ones for current contact, current user).
-			// Do this for each attribute.
-			foreach(['title', 'text', 'url'] as $sAttCode) {
+			if($oTranslation !== null) {
+
+				// Now that above a translation has been selected: 
+				// Replace variables/placeholders (such as the default ones for current contact, current user).
+				// Do this for each attribute.
+				foreach(['title', 'text', 'url'] as $sAttCode) {
+					
+					$oTranslation->Set($sAttCode, MetaModel::ApplyParams($oTranslation->Get($sAttCode), []));
 				
-				$oTranslation->Set($sAttCode, MetaModel::ApplyParams($oTranslation->Get($sAttCode), []));
-			
+				}
+
+			}
+			else {
+
+				Helper::Trace('Unable to find translation for message ID %1$s.', $oMessage->GetKey());
+
 			}
 		
 		return $oTranslation;

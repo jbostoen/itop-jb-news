@@ -26,6 +26,15 @@ use ThirdPartyNewsMessageTranslation;
 use Exception;
 use stdClass;
 
+
+/**
+ * Enum eOperationMode. The operation mode.
+ */
+enum eOperationMode : string {
+	case Cron = 'cron';
+	case Mitm = 'mitm';
+}
+
 /**
  * Interface iSource. Interface to use when implementing news sources.
  */
@@ -543,12 +552,13 @@ abstract class Client {
 	 *
 	 * @param string $sSourceClass Name of the news source class.
 	 * @param eOperation $eOperation The operation that is being executed.
+	 * @param eOperationMode $eOperationMode The operation mode (e.g. cron, mitm).
 	 *
-	 * @return array stdClass The payload.
+	 * @return stdClass The payload.
 	 *
 	 * @details Mind that this is executed over and over for each news source.
 	 */
-	public static function GetPayload(string $sSourceClass, eOperation $eOperation) : stdClass {
+	public static function GetPayload(string $sSourceClass, eOperation $eOperation, eOperationMode $eOperationMode) : stdClass {
 		
 		$sNewsUrl = $sSourceClass::GetUrl();
 		
@@ -573,6 +583,7 @@ abstract class Client {
 		$oPayload->crypto_lib = $eCryptographyLib->value;
 		$oPayload->api_version = eApiVersion::v2_0_0->value;
 		$oPayload->token = static::GetClientToken($sSourceClass)->Get('value');
+		$oPayload->mode = $eOperationMode->value;
 		
 		if(strpos($sNewsUrl, '?') !== false) {
 			
@@ -769,7 +780,7 @@ abstract class Client {
 	public static function DoPost(string $sSourceClass, eOperation $eOperation) : stdClass|null {
 
 		// Unencrypted payload (easier for debugging).
-		$oPayload = static::GetPayload($sSourceClass, $eOperation);
+		$oPayload = static::GetPayload($sSourceClass, $eOperation, eOperationMode::Cron);
 		$sUrl = $sSourceClass::GetUrl();
 				
 		Helper::Trace('Url: %1$s', $sUrl);

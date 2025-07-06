@@ -17,6 +17,7 @@ use JeffreyBostoenExtensions\News\{
 	Client,
     eApiVersion,
 	eOperation,
+	eOperationMode,
     eUserOperation,
     Helper,
 	JsonPage,
@@ -64,7 +65,7 @@ try {
 
 	// - For the given operation: Check if the required parameters are set.
 		
-		switch($eOperation) {
+		switch($eUserOperation) {
 			
 			case eUserOperation::FetchMessages:
 			case eUserOperation::MarkAllAsRead:
@@ -96,7 +97,7 @@ try {
 
 	// - Execute the requested operation.
 		
-		switch($sOperation) {
+		switch($eUserOperation) {
 			
 			case eUserOperation::FetchMessages:
 			
@@ -108,7 +109,7 @@ try {
 				$sOutput = $sCallback.'('.$sMessagesJSON.')';
 
 				$oPage = new JsonPage();
-				$oPage->add($sOutput);
+				$oPage->output($sOutput);
 				break;
 
 			case eUserOperation::MarkAllAsRead:
@@ -124,7 +125,7 @@ try {
 				$sOutput = $sCallback.'('.$sMessageCountJSON.')';
 
 				$oPage = new JsonPage();
-				$oPage->add($sOutput);
+				$oPage->output($sOutput);
 				break;
 
 			case eUserOperation::ViewAll:
@@ -162,7 +163,7 @@ try {
 					
 					if(class_exists($sSourceClass) === false) {
 						
-						$oPage->add(json_encode([
+						$oPage->output(json_encode([
 							'error' => 'News source does not exist.'
 						]));
 						break;
@@ -177,10 +178,10 @@ try {
 					
 				// - Return data to post to news source ('report_read_statistics').
 				
-					$oPayload = Client::GetPayload($sSourceClass, eOperation::ReportReadStatistics);
+					$oPayload = Client::GetPayload($sSourceClass, eOperation::ReportReadStatistics, eOperationMode::Mitm);
 					$sPayload = Client::PreparePayload($sSourceClass, $oPayload);
 				
-				$oPage->add(json_encode([
+				$oPage->output(json_encode([
 					'payload' => $sPayload
 				]));
 				break;
@@ -188,7 +189,7 @@ try {
 			default:
 
 				$oPage = new WebPage('');
-				$oPage->p('Invalid query.');
+				$oPage->p('Invalid operation.');
 				break;
 		}
 
