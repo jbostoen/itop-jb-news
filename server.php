@@ -161,7 +161,9 @@ try {
 
 			// - Validate if "token" is present.
 
-				if(!property_exists($oPayload, 'token') || !is_string($oPayload->token) || strlen($oPayload->token) != (Helper::CLIENT_TOKEN_BYTES * 2)) {
+				if(
+					($eClientApiVersion !== eApiVersion::v1_0_0 && $eClientApiVersion !== eApiVersion::v1_1_0) &&
+					!property_exists($oPayload, 'token') || !is_string($oPayload->token) || strlen($oPayload->token) != (Helper::CLIENT_TOKEN_BYTES * 2)) {
 					
 					throw new Exception('Error: Invalid or missing "token" in payload.');
 					

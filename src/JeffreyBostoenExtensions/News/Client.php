@@ -281,6 +281,7 @@ abstract class Client {
 		
 		// - Preprocessing (common things for both insert, update).
 
+			/** @var stdClass $oJsonMessage */
 			foreach($aMessages as $oJsonMessage) {
 				
 				$aIcon = $oJsonMessage->icon;
@@ -331,13 +332,18 @@ abstract class Client {
 
 		// - Loop through the messages received in the HTTP response to create ThirdPartyNewsMessage objects.
 
+			/** @var stdClass $oJsonMessage */
 			foreach($aMessages as $oJsonMessage) {
 				
 				// - For the ones without a DBObject, create a new one.
 
 					if(!property_exists($oJsonMessage, 'DBObject')) {
 						/** @var ThirdPartyNewsMessage $oMessage */
+						Helper::Trace('Create new ThirdPartyNewsMessage object for message ID "%1$s".', $oJsonMessage->thirdparty_message_id);
 						$oJsonMessage->DBObject = MetaModel::NewObject('ThirdPartyNewsMessage', []);
+					}
+					else {
+						Helper::Trace('Found existing ThirdPartyNewsMessage object for message ID "%1$s".', $oJsonMessage->thirdparty_message_id);
 					}
 					
 				// - Every message (HTTP response) has a ThirdPartyNewsMessage object associated with it now.
