@@ -309,7 +309,7 @@ abstract class Client {
 				if($sIconRef !== null) {
 
 					$oIconData = $oResponse->icons->{$sIconRef};					
-					$oIcon = new ormDocument($oIconData->data, $oIconData->mimetype, $oIconData->filename);
+					$oIcon = new ormDocument(base64_decode($oIconData->data), $oIconData->mimetype, $oIconData->filename);
 					$oJsonMessage->icon = $oIcon;
 
 				}
