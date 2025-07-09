@@ -172,7 +172,9 @@ try {
 				
 			// - Retrieve messages.
 
-				$aMessages = Server::GetMessagesForInstance();
+				$aMessages = [];
+				$oIconLib = new stdClass();
+				Server::GetMessagesForInstance($eClientApiVersion, $aMessages, $oIconLib);
 
 			// - Validate whether the given encryption/signing is possible.
 
@@ -206,6 +208,7 @@ try {
 						// - The structure will always be the same.
 						$oResponse->crypto_lib = $eClientCryptoLib->value;
 						$oResponse->messages = $aMessages;
+						$oResponse->icons = $oIconLib;
 						// The 'refresh_token' should be set by one iServerExtension.
 
 						break;

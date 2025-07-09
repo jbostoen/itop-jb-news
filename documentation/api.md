@@ -12,7 +12,7 @@ Below you'll find example outputs of a server response to a client that has requ
 Clients offer no backward compatibility.  
 Servers should offer backward compatibility where available, or respond with a non-HTTP 200 status code.
 
-## Version 1.2.0
+## Version 2.0.0
 
 A basic token system (per news source) has been implemented for each operation.   
 Despite "unique" identifiers (database UID, instance UID, environment), a complete environment may have been cloned.  
@@ -23,7 +23,8 @@ This token-based system allows to uniquely identify those instances.
 * This token is immediately saved by the client for the next request.
 * The structure of the data always remains the same now, also when signing is not applicable.
 * `encryption_library` has been renamed to `crypto_lib` and its value is now lowercase.
-
+* Icons are now returned in a seperate block, to avoid duplicates. They're indexed by "ref_md5" where md5 is the hash value of the JSON-encoded data (data, filename, mimetype).  
+  When there are duplicates, this has the advantage of less data to be sent.
 
 In the past, clients could specify a preference (Sodium cryptography) to the server.  
 However, they would still process unsigned responses. 
@@ -55,6 +56,13 @@ The latest version of the client will ignore unsigned responses if cryptography 
 			]
 		}
 	],
+	"icons": {
+		"ref_<md5hash>": {
+			"data": ...,
+			"mimetype": "image/png",
+			"filename": "icon.png"
+		}
+	}
 	"signature": "85e4ZQKJq-Pe-qH0C9XfOt0AoLKLL-t896ATKqEdMd45xwTIon-DxNaNge8MDqv8SHj7W_JcJnUpXZMorN8tAw==",
     "refresh_token": "",
 }

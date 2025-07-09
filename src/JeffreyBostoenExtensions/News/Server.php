@@ -70,31 +70,22 @@ abstract class Server {
 	
 	/**
 	 * Gets all the relevant messages for an instance.
+	 * 
+	 * @param eApiVersion $eApiVersion API version (already validated).
+	 * @param array $aMessages Reference to an array that will be filled with messages (array structure with keys/values for the JSON structure).
+	 * @param stdClass $oIcons An object whose properties will be 'ref_<md5_of_value>', value = stdClass with data, mimetype, filename).
 	 *
-	 * @return array An array of messages in JSON format.
+	 * @return array
 	 */
-	public static function GetMessagesForInstance() : array {
+	public static function GetMessagesForInstance(eApiVersion $eApiVersion, array &$aMessages, stdClass $oIconLib) : void {
+
+		Helper::Trace('Getting messages. API version: %1$s', $eApiVersion->value);
 		
 		// API version 1.0: 
 		// Did not support cryptography (and possibly it was also missing the "api_version" parameter), so the parameter should always be present.
 
 		// API version 1.1.0:
 		// The parameter "api_version" must be included, and set to 1.1.0.
-
-		$eApiVersion = eApiVersion::tryFrom(utils::ReadParam('api_version', eApiVersion::v1_0_0->value));
-
-		if($eApiVersion === null) {
-
-			// Failed to identify an enum. If "api_version" was missing, it would have been set to 1.0.
-			Helper::Trace('The requested API version "%1$s" is not supported by this server.', utils::ReadParam('api_version'));
-			
-			// Fail gracefully.
-			return [];
-
-		}
-
-		
-		
 	
 		// Output all messages with their translations
 		// Theoretically additional filtering could be applied to reduce JSON size;
@@ -115,6 +106,9 @@ abstract class Server {
 		$oSetMessages = new DBObjectSet(DBObjectSearch::FromOQL_AllData($sOQL));
 		
 		$aMessages = [];
+
+		/** @var array $aIcons Key = md5 of the JSON-encoded value; value = filename, mimetype, data of the icon. */
+		$aIcons = [];
 		
 		// - Loop through the messages.
 		/** @var ThirdPartyNewsMessage $oMessage */
@@ -141,6 +135,7 @@ abstract class Server {
 			// - Prepare the icon.
 			
 				$oAttDef = MetaModel::GetAttributeDef('ThirdPartyNewsMessage', 'icon');
+				/** @var array|null $aIcon Null or array with keys data, mimetype, filename (and downloads_count) */
 				$aIcon = $oAttDef->GetForJSON($oMessage->Get('icon'));
 				
 				// Note: all attributes should exist on the ThirdPartyNewsMessage class of the client-side.
@@ -162,12 +157,39 @@ abstract class Server {
 						break;
 						
 					case eApiVersion::v1_1_0:
-					case eApiVersion::v2_0_0:
 					
 						$aMessages[] = [
 							'thirdparty_message_id' => $oMessage->Get('thirdparty_message_id'),
 							'title' => $oMessage->Get('title'),
 							'icon' => $aIcon,
+							'start_date' => $oMessage->Get('start_date'),
+							'end_date' => $oMessage->Get('end_date'),
+							'priority' => $oMessage->Get('priority'),
+							'oql' => $oMessage->Get('oql'),
+							'translations_list' => $aTranslations
+						];
+						break;
+
+					case eApiVersion::v2_0_0:
+
+						$sIconRef = null;
+
+						if($aIcon !== null) {
+							
+							$sIconRef = 'ref_'.md5(json_encode($aIcon));
+
+							// No need to check if it was set.
+							$oIconLib->$sIconRef = new stdClass();
+							$oIconLib->$sIconRef->data = $aIcon['data'];
+							$oIconLib->$sIconRef->mimetype = $aIcon['mimetype'];
+							$oIconLib->$sIconRef->filename = $aIcon['filename'];
+
+						}
+
+						$aMessages[] = [
+							'thirdparty_message_id' => $oMessage->Get('thirdparty_message_id'),
+							'title' => $oMessage->Get('title'),
+							'icon' => $sIconRef,
 							'start_date' => $oMessage->Get('start_date'),
 							'end_date' => $oMessage->Get('end_date'),
 							'priority' => $oMessage->Get('priority'),
@@ -183,8 +205,6 @@ abstract class Server {
 				}
 			
 		}
-		
-		return $aMessages;
 			
 	}
 	

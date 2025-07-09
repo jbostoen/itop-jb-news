@@ -93,7 +93,7 @@ class NewsInstaller extends ModuleInstallerAPI {
 				$aMap = [
 					'thirdparty_newsroommessage' => 'news_3rdparty_message',
 					'thirdparty_newsroommessage_translation' => 'news_3rdparty_message_translation',
-					'thirdparty_newsroommessage_translation' => 'news_3rdparty_message_status',
+					'thirdparty_newsroommessage_readstatus' => 'news_3rdparty_message_status',
 				];
 
 				foreach($aMap as $sOrigName => $sNewName) {

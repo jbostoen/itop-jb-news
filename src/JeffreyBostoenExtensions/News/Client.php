@@ -51,7 +51,7 @@ interface iSource {
 	 *
 	 * @return array Key/value pairs to send to the news source.
 	 */
-	public static function SetPayload(eOperation $eOperation, stdClass $oPayload);
+	public static function SetPayload(eOperation $eOperation, stdClass $oPayload) : void;
 	
 	/**
 	 * Returns the base64 encoded public key for the Sodium implementation (crypto box).  
@@ -60,7 +60,7 @@ interface iSource {
 	 *
 	 * @return string
 	 */
-	public static function GetPublicKeySodiumCryptoBox();
+	public static function GetPublicKeySodiumCryptoBox() : string;
 
 	/**
 	 * Returns the base64 encoded public key for a Sodium implementation (crypto sign).  
@@ -69,7 +69,7 @@ interface iSource {
 	 *
 	 * @return string
 	 */
-	public static function GetPublicKeySodiumCryptoSign();
+	public static function GetPublicKeySodiumCryptoSign() : string;
 	
 	/**
 	 * Returns the name of third party news source.  
@@ -77,13 +77,21 @@ interface iSource {
 	 *
 	 * @return string The name of the third party news source.
 	 */
-	public static function GetThirdPartyName();
+	public static function GetThirdPartyName() : string;
 
 	/**
 	 * Returns the URL of the news source. 
 	 * News will be retrieved from this source.
 	 */
-	public static function GetUrl();
+	public static function GetUrl() : string;
+
+
+	/**
+	 * Returns an SVG logo. (Actual SVG, not a URL).
+	 *
+	 * @return string
+	 */
+	public static function GetLogoSVG() : string;
 
 }
 
@@ -293,15 +301,18 @@ abstract class Client {
 			/** @var stdClass $oJsonMessage */
 			foreach($aMessages as $oJsonMessage) {
 				
-				$aIcon = $oJsonMessage->icon;
+				/** @var string|null $sIconRef */
+				$sIconRef = $oJsonMessage->icon;
 				
 				/** @var ormDocument|null $oIcon The specific icon for the news message. */
-				$oIcon = null;
-				if($aIcon->data != '' && $aIcon->mimetype != '' && $aIcon->filename != '') {
-					$oIcon = new ormDocument(base64_decode($aIcon->data), $aIcon->mimetype, $aIcon->filename);
-				}
+				
+				if($sIconRef !== null) {
 
-				$oJsonMessage->icon = $oIcon;
+					$oIconData = $oResponse->icons->{$sIconRef};					
+					$oIcon = new ormDocument($oIconData->data, $oIconData->mimetype, $oIconData->filename);
+					$oJsonMessage->icon = $oIcon;
+
+				}
 
 			}
 
@@ -375,9 +386,7 @@ abstract class Client {
 					
 					// - Icon.
 						
-						if($oJsonMessage->icon !== null) {
-							$oMessage->Set('icon', $oJsonMessage->icon);
-						}
+						$oMessage->Set('icon', $oJsonMessage->icon);
 
 				// - Save.
 
@@ -404,7 +413,7 @@ abstract class Client {
 
 			/**
 			 * @var array $aExistingTranslations An array in which ThirdPartyNewsMessageTranslation will be stored.  
-			 * First level = third-party message ID,  
+			 * First level = internal message ID,  
 			 * second level = language code,  
 			 * third level = ThirdPartyNewsMessageTranslation object
 			 */
@@ -412,7 +421,8 @@ abstract class Client {
 
 			while($oTranslation = $oSetTranslations->Fetch()) {
 
-				$aExistingTranslations[$oTranslation->Get('thirdparty_message_id')][$oTranslation->Get('language')] = $oTranslation;
+				$sKey = $oTranslation->Get('language').'_'.$oTranslation->Get('message_id');
+				$aExistingTranslations[$sKey] = $oTranslation;
 
 			}
 				
@@ -427,12 +437,9 @@ abstract class Client {
 					try {
 							
 						// Check if this translation already exists.
-						if(
-							// No translations at all yet for this message.
-							!array_key_exists($oJsonMessage->thirdparty_message_id, $aExistingTranslations) || 
-							// No translation for this specific language yet.
-							!array_key_exists($oTranslation->language, $aExistingTranslations[$oJsonMessage->thirdparty_message_id])
-						) {
+						$sKey = $oJsonTranslation->language.'_'.$oJsonMessage->DBObject->GetKey();
+
+						if(!array_key_exists($sKey, $aExistingTranslations)) {
 
 							/** @var ThirdPartyNewsMessageTranslation $oTranslation */
 							$oTranslation = MetaModel::NewObject('ThirdPartyNewsMessageTranslation', [
@@ -444,7 +451,7 @@ abstract class Client {
 						else {
 
 							/** @var ThirdPartyNewsMessageTranslation $oTranslation */
-							$oTranslation = $aExistingTranslations[$oJsonMessage->thirdparty_message_id][$oJsonTranslation->language];
+							$oTranslation = $aExistingTranslations[$sKey];
 
 						}
 

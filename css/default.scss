@@ -102,3 +102,35 @@ h1 {
 h2 {
 	/* font-size: 0.9em; */
 }
+
+.header {
+	background-color: #fcb900;
+	width: 100%;
+	height: 6rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.header-container {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 70%;
+}
+
+.header-logo {
+	width: auto;
+	margin-right: 1rem;
+
+	svg {
+		height: 5rem;
+		width: auto;
+		display: block;
+	}
+}
+
+.header-name {
+	font-family: Lato, sans-serif;
+	font-size: 1.1rem;
+}

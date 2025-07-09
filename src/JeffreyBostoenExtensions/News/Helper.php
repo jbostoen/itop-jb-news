@@ -340,30 +340,45 @@ abstract class Helper {
 	public static function MarkAllMessagesAsReadForUser() : int {
 
 		// @todo Review this. "Mark all" : Really mark all, or just what was shown?
-		
-		// Find the messages that were not yet marked as read.
-		// Mind that a regular user by default has no access, so make sure to allow all data.
-		$oSearch = DBObjectSearch::FromOQL_AllData('
-			SELECT ThirdPartyNewsMessage AS M 
-			WHERE 
-				M.id NOT IN (
+
+		// - Note: Something weird is going on; but the below OQL can not be a subquery in the next OQL?
+			$oFilter = DBObjectSearch::FromOQL_AllData('
+			
 					SELECT ThirdPartyNewsMessage AS M2 
 					JOIN ThirdPartyMessageUserStatus AS UserStatus ON UserStatus.message_id = M2.id 
 					WHERE 
 						UserStatus.user_id = :user_id
-				) 
-				AND M.start_date <= NOW() 
-				AND (
-					ISNULL(M.end_date) = 1 OR 
-					M.end_date >= NOW()
-				)
-		', [
-			'user_id' => UserRights::GetUserId()
-		]);
+			
+			');
+			$oSet = new DBObjectSet($oFilter, [], [
+				'user_id' => UserRights::GetUserId()
+			]);
+			$aExcludedIds = [ -1 ];
+			while($oMessage = $oSet->Fetch()) {
+				$aExcludedIds[] = $oMessage->GetKey();
+			}
+		
+		// Find the messages that were not yet marked as read.
+		// Mind that a regular user by default has no access, so make sure to allow all data.
+			$oFilter = DBObjectSearch::FromOQL_AllData('
+				SELECT ThirdPartyNewsMessage AS M 
+				WHERE 
+					M.id NOT IN (:excluded_ids)
+					AND M.start_date <= NOW() 
+					AND (
+						ISNULL(M.end_date)  OR 
+						M.end_date >= NOW()
+					)
+			');
 
-		$oSetMessages = new DBObjectSet($oSearch);
+			$oSetMessages = new DBObjectSet($oFilter, [], [
+				'excluded_ids' => $aExcludedIds
+			]);
+
 		$iCount = 0;
 		
+		Helper::Trace('Mark %1$s messages (previously unread) as read for user ID "%2$s".', $oSetMessages->Count(), UserRights::GetUserId());
+
 		/** @var ThirdPartyNewsMessage $oMessage */
 		while($oMessage = $oSetMessages->Fetch()) {
 			
@@ -381,10 +396,12 @@ abstract class Helper {
 				
 			}
 			catch(Exception $e) {
-				// Probably too late / duplicate
+				Helper::Trace($e->getMessage());
 			}
 			
 		}
+
+		Helper::Trace('Marked.');
 
 		return $iCount;
 	}
@@ -479,8 +496,24 @@ abstract class Helper {
 		$oPage->LinkScriptFromAppRoot('js/jquery.min.js');
 		$oPage->LinkScriptFromAppRoot('js/showdown.min.js');
 
-		// Build markup
+		// Some day, this should be changed to only show a specific's new source name and logo.
+		$sSourceClass = SourceJeffreyBostoen::class;
+		$sSourceName = $sSourceClass::GetThirdPartyName();
+		$sSourceLogoSvg = $sSourceClass::GetLogoSVG();
+
+		// Build markup.
 		$oPage->add(<<<HTML
+
+<div class="header">
+	<div class="header-container">
+		<div class="header-logo">
+			{$sSourceLogoSvg}
+		</div>
+		<div class="header-name">
+			<h1>{$sSourceName}</h1>
+		</div>
+	</div>
+</div>
 
 <div class="newsroom-all-messages">
 	<h2>{$sLabel}</h2>

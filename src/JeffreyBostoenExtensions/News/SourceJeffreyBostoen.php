@@ -20,7 +20,7 @@ abstract class SourceJeffreyBostoen implements iSource {
 	/**
 	 * @inheritDoc
 	 */
-	public static function GetThirdPartyName() {
+	public static function GetThirdPartyName() : string {
 		
 		return 'Jeffrey Bostoen';
 		
@@ -29,7 +29,7 @@ abstract class SourceJeffreyBostoen implements iSource {
 	/**
 	 * @inheritDoc
 	 */
-	public static function SetPayload(eOperation $eOperation, stdClass $oPayload) {
+	public static function SetPayload(eOperation $eOperation, stdClass $oPayload) : void {
 
 		$oPayload->app_root_url = MetaModel::GetConfig()->Get('app_root_url');
 		
@@ -38,7 +38,7 @@ abstract class SourceJeffreyBostoen implements iSource {
 	/**
 	 * @inheritDoc
 	 */
-	public static function GetUrl() {
+	public static function GetUrl() : string {
 
 		return 'https://itop-news.jeffreybostoen.be';
 	
@@ -48,7 +48,7 @@ abstract class SourceJeffreyBostoen implements iSource {
 	/**
 	 * @inheritDoc
 	 */
-	public static function GetPublicKeySodiumCryptoBox() {
+	public static function GetPublicKeySodiumCryptoBox() : string {
 		
 		return '_MFByYo4dIpQ-Z8j9jy8cwxU4EH5vVXj5HqhVo02PD4=';
 		
@@ -57,11 +57,32 @@ abstract class SourceJeffreyBostoen implements iSource {
 	/**
 	 * @inheritDoc
 	 */
-	public static function GetPublicKeySodiumCryptoSign() {
+	public static function GetPublicKeySodiumCryptoSign() : string {
 		
 		return 'SafJHvlxp3ktweQDbRnkwvm6ih4dru2H3ydvVaA0xSI=';
 		
 	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public static function GetLogoSVG(): string {
+		
+		return trim(<<<SVGXML
+		<svg xmlns="http://www.w3.org/2000/svg" version="1.0" preserveAspectRatio="xMidYMid meet" viewBox="194.09 199.18 634.78 633.64">
+			<g transform="translate(0.000000,1024.000000) scale(0.100000,-0.100000)" fill="#000000" stroke="none">
+			<path d="M4890 8243 c-692 -54 -1396 -357 -1908 -823 -518 -471 -884 -1139 -1001 -1830 -60 -353 -52 -794 20 -1144 83 -399 287 -878 506 -1184 54 -75 43 -80 165 77 45 58 108 139 140 179 32 40 58 77 58 82 0 5 -23 48 -51 97 -184 317 -301 652 -356 1010 -21 138 -24 576 -5 708 60 426 227 848 465 1180 104 145 320 385 334 372 1 -2 -10 -32 -25 -67 l-27 -65 0 -1330 0 -1330 32 -68 c40 -85 119 -169 192 -204 l56 -28 1600 -3 c1774 -3 1655 -7 1762 64 65 42 124 116 155 191 l23 58 0 1320 0 1320 -26 72 c-30 85 -32 86 87 -37 321 -333 566 -804 658 -1265 45 -227 59 -537 35 -781 -20 -208 -80 -470 -155 -673 -42 -113 -165 -370 -223 -465 -23 -36 -41 -71 -41 -77 0 -11 279 -368 303 -388 22 -18 138 159 278 424 145 277 253 600 308 925 61 361 51 816 -25 1160 -243 1089 -984 1948 -2009 2330 -366 136 -728 202 -1095 198 -102 -1 -205 -3 -230 -5z m491 -523 c249 -25 559 -108 807 -216 173 -75 408 -211 506 -291 l29 -24 -29 8 c-16 4 -731 8 -1589 7 -1476 0 -1562 -1 -1594 -18 -60 -32 -23 1 81 71 379 256 856 428 1293 466 95 8 401 6 496 -3z m1234 -787 c30 -10 65 -33 91 -60 79 -81 74 12 74 -1355 0 -1000 -2 -1224 -13 -1251 -22 -50 -65 -96 -121 -125 l-51 -27 -1445 -3 c-1011 -2 -1461 1 -1497 9 -77 15 -141 63 -175 128 l-28 53 0 1222 c0 1206 1 1222 21 1266 33 73 95 128 169 151 14 4 678 8 1476 8 1326 1 1455 0 1499 -16z"/>
+			<path d="M3903 6619 c-121 -23 -204 -122 -205 -243 0 -73 17 -120 66 -174 132 -145 376 -86 432 105 21 71 10 139 -32 202 -32 49 -103 98 -153 107 -20 3 -43 7 -51 9 -8 1 -34 -1 -57 -6z"/>
+			<path d="M4520 5797 c0 -897 1 -881 -62 -953 -46 -52 -101 -76 -173 -77 -134 0 -228 85 -242 219 l-6 53 -170 3 c-137 2 -171 0 -175 -11 -7 -19 14 -148 34 -207 24 -72 88 -166 152 -226 110 -101 236 -148 401 -148 171 0 290 48 407 165 44 44 81 93 97 127 58 123 57 98 57 1020 l0 848 -160 0 -160 0 0 -813z"/>
+			<path d="M5010 5535 l0 -1076 468 4 c510 4 522 5 673 67 184 76 328 232 374 406 32 120 17 282 -35 384 -28 56 -107 138 -178 185 l-64 43 33 18 c46 24 144 119 173 168 33 57 56 128 66 208 22 177 -36 336 -170 469 -87 86 -172 134 -306 171 -75 21 -103 22 -556 26 l-478 3 0 -1076z m904 760 c84 -18 142 -50 194 -111 110 -124 92 -332 -37 -430 -77 -59 -110 -64 -443 -64 l-299 0 2 303 c0 166 3 305 6 310 8 14 503 8 577 -8z m14 -925 c119 -16 193 -65 244 -164 32 -61 31 -174 -2 -240 -33 -64 -116 -139 -188 -168 -54 -21 -72 -23 -354 -26 l-298 -3 0 305 0 306 263 0 c144 0 295 -5 335 -10z"/>
+			<path d="M3215 3632 l-60 -3 -62 -83 c-35 -45 -126 -160 -203 -256 -77 -96 -144 -190 -149 -207 -20 -70 20 -132 99 -153 25 -7 794 -9 2291 -8 2182 3 2255 4 2288 22 45 24 69 53 77 93 8 42 -17 84 -132 223 -47 58 -126 157 -174 220 -49 63 -98 125 -110 137 l-21 23 -1892 -3 c-1041 -1 -1919 -3 -1952 -5z m2322 -211 c28 -17 36 -35 72 -143 35 -109 38 -125 25 -138 -13 -13 -86 -15 -512 -18 -576 -3 -547 -8 -520 79 9 30 26 87 38 127 34 118 10 112 475 112 368 0 392 -1 422 -19z"/>
+			<path d="M3013 2699 c6 -14 127 -116 215 -181 107 -79 299 -196 433 -263 895 -450 1965 -458 2864 -21 175 85 300 159 441 262 114 83 247 191 253 206 2 6 -164 8 -450 6 l-454 -3 -117 -52 c-690 -307 -1465 -306 -2164 3 l-127 56 -448 -3 c-247 -2 -448 -7 -446 -10z"/>
+			</g>
+		</svg>
+		SVGXML);
+
+	}
+
 }
 
 
