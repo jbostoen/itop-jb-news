@@ -1,9 +1,9 @@
 <?php
 
 /**
- * @copyright   Copyright (c) 2019-2024 Jeffrey Bostoen
+ * @copyright   Copyright (c) 2019-2025 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.241010
+ * @version     3.2.250712
  */
 
 namespace JeffreyBostoenExtensions\News;
@@ -531,15 +531,15 @@ HTML
 <<<JS
 
 			let oShownDownConverter = new showdown.Converter();
-			let aThirdPartyNewsMessages = {$sJsonMessages}
+			const aThirdPartyNewsMessages = {$sJsonMessages}
 			
 			$.each(aThirdPartyNewsMessages, function(i) {
 				
-				let msg = aThirdPartyNewsMessages[i];
-				let sTitle = oShownDownConverter.makeHtml(msg.title);
-				let sText = oShownDownConverter.makeHtml(msg.text);
+				const msg = aThirdPartyNewsMessages[i];
+				const sTitle = oShownDownConverter.makeHtml(msg.title);
+				const sText = oShownDownConverter.makeHtml(msg.text);
 
-				let sUrl = msg.url ? `<hr/> <p><a href="\${msg.url}" target="_blank">{$sMoreInfo}</a></p>` : '';
+				const sUrl = msg.url ? `<hr/> <p><a href="\${msg.url}" target="_blank">{$sMoreInfo}</a></p>` : '';
 				
 				$('.newsroom-messages').append(`
 					<div class="newsroom-message" data-url="\${msg.url}" data-priority="\${msg.priority}">
