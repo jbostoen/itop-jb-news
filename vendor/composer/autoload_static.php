@@ -18,14 +18,6 @@ class ComposerStaticInitc0a158d0fcccb2bd719587cf1e89e2ed
 
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
-        'JeffreyBostoenExtensions\\News\\BackgroundProcess' => __DIR__ . '/../..' . '/src/JeffreyBostoenExtensions/News/BackgroundProcess.php',
-        'JeffreyBostoenExtensions\\News\\Client' => __DIR__ . '/../..' . '/src/JeffreyBostoenExtensions/News/Client.php',
-        'JeffreyBostoenExtensions\\News\\FrontEndReadyScripts' => __DIR__ . '/../..' . '/src/JeffreyBostoenExtensions/News/FrontEndReadyScripts.php',
-        'JeffreyBostoenExtensions\\News\\Helper' => __DIR__ . '/../..' . '/src/JeffreyBostoenExtensions/News/Helper.php',
-        'JeffreyBostoenExtensions\\News\\Page' => __DIR__ . '/../..' . '/src/JeffreyBostoenExtensions/News/Page.php',
-        'JeffreyBostoenExtensions\\News\\Provider' => __DIR__ . '/../..' . '/src/JeffreyBostoenExtensions/News/Provider.php',
-        'JeffreyBostoenExtensions\\News\\Server' => __DIR__ . '/../..' . '/src/JeffreyBostoenExtensions/News/Server.php',
-        'JeffreyBostoenExtensions\\News\\SourceJeffreyBostoen' => __DIR__ . '/../..' . '/src/JeffreyBostoenExtensions/News/SourceJeffreyBostoen.php',
     );
 
     public static function getInitializer(ClassLoader $loader)

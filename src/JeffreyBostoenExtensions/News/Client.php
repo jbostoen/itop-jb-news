@@ -205,13 +205,13 @@ abstract class Client {
 		
 			foreach($aSources as $sSourceClass) {
 				
-				$sApiResponse = static::DoPost($sSourceClass, $eOperation);
+				$oResponse = static::DoPost($sSourceClass, $eOperation);
 
-				if($sApiResponse === null) {
+				if($oResponse === null) {
 					continue;
 				}
 
-				static::ProcessRetrievedMessages($sApiResponse, $sSourceClass);
+				static::ProcessRetrievedMessages($oResponse, $sSourceClass);
 				
 			}
 			
@@ -220,7 +220,8 @@ abstract class Client {
 	/**
 	 * Process retrieved messages.
 	 * 
-	 * In case the HTTP response from the news sserver fails to meet the expected format, it will be logged and the process will be aborted gracefully.
+	 * In case the HTTP response from the news server fails to meet the expected format,  
+	 * it will be logged and the process will be aborted gracefully.
 	 *
 	 * @param stdClass $oResponse The HTTP response from the news server.
 	 * @param string $sSourceClass Name of the news source class.
@@ -296,7 +297,7 @@ abstract class Client {
 			$aMessages
 		);
 		
-		// - Preprocessing (common things for both insert, update).
+		// - Pre-processing (common things for both insert, update).
 
 			/** @var stdClass $oJsonMessage */
 			foreach($aMessages as $oJsonMessage) {
@@ -322,22 +323,21 @@ abstract class Client {
 			$oFilterMessages = new DBObjectSearch('ThirdPartyNewsMessage');
 			$oFilterMessages->AddCondition('thirdparty_name', $sThirdPartyName, '=');
 			$oSetMessages = new DBObjectSet($oFilterMessages);
-			$aKnownMessageIds = [];
 
 		
 		// - Loop through the messages that are already in the database.
 			
-			$oSetMessages->Rewind();
-
 			/** @var ThirdPartyNewsMessage $oMessage */
 			while($oMessage = $oSetMessages->Fetch()) {
-
-				$aKnownMessageIds[] = $oMessage->Get('thirdparty_message_id');
 
 				// - Do not intervene if the message on the current iTop instance was created manually.
 				//   If it was manually created, assume this is the news provider, not the news client.
 				//   A news provider may have messages in the database that are not visible to news clients yet (thus missing in the HTTP response).
 				if($oMessage->Get('manually_created') == 'yes') {
+					// This message should not be processed further on either!
+					// Theoretically speaking, it could be assumed that all messages in this set will be manually created (coming from the same source).
+					Helper::Trace('Skipping ThirdPartyNewsMessage object for message ID "%1$s" (manually created on this instance).', $oJsonMessage->thirdparty_message_id);
+					unset($aMessages[$oMessage->Get('thirdparty_message_id')]);
 					continue;
 				}
 				

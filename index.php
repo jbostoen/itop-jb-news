@@ -133,6 +133,7 @@ try {
 				$oPage = new Page('All messages');
 				Helper::MakeAllMessagesPage($oPage);
 				Helper::MarkAllMessagesAsReadForUser(); // Open to discussion: when all messages are rendered on an overview page: should they be marked as read?
+				$oPage->output();
 				break;
 
 			case eUserOperation::Redirect:
@@ -173,9 +174,11 @@ try {
 				// - Process response.
 			
 					$sApiResponse = utils::ReadParam('data', '', false, 'raw_data');
-						
-					Client::ProcessRetrievedMessages($sApiResponse, $sSourceClass);
-					
+					$oApiResponse = json_decode($sApiResponse);
+					if($oApiResponse !== null) {
+						Client::ProcessRetrievedMessages($oApiResponse, $sSourceClass);
+					}
+
 				// - Return data to post to news source ('report_read_statistics').
 				
 					$oPayload = Client::GetPayload($sSourceClass, eOperation::ReportReadStatistics, eOperationMode::Mitm);
@@ -193,7 +196,6 @@ try {
 				break;
 		}
 
-		$oPage->output();
 	}
 	catch(Exception $oException) {
 		
