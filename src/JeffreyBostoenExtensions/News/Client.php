@@ -121,7 +121,7 @@ abstract class Client {
 	/**
 	 * Returns an object set of key/value pairs. Each key will be an identifier for a news source, and the value a timestamp.
 	 *
-	 * @return array Hashtable where the key is th news source name, and the value is the last retrieved date/time.
+	 * @return array Hashtable where the key is the news source name, and the value is the last retrieved date/time.
 	 */
 	public static function GetLastRetrievedDateTimePerNewsSource() : array {
 		
@@ -138,16 +138,15 @@ abstract class Client {
 
 		// - Where available, get the real timestamp.
 
-			$oFilter = DBObjectSearch::FromOQL_AllData('SELECT KeyValueStore WHERE namespace = :namespace', [
+			$oFilter = DBObjectSearch::FromOQL_AllData('SELECT KeyValueStore WHERE namespace = :namespace AND key_name LIKE "%_last_retrieval"', [
 				'namespace' => Helper::MODULE_CODE
 			]);
 			$oSet = new DBObjectSet($oFilter);
 			
 			while($oKeyValue = $oSet->Fetch()) {
 
-				if(preg_match('/_last_retrieval$/', $oKeyValue->Get('key_name'))) {
-					$aDateTimes[$oKeyValue->Get('key_name')] = $oKeyValue->Get('value');
-				}
+				$sKey = str_replace('_last_retrieval', '', $oKeyValue->Get('key_name'));
+				$aDateTimes[$sKey] = $oKeyValue->Get('value');
 
 			}
 
