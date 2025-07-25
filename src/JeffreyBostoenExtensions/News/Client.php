@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2025 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.250724
+ * @version     3.2.250725
  *
  */
 
@@ -14,8 +14,6 @@ use DBObjectSearch;
 use DBObjectSet;
 use MetaModel;
 use ormDocument;
-use UserRights;
-use utils;
 
 // iTop classes.
 use KeyValueStore;
@@ -24,6 +22,7 @@ use ThirdPartyNewsMessageTranslation;
 
 // Generic.
 use Exception;
+use ModuleInstallation;
 use stdClass;
 
 
@@ -590,6 +589,22 @@ abstract class Client {
 		$oPayload->api_version = eApiVersion::v2_0_0->value;
 		$oPayload->token = static::GetClientToken($sSourceClass)->Get('value');
 		$oPayload->mode = $eOperationMode->value;
+
+		// - Add the version of this module.
+
+			$oFilter = DBObjectSearch::FromOQL_AllData('SELECT ModuleInstallation WHERE name = :name', []);
+			$oSet = new DBObjectSet($oFilter, [
+				'installed' => false,
+			], [
+				'name' => Helper::MODULE_CODE
+			]);
+			/** @var ModuleInstallation $oModuleInstallation */
+			$oModuleInstallation = $oSet->Fetch();
+
+			// - There should be at least one.
+			if($oModuleInstallation !== null) {
+				$oPayload->extension_version = $oModuleInstallation->Get('version');
+			}
 		
 		if(strpos($sNewsUrl, '?') !== false) {
 			
