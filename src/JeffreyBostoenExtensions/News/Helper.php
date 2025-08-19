@@ -239,6 +239,7 @@ abstract class Helper {
 		$oSet->SetLimit(50);
 
 		$aMessages = [];
+		$aApplicableMessageIds = [];
 		
 		/** @var ThirdPartyNewsMessage $oMessage */
 		while($oMessage = $oSet->Fetch()) {
@@ -283,45 +284,47 @@ abstract class Helper {
 
 		// The fact that this method is executed,
 		// implies the message will be shown to the user.
-			
-			$oFilter = DBObjectSearch::FromOQL_AllData('
-				SELECT ThirdPartyMessageUserStatus AS UserStatus 
-				WHERE 
-					UserStatus.user_id = :user_id AND 
-					UserStatus.message_id IN (:message_ids)
-			');
-			$oSet = new DBObjectSet($oFilter, [], [
-				'user_id' => $oUser->GetKey(),
-				'message_ids' => array_keys($aApplicableMessageIds)
-			]);
 
-			// - Update the "last shown" date for all messages that are applicable for the user.
+			if(count($aApplicableMessageIds) > 0) {
+				
+				$oFilter = DBObjectSearch::FromOQL_AllData('
+					SELECT ThirdPartyMessageUserStatus AS UserStatus 
+					WHERE 
+						UserStatus.user_id = :user_id AND 
+						UserStatus.message_id IN (:message_ids)
+				');
+				$oSet = new DBObjectSet($oFilter, [], [
+					'user_id' => $oUser->GetKey(),
+					'message_ids' => array_keys($aApplicableMessageIds)
+				]);
 
-				while($oMessageStatus = $oSet->Fetch()) {
-					
-					// Update the "last shown" date.
-					$oMessageStatus->Set('last_shown_date', date('Y-m-d H:i:s'));
-					$oMessageStatus->DBUpdate();
+				// - Update the "last shown" date for all messages that are applicable for the user.
 
-					unset($aApplicableMessageIds[$oMessageStatus->Get('message_id')]);
-					
-				}
+					while($oMessageStatus = $oSet->Fetch()) {
+						
+						// Update the "last shown" date.
+						$oMessageStatus->Set('last_shown_date', date('Y-m-d H:i:s'));
+						$oMessageStatus->DBUpdate();
 
-			// - For the messages that weren't seen: Create a new status object.
+						unset($aApplicableMessageIds[$oMessageStatus->Get('message_id')]);
+						
+					}
 
-				foreach(array_keys($aApplicableMessageIds) as $iMessageId) {
+				// - For the messages that weren't seen: Create a new status object.
 
-					$oMessageStatus = MetaModel::NewObject('ThirdPartyMessageUserStatus', [
-						'message_id' => $iMessageId,
-						'user_id' => $oUser->GetKey(),
-						'first_shown_date' => date('Y-m-d H:i:s'),
-						'last_shown_date' => date('Y-m-d H:i:s')
-					]);
-					$oMessageStatus->DBInsert();
+					foreach(array_keys($aApplicableMessageIds) as $iMessageId) {
 
-				}
+						$oMessageStatus = MetaModel::NewObject('ThirdPartyMessageUserStatus', [
+							'message_id' => $iMessageId,
+							'user_id' => $oUser->GetKey(),
+							'first_shown_date' => date('Y-m-d H:i:s'),
+							'last_shown_date' => date('Y-m-d H:i:s')
+						]);
+						$oMessageStatus->DBInsert();
 
+					}
 
+			}
 
 		return $aMessages;
 	}
