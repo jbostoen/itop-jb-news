@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2025 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.250725
+ * @version     3.2.250819
  *
  */
 
@@ -843,6 +843,7 @@ abstract class Client {
 		$iHttpCode = curl_getinfo($cURLConnection, CURLINFO_HTTP_CODE);
 		if($iHttpCode != 200) {
 
+			// Hint: This also allows the news server to occasionally skip requests, by returning a different HTTP status code.
 			Helper::Trace('Error: cURL did not return HTTP status code 200, but %1$s', $iHttpCode);
 			Helper::Trace($sApiResponse);
 			return null;

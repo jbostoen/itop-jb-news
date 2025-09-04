@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2025 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.250725
+ * @version     3.2.250819
  */
 
 namespace JeffreyBostoenExtensions\News;
@@ -902,10 +902,10 @@ JS
 	 * 
 	 * Note that this does not check whether the user is allowed to see a specific message.
 	 *
-	 * @param User|null $oUser
+	 * @param User $oUser
 	 * @return bool
 	 */
-	public static function IsTargetedUser(?User $oUser) : bool {
+	public static function IsTargetedUser(User $oUser) : bool {
 		
 		try {
 				
