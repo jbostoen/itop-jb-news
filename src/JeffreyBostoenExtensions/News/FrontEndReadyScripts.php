@@ -96,6 +96,7 @@ class FrontEndReadyScripts implements iBackofficeReadyScriptExtension {
 					$sCode .=
 <<<JS
 						$.ajax({
+							async: true,
 							url: '{$sServerUrl}',
 							dataType: 'jsonp',
 							data: {$sData},
@@ -108,6 +109,7 @@ class FrontEndReadyScripts implements iBackofficeReadyScriptExtension {
 								
 								// Post response from news source to iTop
 								$.ajax({
+										async: true,
 										url: '{$sClientUrl}',
 										dataType: 'json',
 										data: {
@@ -118,6 +120,10 @@ class FrontEndReadyScripts implements iBackofficeReadyScriptExtension {
 										},
 										type: 'POST', // Without POST, this is highly likely to result in 414 Request-URI Too Long
 										success: function(result, status, xhr) {
+
+											if(xhr.status !== 200) {
+												return;
+											}
 											
 											// Send statistics from iTop to news source (just try, it may fail if the Request-URI becomes too long).
 											$.ajax({
