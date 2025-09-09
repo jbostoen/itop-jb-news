@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2025 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.250819
+ * @version     3.2.250909
  *
  */
 
@@ -50,6 +50,13 @@ class FrontEndReadyScripts implements iBackofficeReadyScriptExtension {
 
 					// Add some extra leniency, as the cron job is preferred.
 					$iMinTime = strtotime('-'.$iFrequency.' minutes -15 minutes');
+
+					Helper::Trace('Source: %1$s - Last retrieved: %2$s - Frequency (minutes): %3$s - Tolerance: %4$s',
+						$sKeyName,
+						$sLastRetrieved,
+						$iFrequency,
+						date('Y-m-d H:i:s', $iMinTime)
+					);
 
 					// If it seems the cron job successfully retrieved messages recently, skip.
 					if(strtotime($sLastRetrieved) >= $iMinTime) {
