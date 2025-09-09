@@ -110,6 +110,8 @@ abstract class Client {
 	 * @return string
 	 */
 	public static function GetSanitizedNewsSourceName(string $sNewsSource) : string {
+
+		$sNewsSource = basename($sNewsSource);
 		
 		// Sanitize the news source name to be used as a key in the KeyValueStore.
 		// This is to avoid issues with special characters, spaces, etc.
@@ -167,7 +169,7 @@ abstract class Client {
 	 */
 	public static function StoreKeyValue(string $sNewsSource, string $sSuffix, string $sValue) : void {
 		
-		$sKeyName = static::GetSanitizedNewsSourceName(basename($sNewsSource)).'_'.$sSuffix;
+		$sKeyName = static::GetSanitizedNewsSourceName($sNewsSource).'_'.$sSuffix;
 		
 		/** @var KeyValueStore $oKeyValueStore */
 		$oKeyValueStore = Helper::GetKeyValueStore($sKeyName) ?? MetaModel::NewObject('KeyValueStore', [
@@ -885,7 +887,7 @@ abstract class Client {
 		// The client token is initially created by the client, and then sent to the news server.
 		// Any third-party news server processors can use this token to identify the client, and send another one back that should be saved by the client.
 		
-		$sKeyName = static::GetSanitizedNewsSourceName(basename($sSourceClass)).'_client_token';
+		$sKeyName = static::GetSanitizedNewsSourceName($sSourceClass).'_client_token';
 
 		/** @var KeyValueStore $oKeyValueStore */
 		$oKeyValueStore = Helper::GetKeyValueStore($sKeyName) ?? MetaModel::NewObject('KeyValueStore', [
