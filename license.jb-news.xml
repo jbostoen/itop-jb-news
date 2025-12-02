@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<licenses>
+   <license>
+      <product>Jeffrey Bostoen - Account Security (extension)</product>
+      <author>Jeffrey Bostoen</author>
+      <license_type>Jeffrey Bostoen Software License</license_type>
+      <text><![CDATA[<h3>
+    Jeffrey Bostoen License
+  </h3>
+  <p>
+    Version 2025-08-19
+  </p>
+  <p>
+    Copyright (c) 2020-2025 Jeffrey Bostoen. All rights reserved.
+  </p>
+  <ol>
+    <li>
+      Your use of this iTop extension is restricted to a single application (development, test, acceptance,
+      production environments for this application are allowed).
+    </li>
+    <li>
+      This software may not be redistributed or resold in any way.
+    </li>
+    <li>
+      If the item contains licensed components, those components must only be used within the item and you
+      must not extract and use them on a stand-alone basis.
+    </li>
+    <li>
+      If the item was created using materials which are the subject of a GNU General Public License (GPL),
+      your use of the item is subject to the terms of the GPL in place of the foregoing conditions (to the
+      extent the GPL applies).
+    </li>
+    <li>
+      Use at your own risk.
+    </li>
+    <li>
+      All parts of the code may be re-used for my other clients (excluding sensitive information).
+    </li>
+    <li>
+      Maintenance and support is given on a best-effort basis and by e-mail.
+    </li>
+    <li>
+      The administrator of the iTop environment is responsible for taking a backup of the iTop database and
+      files before installing this extension and on a regular interval (daily).
+    </li>
+    <li>
+      New or revised versions of this license may be published from time to time. Each version will be
+      referred to by date. Once covered code has been published under a particular version of the license,
+      you may always continue to use it under the terms of that version. You may also choose to use such
+      covered code under the terms of any subsequent version of the license. No one other than Jeffrey
+      Bostoen has the right to modify the terms applicable to covered code created under this license.
+    </li>
+  </ol>
+  <p>
+    This software is provided by Jeffrey Bostoen "as is" and any expressed or implied warranties, including,
+    but not limited to, the implied warranties of merchantability and fitness for a particular purpose are
+    disclaimed. In no event shall Jeffrey Bostoen be liable for any direct, indirect, incidental, special,
+    exemplary, or consequential damages (including, but not limited to, procurement of substitute goods or
+    services; loss of use, data, or profits; or business interruption) however caused and on any theory of
+    liability, whether in contract, strict liability, or tort (including negligence or otherwise) arising in
+    any way out of the use of this software, even if advised of the possibility of such damage. For more
+    information on Jeffrey Bostoen, please see <a href="https://jeffreybostoen.be">https://jeffreybostoen.be</a>.
+  </p>]]></text>
+   </license>
+   <license>
+      <product>lbuchs/webauthn</product>
+      <author>Lukas Buchs, Thomas Bleeker</author>
+      <license_type>MIT</license_type>
+      <text><![CDATA[<h3>
+      MIT License
+			</h3>
+			<p>
+      Copyright © 2022 Lukas Buchs<br>
+      Copyright © 2018 Thomas Bleeker (CBOR &amp; ByteBuffer part)
+				</p>
+				<p>
+      Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+      documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+      the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
+      to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+				</p>
+				<p>
+      The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+      the Software.
+				</p>
+				<p>
+      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+      THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+      AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+      CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+      IN THE SOFTWARE.
+				</p>]]></text>
+   </license>
+</licenses>

@@ -7,4 +7,13 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
+    'JeffreyBostoenExtensions\\News\\BackgroundProcess' => $baseDir . '/src/JeffreyBostoenExtensions/News/BackgroundProcess.php',
+    'JeffreyBostoenExtensions\\News\\Client' => $baseDir . '/src/JeffreyBostoenExtensions/News/Client.php',
+    'JeffreyBostoenExtensions\\News\\FrontEndReadyScripts' => $baseDir . '/src/JeffreyBostoenExtensions/News/FrontEndReadyScripts.php',
+    'JeffreyBostoenExtensions\\News\\Helper' => $baseDir . '/src/JeffreyBostoenExtensions/News/Helper.php',
+    'JeffreyBostoenExtensions\\News\\JsonPage' => $baseDir . '/src/JeffreyBostoenExtensions/News/JsonPage.php',
+    'JeffreyBostoenExtensions\\News\\Page' => $baseDir . '/src/JeffreyBostoenExtensions/News/Page.php',
+    'JeffreyBostoenExtensions\\News\\Provider' => $baseDir . '/src/JeffreyBostoenExtensions/News/Provider.php',
+    'JeffreyBostoenExtensions\\News\\Server' => $baseDir . '/src/JeffreyBostoenExtensions/News/Server.php',
+    'JeffreyBostoenExtensions\\News\\SourceJeffreyBostoen' => $baseDir . '/src/JeffreyBostoenExtensions/News/SourceJeffreyBostoen.php',
 );
