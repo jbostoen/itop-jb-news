@@ -43,14 +43,14 @@ interface iSource {
 	 * A source can add extra data to the payload that will be sent from the client to the server.
 	 * 
 	 * @param eOperation $eOperation The operation that is being executed.
-	 * @param stdClass $oPayload The payload that will be sent from the client to the server.
+	 * @param HttpRequestPayload $oPayload The payload that will be sent from the client to the server.
 	 * 
 	 * @details Mind that by default certain parameters are already included in the HTTP request to the news source.
 	 * @see Client::GetPayload()
 	 *
 	 * @return array Key/value pairs to send to the news source.
 	 */
-	public static function SetPayload(eOperation $eOperation, stdClass $oPayload) : void;
+	public static function SetPayload(eOperation $eOperation, HttpRequestPayload $oPayload) : void;
 	
 	/**
 	 * Returns the base64 encoded public key for the Sodium implementation (crypto box).  
@@ -536,7 +536,7 @@ abstract class Client {
 		foreach(get_declared_classes() as $sClassName) {
 			
 			$aImplementations = class_implements($sClassName);
-			if(in_array('JeffreyBostoenExtensions\News\iSource', $aImplementations) == true || in_array('iSource', class_implements($sClassName)) == true) {
+			if(in_array(iSource::class, $aImplementations)) {
 				
 				// Skip source if temporarily disabled (perhaps advised at some point for some reason, without needing to disable or uninstall the extension completely)
 				$sThirdPartyName = $sClassName::GetThirdPartyName();
@@ -561,11 +561,11 @@ abstract class Client {
 	 * @param eOperation $eOperation The operation that is being executed.
 	 * @param eOperationMode $eOperationMode The operation mode (e.g. cron, mitm).
 	 *
-	 * @return stdClass The payload.
+	 * @return HttpRequestPayload The payload.
 	 *
 	 * @details Mind that this is executed over and over for each news source.
 	 */
-	public static function GetPayload(string $sSourceClass, eOperation $eOperation, eOperationMode $eOperationMode) : stdClass {
+	public static function GetPayload(string $sSourceClass, eOperation $eOperation, eOperationMode $eOperationMode) : HttpRequestPayload {
 		
 		$sNewsUrl = $sSourceClass::GetUrl();
 		
@@ -578,8 +578,8 @@ abstract class Client {
 		
 		$eCryptographyLib = Helper::GetCryptographyLibrary();
 		
-		/** @var stdClass $oPayload */
-		$oPayload = new stdClass();
+		/** @var HttpRequestPayload $oPayload */
+		$oPayload = new HttpRequestPayload();
 		$oPayload->operation = $eOperation->value;
 		$oPayload->instance_hash = $sInstanceHash;
 		$oPayload->instance_hash2 = $sInstanceHash2;
@@ -591,6 +591,7 @@ abstract class Client {
 		$oPayload->api_version = eApiVersion::v2_0_0->value;
 		$oPayload->token = static::GetClientToken($sSourceClass)->Get('value');
 		$oPayload->mode = $eOperationMode->value;
+		$oPayload->app_root_url = MetaModel::GetConfig()->Get('app_root_url');
 
 		// - Add the version of this module.
 
@@ -744,6 +745,7 @@ abstract class Client {
 
 			// - Add this info to the payload.
 			
+				// @todo Check: extend HttpRequestPayload instead?
 				$oPayload->read_status =  new stdClass();
 				$oPayload->read_status->target_oql_users = $aExtTargetUsers;
 				$oPayload->read_status->messages = $aMessages;
@@ -765,11 +767,11 @@ abstract class Client {
 	 * If Sodium is available, the client attempts to encrypt it before sending it to the server.
 	 *
 	 * @param string $sSourceClass Name of the news source class.
-	 * @param stdClass $oPayload Payload to be prepared.
+	 * @param HttpRequestPayload $oPayload Payload to be prepared.
 	 *
 	 * @return string Binary data
 	 */
-	public static function PreparePayload(string $sSourceClass, stdClass $oPayload) : string {
+	public static function PreparePayload(string $sSourceClass, HttpRequestPayload $oPayload) : string {
 		
 		$sPayload = json_encode($oPayload);
 		
@@ -852,7 +854,7 @@ abstract class Client {
 
 		}
 
-		curl_close($cURLConnection);
+		$cURLConnection = null;
 
 		// - Common behavior for all requests:
 		//   For any valid response, try to decode and save the token.
@@ -917,7 +919,7 @@ abstract class Client {
 		// If a "refresh_token" was received (and it should be), store it.
 
 		if(property_exists($oResponse, 'refresh_token') && is_string($oResponse->refresh_token) && strlen($oResponse->refresh_token) == (Helper::CLIENT_TOKEN_BYTES * 2)) {
-					
+
 			// Store the refresh token for this news source.
 			// Do so before any other processing can fail; as it may be used to uniquely identify this instance.
 			static::StoreKeyValue($sSourceClass, 'client_token', $oResponse->refresh_token);

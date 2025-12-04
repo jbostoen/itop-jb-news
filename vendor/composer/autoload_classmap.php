@@ -11,6 +11,8 @@ return array(
     'JeffreyBostoenExtensions\\News\\Client' => $baseDir . '/src/JeffreyBostoenExtensions/News/Client.php',
     'JeffreyBostoenExtensions\\News\\FrontEndReadyScripts' => $baseDir . '/src/JeffreyBostoenExtensions/News/FrontEndReadyScripts.php',
     'JeffreyBostoenExtensions\\News\\Helper' => $baseDir . '/src/JeffreyBostoenExtensions/News/Helper.php',
+    'JeffreyBostoenExtensions\\News\\HttpRequest' => $baseDir . '/src/JeffreyBostoenExtensions/News/HttpRequest.php',
+    'JeffreyBostoenExtensions\\News\\HttpRequestPayload' => $baseDir . '/src/JeffreyBostoenExtensions/News/HttpRequestPayload.php',
     'JeffreyBostoenExtensions\\News\\JsonPage' => $baseDir . '/src/JeffreyBostoenExtensions/News/JsonPage.php',
     'JeffreyBostoenExtensions\\News\\Page' => $baseDir . '/src/JeffreyBostoenExtensions/News/Page.php',
     'JeffreyBostoenExtensions\\News\\Provider' => $baseDir . '/src/JeffreyBostoenExtensions/News/Provider.php',

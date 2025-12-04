@@ -39,45 +39,77 @@ enum eCryptographyKeyType : string {
 	case PublicKeyCryptoBox = 'public_key_crypto_box';
 }
 
+
 /**
  * Interface iServerExtension. Interface to implement server-side actions when a client connects.
  */
 interface iServerExtension {
 	
 	/**
-	 * Processes actions.
-	 * 
-	 * It's possible to customize the behavior of the server when a client connects.
-	 * 
+	 * A hook that can execute logic as soon as the incoming HTTP request is received, before any other processing is done.
 	 * For example: Keep track of which instances last connected, process custom info that may have been added in the payload.
 	 *
-	 * @param eApiVersion $eApiVersion API version.
-	 * @param eOperation $eOperation Operation.
-	 * @param stdClass $oPayload Plain payload. This is received from the client.
+	 * @param HttpRequest $oHttpRequest The incoming HTTP request.
 	 * @param stdClass $oResponse Response data. This will be sent to the client.
 	 *
 	 * @return void
 	 *
 	 */
-	public static function Process(eApiVersion $eApiVersion, eOperation $eOperation, stdClass $oPayload, stdClass $oResponse) : void;
+	public function PreProcess(HttpRequest $oHttpRequest, stdClass $oResponse) : void;
+	
+	
+	/**
+	 * A hook that can execute logic after all other processing is done.
+	 *
+	 * @param HttpRequest $oHttpRequest The incoming HTTP request.
+	 * @param stdClass $oResponse Response data. This will be sent to the client.
+	 *
+	 * @return void
+	 *
+	 */
+	public function PostProcess(HttpRequest $oHttpRequest, stdClass $oResponse) : void;
+
+
+	/**
+	 * A hook to allow additional filtering of any messages that may be returned to the client.
+	 *
+	 * @param HttpRequest $oHttpRequest The incoming HTTP request.
+	 * @param DBObjectSet $oSet The object set to filter.
+	 *
+	 * @return DBObjectSet
+	 *
+	 */
+	public function ProcessMessages(HttpRequest $oHttpRequest, DBObjectSet $oSet) : void;
 	
 }
 
 /**
- * Class Server. A news server that is capable to process incoming HTTP requests and lists all applicable messages for the news client (requester).
+ * Class Server. A news server that processes incoming HTTP requests and lists all applicable messages for the news client (requester).
  */
-abstract class Server {
+class Server {
+
+	/**
+	 * @var HttpRequest $oHttpRequest The incoming HTTP request.
+	 */
+	private $oHttpRequest;
+
+	/**
+	 * @var object&iServer[] $aExtensions List of third-party server extensions.
+	 */
+	private $aExtensions = [];
 	
 	/**
-	 * Gets all the relevant messages for an instance.
+	 * Returns all the relevant messages for an instance.
 	 * 
 	 * @param eApiVersion $eApiVersion API version (already validated).
 	 * @param array $aMessages Reference to an array that will be filled with messages (array structure with keys/values for the JSON structure).
-	 * @param stdClass $oIcons An object whose properties will be 'ref_<md5_of_value>', value = stdClass with data, mimetype, filename).
+	 * @param stdClass $oIconLib An object whose properties will be 'ref_<md5_of_value>', value = stdClass with data, mimetype, filename).
 	 *
-	 * @return array
+	 * @return void
 	 */
-	public static function GetMessagesForInstance(eApiVersion $eApiVersion, array &$aMessages, stdClass $oIconLib) : void {
+	public function GetMessagesForInstance(array &$aMessages, stdClass $oIconLib) : void {
+
+		$eApiVersion = $this->oHttpRequest->GetApiVersion();
 
 		Helper::Trace('Getting messages. API version: %1$s', $eApiVersion->value);
 		
@@ -104,11 +136,12 @@ abstract class Server {
 				)
 		';
 		$oSetMessages = new DBObjectSet(DBObjectSearch::FromOQL_AllData($sOQL));
+
+		foreach($this->aExtensions as $oExtension) {
+			$oExtension->ProcessMessages($this->oHttpRequest, $oSetMessages);
+		}
 		
 		$aMessages = [];
-
-		/** @var array $aIcons Key = md5 of the JSON-encoded value; value = filename, mimetype, data of the icon. */
-		$aIcons = [];
 		
 		// - Loop through the messages.
 		/** @var ThirdPartyNewsMessage $oMessage */
@@ -207,144 +240,167 @@ abstract class Server {
 		}
 			
 	}
-	
-	/**
-	 * Executes each third-party implementation of iServerExtension.
-	 * Currently, these run after executing the default actions for a given 'operation'.
-	 * 
-	 * The goal is to allow third-party developers to extend the server-side behavior of the news server.
-	 *
-	 * @param eApiVersion, $eApiVersion API version.
-	 * @param eOperation $eOperation Operation.
-	 * @param stdClass $oPayload Payload (data) from the client.
-	 * @param stdClass $oResponse The response that will be sent to the client.
-	 *
-	 * @return void
-	 */
-	public static function ExecuteThirdPartyServerExtensions(eApiVersion $eApiVersion, eOperation $eOperation, stdClass $oPayload, stdClass $oResponse) : void {
-		
-	
-		// - Build list of processors.
-		
-			$aProcessors = [];
-			foreach(get_declared_classes() as $sClassName) {
-				$aImplementations = class_implements($sClassName);
-				if(in_array('JeffreyBostoenExtensions\News\iServerExtension', $aImplementations) == true || in_array('iServerExtension', class_implements($sClassName)) == true) {
-					
-					$aProcessors[] = $sClassName;
-					
-				}
-			}
-			
-		// - Run each processor.
-			
-			foreach($aProcessors as $sProcessor) {
-				
-				$sProcessor::Process($eApiVersion, $eOperation, $oPayload, $oResponse);
-				
-			}
-		
-	}
+
 
 	/**
-	 * Returns Sodium private key.
+	 * Processes an incoming HTTP request from a news client.
 	 *
-	 * @param eCryptographyKeyType $eKeyType Should be one of these: private_key_file_crypto_sign , private_key_file_crypto_box
-	 *
-	 * @return string
+	 * @return void
 	 *
 	 * @throws Exception
 	 */
-	public static function GetKeySodium(eCryptographyKeyType $eKeyType) : string {
+	public function ProcessIncomingRequest() : void {
 		
-		$sKeyType = $eKeyType->value;
+		Helper::Trace('Server received request from client.');
+		
+		$bExtensionEnabled = MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'enabled', false);
+		$bServerEnabled = MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'server', false);
 
-		// Get private key.
-		$aKeySettings = MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'sodium', []);
-		
-		if(is_array($aKeySettings) == false || array_key_exists($sKeyType, $aKeySettings) == false) {
+		// - This extension might simply not be enabled.
 			
-			Helper::Trace('Missing %1$s key settings.', $sKeyType);
-			throw new Exception('Missing '.$sKeyType.' key settings.');
+			if(!$bExtensionEnabled) {
+
+				throw new Exception('News extension not enabled.');
+
+			}
+
+		// - The "server" functionality might simply not be enabled.
+
+			if(!$bServerEnabled) {
+				
+				throw new Exception('Server not enabled.');
+				
+			}
+		
+		$this->oHttpRequest = new HttpRequest();
+		
+		// Don't use Combodo's JsonPage. The server response will be JSONP.
+		$oPage = new JsonPage();
+
+		$eClientApiVersion = $this->oHttpRequest->GetApiVersion();
+		$eClientCryptoLib = $this->oHttpRequest->GetCryptoLib();
+		
+		/** @var stdClass $oResponse */
+		$oResponse = new stdClass();
+
+		$this->aExtensions = array_map(function(string $sClass) {
+			return new $sClass;
+		}, Helper::GetImplementations(iServerExtension::class));
+
+		// - Execute pre-processors.
+			
+			foreach($this->aExtensions as $oExtension) {
+				$oExtension->PreProcess($this->oHttpRequest, $oResponse);
+			}
+			
+		switch($this->oHttpRequest->GetOperation()) {
+			
+			case eOperation::GetMessagesForInstance:
+				
+				// - Retrieve messages.
+
+					$aMessages = [];
+					$oIconLib = new stdClass();
+					$this->GetMessagesForInstance($aMessages, $oIconLib);
+					
+				// - Prepare the data.
+
+					switch($eClientApiVersion) {
+
+						case eApiVersion::v2_0_0:
+
+							// - The structure will always be the same.
+							$oResponse->crypto_lib = $eClientCryptoLib->value;
+							$oResponse->messages = $aMessages;
+							$oResponse->icons = $oIconLib;
+							// The 'refresh_token' should be set by one iServerExtension.
+
+							break;
+
+						case eApiVersion::v1_1_0:
+						case eApiVersion::v1_0_0:
+
+							// - Note: In the end, the response may still be turned into an array for non-encrypted responses. See further.
+							$oResponse->encryption_library = $eClientCryptoLib->value; // This will keep the capital of 'Sodium'.
+							$oResponse->messages = $aMessages;
+
+							break;
+							
+					}
+
+					// - Sign, if necessary.
+
+						if($eClientCryptoLib == eCryptographyLibrary::Sodium) {
+								
+							// If Sodium is available, use it to sign the messages.
+							// The messages are not secret; the signing is just to verify authenticity.
+							$sPrivateKey = Helper::GetKeySodium(eCryptographyKeyType::PrivateKeyCryptoSign);
+							$sSignature = sodium_crypto_sign_detached(json_encode($aMessages), $sPrivateKey);
+							
+							$oResponse->signature = sodium_bin2base64($sSignature, SODIUM_BASE64_VARIANT_URLSAFE);
+
+						}
+
+					// - Prepare output.
+
+						if($eClientCryptoLib == eCryptographyLibrary::None && (
+								$eClientApiVersion == eApiVersion::v1_1_0 || 
+								$eClientApiVersion == eApiVersion::v1_1_0
+						)) {
+
+							$oResponse = $oResponse->messages;
+
+						}
+			
+				break;
+				
+			case eOperation::ReportReadStatistics:
+				break;
+				
+
+				
+			default:
+				
+				// Invalid operation. This should not occur.
+				throw new Exception('Unexpected cases when handling operations. Please report this as a bug.');
+				break;
 
 		}
-		
-		$sKeyFile = $aKeySettings[$sKeyType];
+
+		// - Last change to alter response.
 			
-		if(file_exists($sKeyFile) == false) {
+			foreach($this->aExtensions as $oExtension) {
+				$oExtension->PostProcess($this->oHttpRequest, $oResponse);
+			}
+
+		// - If a callback method is specified, wrap the output in a JSONP callback.
+
+			$sOutput = json_encode($oResponse);
+
+			$sCallBackMethod = utils::ReadParam('callback', '', false, 'parameter');
+			if($sCallBackMethod != '') {
+				$sOutput = $sCallBackMethod.'('.$sOutput.');';
 			
-			Helper::Trace('Missing %1$s key file.', $sKeyType);
-			throw new Exception('Missing '.$sKeyType.' key file.');
-		
-		}
-			
-		$sKey = file_get_contents($sKeyFile);
-		
-		try {
+			}
 
-			$sBinKey = sodium_base642bin($sKey, SODIUM_BASE64_VARIANT_URLSAFE);
+			Helper::Trace('Response to client:');
+			Helper::Trace($sOutput);
 
-		}
-		catch(SodiumException $e) {
+		// - Print the output.
+			$oPage->output($sOutput);
 
-			Helper::Trace('Failed to use %1$s key to convert base64 to binary key: %2$s', $sKeyType, $e->getMessage());
-
-		}
-
-		return $sBinKey;
-		
 	}
-	
+
+
 	/**
-	 * Gets (and if necessary decrypts) the payload that was sent to the server.
-	 * 
-	 * 1) Perform base64 decoding on the payload.
-	 * 2) If it's not a JSON structure yet; try decrypting.
-	 * 3) Decode the JSON structure.
+	 * Returns the HTTP request that is currently being handled.
 	 *
-	 * @param string $sPayload Payload
-	 *
-	 * @return stdClass Hash table.
+	 * @return HttpRequest
 	 */
-	public static function GetPlainPayload(string $sPayload) : stdClass {
-	
-		if(trim($sPayload) == '') {
-			Helper::Trace('Payload is empty.');
-			throw new Exception('Payload is empty.');
-		}
+	public function GetHttpRequest() : HttpRequest {
 
-		Helper::Trace('Received payload: %1$s', $sPayload);
-		
-		// Payloads can be either encrypted or unencrypted (Sodium not available on the iTop instance that is requesting news messages).
-		// Either way, they are base64 encoded.
-		$sPayload = base64_decode($sPayload);
-		
-		// Doesn't seem regular JSON yet; try unsealing
-		if(substr($sPayload, 0, 1) !== '{') {
+		return $this->oHttpRequest;
 
-			Helper::Trace('No JSON yet, try unsealing the payload.');
-			
-			$sPrivateKey = static::GetKeySodium(eCryptographyKeyType::PrivateKeyCryptoBox);
-			// The public key must match the one defined in the "Source" (iSource) for this news provider.
-			$sPublicKey = static::GetKeySodium(eCryptographyKeyType::PublicKeyCryptoBox);
-
-			$sPayload = sodium_crypto_box_seal_open($sPayload, sodium_crypto_box_keypair_from_secretkey_and_publickey($sPrivateKey, $sPublicKey));
-			
-		}
-		
-		$oPayload = json_decode($sPayload);
-
-		if($oPayload === null) {
-
-			Helper::Trace('Unable to decode the payload. This is probably not JSON.');
-			throw new Exception('Unable to decode the payload. This is probably not JSON.');
-
-		}
-
-		Helper::Trace('Plain payload: %1$s', json_encode($oPayload, JSON_PRETTY_PRINT));
-		
-		return $oPayload;
-		
 	}
 
 }

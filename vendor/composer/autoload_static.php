@@ -22,6 +22,8 @@ class ComposerStaticInitc0a158d0fcccb2bd719587cf1e89e2ed
         'JeffreyBostoenExtensions\\News\\Client' => __DIR__ . '/../..' . '/src/JeffreyBostoenExtensions/News/Client.php',
         'JeffreyBostoenExtensions\\News\\FrontEndReadyScripts' => __DIR__ . '/../..' . '/src/JeffreyBostoenExtensions/News/FrontEndReadyScripts.php',
         'JeffreyBostoenExtensions\\News\\Helper' => __DIR__ . '/../..' . '/src/JeffreyBostoenExtensions/News/Helper.php',
+        'JeffreyBostoenExtensions\\News\\HttpRequest' => __DIR__ . '/../..' . '/src/JeffreyBostoenExtensions/News/HttpRequest.php',
+        'JeffreyBostoenExtensions\\News\\HttpRequestPayload' => __DIR__ . '/../..' . '/src/JeffreyBostoenExtensions/News/HttpRequestPayload.php',
         'JeffreyBostoenExtensions\\News\\JsonPage' => __DIR__ . '/../..' . '/src/JeffreyBostoenExtensions/News/JsonPage.php',
         'JeffreyBostoenExtensions\\News\\Page' => __DIR__ . '/../..' . '/src/JeffreyBostoenExtensions/News/Page.php',
         'JeffreyBostoenExtensions\\News\\Provider' => __DIR__ . '/../..' . '/src/JeffreyBostoenExtensions/News/Provider.php',

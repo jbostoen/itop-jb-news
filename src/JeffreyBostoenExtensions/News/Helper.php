@@ -10,6 +10,7 @@ namespace JeffreyBostoenExtensions\News;
 
 // Generic.
 use Exception;
+use SodiumException;
 
 // iTop internals.
 use DBObjectSearch;
@@ -933,6 +934,80 @@ JS
 
 		return ($oSetUsers->Count() == 1);
 
+	}
+
+
+	/**
+	 * Returns all classes that implement the specified interface.
+	 *
+	 * @param string $sInterface
+	 * @return string[]
+	 */
+	public static function GetImplementations(string $sInterface) : array {
+
+		$aResult = [];
+
+		foreach (get_declared_classes() as $sClassName) {
+			
+			$aImplementations = class_implements($sClassName);
+
+			if (in_array($sInterface, $aImplementations)) {
+				$aResult[] = $sClassName;
+			}
+
+		}
+
+		return $aResult;
+	}
+
+	
+	/**
+	 * Returns Sodium private key.
+	 *
+	 * @param eCryptographyKeyType $eKeyType Should be one of these: private_key_file_crypto_sign , private_key_file_crypto_box
+	 *
+	 * @return string
+	 *
+	 * @throws Exception
+	 */
+	public static function GetKeySodium(eCryptographyKeyType $eKeyType) : string {
+		
+		$sKeyType = $eKeyType->value;
+
+		// Get private key.
+		$aKeySettings = MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'sodium', []);
+		
+		if(is_array($aKeySettings) == false || array_key_exists($sKeyType, $aKeySettings) == false) {
+			
+			Helper::Trace('Missing %1$s key settings.', $sKeyType);
+			throw new Exception('Missing '.$sKeyType.' key settings.');
+
+		}
+		
+		$sKeyFile = $aKeySettings[$sKeyType];
+			
+		if(file_exists($sKeyFile) == false) {
+			
+			Helper::Trace('Missing %1$s key file.', $sKeyType);
+			throw new Exception('Missing '.$sKeyType.' key file.');
+		
+		}
+			
+		$sKey = file_get_contents($sKeyFile);
+		
+		try {
+
+			$sBinKey = sodium_base642bin($sKey, SODIUM_BASE64_VARIANT_URLSAFE);
+
+		}
+		catch(SodiumException $e) {
+
+			Helper::Trace('Failed to use %1$s key to convert base64 to binary key: %2$s', $sKeyType, $e->getMessage());
+
+		}
+
+		return $sBinKey;
+		
 	}
 
 }
