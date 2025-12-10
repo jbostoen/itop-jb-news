@@ -1,0 +1,51 @@
+<?php
+
+/**
+ * @copyright   Copyright (c) 2019-2025 Jeffrey Bostoen
+ * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
+ * @version     3.2.250909
+ */
+
+namespace JeffreyBostoenExtensions\News\v100;
+
+use JeffreyBostoenExtensions\News\Base\Message as Base;
+
+// iTop internals.
+use ThirdPartyNewsMessage;
+
+/**
+ * Class Message. Represents an outgoing message to a client. (API v1.0.0)
+ */
+class Message extends Base {
+    
+    /**
+     * @var string $target_profiles The target profiles (comma seperated) that should see this message.
+     */
+    public string $target_profiles = 'Administrator';
+
+    /**
+     * @var Translation[] $translations_list The translations of the message.
+     */
+    public array $translations_list = [];
+
+    /**
+     * Converts a ThirdPartyNewsMessage to a Message object.
+     *
+     * @param ThirdPartyNewsMessage $oMessage
+     * @return Message
+     */
+    public static function FromThirdPartyNewsMessage(ThirdPartyNewsMessage $oMessage) : Message {
+
+        /** @var Message $oMsg */
+        $oMsg = parent::FromThirdPartyNewsMessage($oMessage);
+
+        $oMsg->target_profiles = 'Administrator'; // "Administrators" were always targeted in the messages that were published.
+        $oMsg->icon = $oMsg->GetIcon()->GetRef();
+
+        return $oMsg;
+
+    }
+
+    
+}
+

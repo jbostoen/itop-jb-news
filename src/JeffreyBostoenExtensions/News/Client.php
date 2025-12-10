@@ -9,6 +9,12 @@
 
 namespace JeffreyBostoenExtensions\News;
 
+use JeffreyBostoenExtensions\News\Base\HttpRequest as HttpRequest_Base;
+use JeffreyBostoenExtensions\News\v200\{
+	HttpRequest,
+	Message,
+};
+
 // iTop internals.
 use DBObjectSearch;
 use DBObjectSet;
@@ -25,15 +31,6 @@ use Exception;
 use ModuleInstallation;
 use stdClass;
 
-
-/**
- * Enum eOperationMode. The operation mode.
- */
-enum eOperationMode : string {
-	case Cron = 'cron';
-	case Mitm = 'mitm';
-}
-
 /**
  * Interface iSource. Interface to use when implementing news sources.
  */
@@ -42,15 +39,14 @@ interface iSource {
 	/**
 	 * A source can add extra data to the payload that will be sent from the client to the server.
 	 * 
-	 * @param eOperation $eOperation The operation that is being executed.
-	 * @param HttpRequestPayload $oPayload The payload that will be sent from the client to the server.
+	 * @param HttpRequest $oRequest The request (payload) that will be sent from the client to the server.
 	 * 
 	 * @details Mind that by default certain parameters are already included in the HTTP request to the news source.
 	 * @see Client::GetPayload()
 	 *
 	 * @return array Key/value pairs to send to the news source.
 	 */
-	public static function SetPayload(eOperation $eOperation, HttpRequestPayload $oPayload) : void;
+	public static function SetPayload(HttpRequest $oRequest) : void;
 	
 	/**
 	 * Returns the base64 encoded public key for the Sodium implementation (crypto box).  
@@ -192,16 +188,13 @@ abstract class Client {
 		
 		$eOperation = eOperation::GetMessagesForInstance;
 		
-		// Build list of news sources
-		// -
+		// - Build list of news sources.
 		
 			$aSources = static::GetSources();
 			Helper::Trace('Request messages from %1$s remote news source(s).', count($aSources));
 		
 			
-		// Request messages from each news source
-		// -
-		
+		// - Request messages from each news source.
 		
 			foreach($aSources as $sSourceClass) {
 				
@@ -250,30 +243,36 @@ abstract class Client {
 
 			}
 
+		/** @var Message[] $aMessages */
 		$aMessages = $oResponse->messages;
 
-		// If cryptography was enabled, the HTTP response must contain the same encryption library and a signature.
-		if(property_exists($oResponse, 'signature') == true) {
+		// Implement supported libraries. For now, only Sodium (so this check is currently a bit redundant).
+		if($eCryptographyLib == eCryptographyLibrary::Sodium) {
 
-			// Implement supported libraries. For now, only Sodium (so this check is currently a bit redundant).
-			if($eCryptographyLib == eCryptographyLibrary::Sodium) {
-			
-				$sSignature = sodium_base642bin($oResponse->signature, SODIUM_BASE64_VARIANT_URLSAFE);
-				$sPublicKey = sodium_base642bin($sSourceClass::GetPublicKeySodiumCryptoSign(), SODIUM_BASE64_VARIANT_URLSAFE);
+			// If cryptography was enabled, the HTTP response must contain the same encryption library and a signature.
+			if(property_exists($oResponse, 'signature') == true) {
+
+				// - Verify entire response (except signature) using public key.
 					
-				// Verify using public key.
-				if(sodium_crypto_sign_verify_detached($sSignature, json_encode($aMessages), $sPublicKey)) {
-					
-					// Verified.
-					Helper::Trace('Signature is valid.');
-					
-				} 
-				else {
-					
-					Helper::Trace('Unable to verify the signature using the public key for "%1$s".', $sSourceClass);
-					return;
-					
-				}
+					$sSignature = sodium_base642bin($oResponse->signature, SODIUM_BASE64_VARIANT_URLSAFE);
+					$sPublicKey = sodium_base642bin($sSourceClass::GetPublicKeySodiumCryptoSign(), SODIUM_BASE64_VARIANT_URLSAFE);
+
+					$oClonedResponse = clone $oResponse;
+					$oClonedResponse->signature = null;
+						
+
+					if(sodium_crypto_sign_verify_detached($sSignature, json_encode($oClonedResponse), $sPublicKey)) {
+						
+						// Verified.
+						Helper::Trace('Signature is valid.');
+						
+					} 
+					else {
+						
+						Helper::Trace('Unable to verify the signature using the public key for "%1$s".', $sSourceClass);
+						return;
+						
+					}
 				
 			}
 			else {
@@ -561,11 +560,11 @@ abstract class Client {
 	 * @param eOperation $eOperation The operation that is being executed.
 	 * @param eOperationMode $eOperationMode The operation mode (e.g. cron, mitm).
 	 *
-	 * @return HttpRequestPayload The payload.
+	 * @return HttpRequest The payload.
 	 *
-	 * @details Mind that this is executed over and over for each news source.
+	 * @details Mind that this is executed once for each news source, as the payload might differ.
 	 */
-	public static function GetPayload(string $sSourceClass, eOperation $eOperation, eOperationMode $eOperationMode) : HttpRequestPayload {
+	public static function GetPayload(string $sSourceClass, eOperation $eOperation, eOperationMode $eOperationMode) : HttpRequest {
 		
 		$sNewsUrl = $sSourceClass::GetUrl();
 		
@@ -578,8 +577,8 @@ abstract class Client {
 		
 		$eCryptographyLib = Helper::GetCryptographyLibrary();
 		
-		/** @var HttpRequestPayload $oPayload */
-		$oPayload = new HttpRequestPayload();
+		/** @var HttpRequest $oPayload */
+		$oPayload = new HttpRequest();
 		$oPayload->operation = $eOperation->value;
 		$oPayload->instance_hash = $sInstanceHash;
 		$oPayload->instance_hash2 = $sInstanceHash2;
@@ -609,6 +608,7 @@ abstract class Client {
 				$oPayload->extension_version = $oModuleInstallation->Get('version');
 			}
 		
+		// @todo Check if the below is still true.
 		if(strpos($sNewsUrl, '?') !== false) {
 			
 			// To understand the part below:
@@ -754,7 +754,7 @@ abstract class Client {
 		
 		
 		// -These are default parameters, which can be overridden or extended by the provider.
-			$sSourceClass::SetPayload($eOperation, $oPayload);
+			$sSourceClass::SetPayload($oPayload);
 
 		// - Return the final payload.
 
@@ -763,15 +763,18 @@ abstract class Client {
 	}
 	
 	/**
-	 * Prepare the payload: Perform JSON encoding and then base64 encoding.  
-	 * If Sodium is available, the client attempts to encrypt it before sending it to the server.
+	 * Prepare the payload: 
+	 * 
+	 * - Encode payload as JSON.
+	 * - If Sodium is available, the client attempts to encrypt it before sending it to the server.
+	 * - Encode using base64.
 	 *
 	 * @param string $sSourceClass Name of the news source class.
-	 * @param HttpRequestPayload $oPayload Payload to be prepared.
+	 * @param HttpRequest_Base $oPayload Payload to be prepared. This is a base class, as this method is used in automated tests for older client versions too.
 	 *
 	 * @return string Binary data
 	 */
-	public static function PreparePayload(string $sSourceClass, HttpRequestPayload $oPayload) : string {
+	public static function PreparePayload(string $sSourceClass, HttpRequest_Base $oPayload) : string {
 		
 		$sPayload = json_encode($oPayload);
 		

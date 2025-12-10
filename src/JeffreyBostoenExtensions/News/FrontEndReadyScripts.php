@@ -93,6 +93,11 @@ class FrontEndReadyScripts implements iBackofficeReadyScriptExtension {
 
 					$sThirdPartyName = $sSourceClass::GetThirdPartyName();
 				
+					// - Add AJAX call to retrieve news from third party.
+					//   Unfortunately, CORS is out of our control, so we have to use JSONP here.
+					//   This means we're restricted to the GET method (and the limitations of it).
+					//   @todo It means we should have some form of chunking?
+					//	 @todo Should we split the data payload?
 					$sCode .=
 <<<JS
 						$.ajax({

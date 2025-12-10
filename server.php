@@ -19,13 +19,13 @@ require_once(APPROOT.'/application/loginwebpage.class.inc.php');
 use JeffreyBostoenExtensions\News\{
     eApiVersion,
 	Helper,
-	Server
+	ServerWorker
 };
 
 
 try {
 	
-	$oServer = new Server();
+	$oServer = new ServerWorker();
 	$oServer->ProcessIncomingRequest();
 	
 

@@ -28,6 +28,42 @@ use ThirdPartyNewsMessage;
 use ThirdPartyNewsMessageTranslation;
 
 
+
+
+/**
+ * Trait ServerWorkerTrait. Adds server worker handling to a class.
+ */
+trait ServerWorkerTrait {
+
+    /**
+     * @var ServerWorker|null The server worker handling this request.
+     */
+    private ServerWorker|null $oWorker;
+
+
+	/**
+	 * Sets the server worker.
+	 *
+	 * @param ServerWorker|null $oWorker
+	 * @return void
+	 */
+	public function SetWorker(ServerWorker|null $oWorker) : void {
+		$this->oWorker = $oWorker;
+	}
+
+	/**
+	 * Returns the server worker.
+	 *
+	 * @return ServerWorker
+	 */
+	public function GetWorker() : ServerWorker {
+		return $this->oWorker;
+	}
+
+
+}
+
+
 /**
  * Enum eApiVersion. Defines the API versions that have been in use so far.
  */
@@ -60,6 +96,16 @@ enum eOperation : string {
 	case ReportReadStatistics = 'report_read_statistics';
 
 }
+
+
+/**
+ * Enum eOperationMode. The operation mode.
+ */
+enum eOperationMode : string {
+	case Cron = 'cron';
+	case Mitm = 'mitm';
+}
+
 
 /**
  * Enum eUserOperation. Defines the operations that can be performed by the extension and are requested/triggered by a user.
@@ -589,6 +635,7 @@ JS
 		 */
 		$oTranslation = null;
 		
+		/** @var ThirdPartyNewsMessageTranslation $oCurrentTranslation */
 		while($oCurrentTranslation = $oSetTranslations->Fetch()) {
 			
 			switch(true) {
@@ -863,7 +910,7 @@ JS
 		
 		// Check if the cryptography library is set in the iTop configuration.
 		$sPreferredCryptoLib = strtolower(MetaModel::GetConfig()->GetEncryptionLibrary());
-		$eCryptographyLib = eCryptographyLibrary::tryFrom($sPreferredCryptoLib);
+		$eCryptographyLib = eCryptographyLibrary::tryFrom(strtolower($sPreferredCryptoLib));
 
 		// If by now there is no cryptography library, check if Sodium is available as a fallback.
 		// For security reasons, encrypted communication with news providers is heavily recommended.

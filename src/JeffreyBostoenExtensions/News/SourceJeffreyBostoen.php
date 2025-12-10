@@ -8,6 +8,8 @@
 
 namespace JeffreyBostoenExtensions\News;
 
+use JeffreyBostoenExtensions\News\v200\HttpRequest;
+
 // iTop internals.
 
 /**
@@ -27,10 +29,10 @@ abstract class SourceJeffreyBostoen implements iSource {
 	/**
 	 * @inheritDoc
 	 */
-	public static function SetPayload(eOperation $eOperation, HttpRequestPayload $oPayload) : void {
+	public static function SetPayload(HttpRequest $oRequest) : void {
 
-		// A custom payload.
-		// $oPayload->example = 'custom info';
+		// A custom property.
+		// $oRequest->example = 'custom info';
 		
 	}
 	
