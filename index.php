@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2025 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.250909
+ * @version     3.2.251212
  *
  */
 
@@ -15,6 +15,10 @@
 
 use JeffreyBostoenExtensions\News\{
 	Client,
+	Helper as NewsHelper
+};
+
+use JeffreyBostoenExtensions\ServerCommunication\{
     eApiVersion,
 	eOperation,
 	eOperationMode,
@@ -102,7 +106,7 @@ try {
 			case eUserOperation::FetchMessages:
 			
 				// Retrieve messages.
-				$aMessages = Helper::GetUnreadMessagesForUser();
+				$aMessages = NewsHelper::GetUnreadMessagesForUser();
 				$sMessagesJSON = json_encode($aMessages);
 
 				// Prepare response.
@@ -115,7 +119,7 @@ try {
 			case eUserOperation::MarkAllAsRead:
 			
 				// Mark messages as read.
-				$iMessageCount = Helper::MarkAllMessagesAsReadForUser();
+				$iMessageCount = NewsHelper::MarkAllMessagesAsReadForUser();
 				$sMessageCountJSON = json_encode(array(
 					'counter' => $iMessageCount,
 					'message' => $iMessageCount.' message(s) marked as read',
@@ -131,23 +135,23 @@ try {
 			case eUserOperation::ViewAll:
 			
 				$oPage = new Page('All messages');
-				Helper::MakeAllMessagesPage($oPage);
-				Helper::MarkAllMessagesAsReadForUser(); // Open to discussion: when all messages are rendered on an overview page: should they be marked as read?
+				NewsHelper::MakeAllMessagesPage($oPage);
+				NewsHelper::MarkAllMessagesAsReadForUser(); // Open to discussion: when all messages are rendered on an overview page: should they be marked as read?
 				$oPage->output();
 				break;
 
 			case eUserOperation::Redirect:
 			
 				// Mark message as read when the user requested to see the details.
-				$bMarked = Helper::MarkMessageAsReadForUser($iMessageId);
+				$bMarked = NewsHelper::MarkMessageAsReadForUser($iMessageId);
 
 				// Redirect to final URL
 				/** @var ThirdPartyNewsMessage $oMessage */
 				$oMessage = MetaModel::GetObject('ThirdPartyNewsMessage', $iMessageId);
 				
-				if($oMessage !== null && Helper::MessageIsApplicable($oMessage) == true) {
+				if($oMessage !== null && NewsHelper::MessageIsApplicable($oMessage) == true) {
 					
-					$oTranslation = Helper::GetTranslationForUser($oMessage);
+					$oTranslation = NewsHelper::GetTranslationForUser($oMessage);
 					header('Location: '.$oTranslation->Get('url'));
 				
 				}
@@ -165,7 +169,7 @@ try {
 					if(class_exists($sSourceClass) === false) {
 						
 						$oPage->output(json_encode([
-							'error' => 'News source does not exist.'
+							'error' => 'External server source does not exist.'
 						]));
 						break;
 						
@@ -179,9 +183,9 @@ try {
 						Client::ProcessRetrievedMessages($oApiResponse, $sSourceClass);
 					}
 
-				// - Return data to post to news source ('report_read_statistics').
+				// - Return data to post to external server source ('report_read_statistics').
 				
-					$oPayload = Client::GetPayload($sSourceClass, eOperation::ReportReadStatistics, eOperationMode::Mitm);
+					$oPayload = Client::BuildHttpRequest($sSourceClass, eOperation::ReportReadStatistics, eOperationMode::Mitm);
 					$sPayload = Client::PreparePayload($sSourceClass, $oPayload);
 				
 				$oPage->output(json_encode([

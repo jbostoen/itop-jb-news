@@ -3,17 +3,19 @@
 /**
  * @copyright   Copyright (c) 2019-2025 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.250909
+ * @version     3.2.251212
  *
  */
 
 namespace JeffreyBostoenExtensions\News;
 
-use JeffreyBostoenExtensions\News\Base\HttpRequest as HttpRequest_Base;
-use JeffreyBostoenExtensions\News\v200\{
-	HttpRequest,
-	Message,
+use JeffreyBostoenExtensions\News\Message;
+use JeffreyBostoenExtensions\ServerCommunication\{
+	Client as BaseClient,
+	eOperation,
+	eOperationMode,
 };
+use JeffreyBostoenExtensions\ServerCommunication\v210\HttpRequest;
 
 // iTop internals.
 use DBObjectSearch;
@@ -22,114 +24,34 @@ use MetaModel;
 use ormDocument;
 
 // iTop classes.
-use KeyValueStore;
 use ThirdPartyNewsMessage;
 use ThirdPartyNewsMessageTranslation;
 
 // Generic.
 use Exception;
-use ModuleInstallation;
 use stdClass;
 
 /**
- * Interface iSource. Interface to use when implementing news sources.
+ * Class Client. A common client to send and retrieve data from one or more third-party (non Combodo) external servers (person/organization).
  */
-interface iSource {
+abstract class Client extends BaseClient {
 	
+
 	/**
-	 * A source can add extra data to the payload that will be sent from the client to the server.
-	 * 
-	 * @param HttpRequest $oRequest The request (payload) that will be sent from the client to the server.
-	 * 
-	 * @details Mind that by default certain parameters are already included in the HTTP request to the news source.
-	 * @see Client::GetPayload()
+	 * Returns an object set of key/value pairs. Each key will be an identifier for a external server, and the value a timestamp.
 	 *
-	 * @return array Key/value pairs to send to the news source.
+	 * @return array Hashtable where the key is the external server name, and the value is the last retrieved date/time.
 	 */
-	public static function SetPayload(HttpRequest $oRequest) : void;
-	
-	/**
-	 * Returns the base64 encoded public key for the Sodium implementation (crypto box).  
-	 * A news source must share a public key with the clients.  
-	 * This public key will be used to seal data which can then only be read by the news server.
-	 *
-	 * @return string
-	 */
-	public static function GetPublicKeySodiumCryptoBox() : string;
-
-	/**
-	 * Returns the base64 encoded public key for a Sodium implementation (crypto sign).  
-	 * A news source must share a public key with the clients.  
-	 * This public key will be used to verify the news message contents of the source, to avoid tampering.
-	 *
-	 * @return string
-	 */
-	public static function GetPublicKeySodiumCryptoSign() : string;
-	
-	/**
-	 * Returns the name of third party news source.  
-	 * This is used as a unique identifier, so do not use an existing one. It should remain consistent.
-	 *
-	 * @return string The name of the third party news source.
-	 */
-	public static function GetThirdPartyName() : string;
-
-	/**
-	 * Returns the URL of the news source. 
-	 * News will be retrieved from this source.
-	 */
-	public static function GetUrl() : string;
-
-
-	/**
-	 * Returns an SVG logo. (Actual SVG, not a URL).
-	 *
-	 * @return string
-	 */
-	public static function GetLogoSVG() : string;
-
-}
-
-/**
- * Class NewsClient. A news client that retrieves messages from one or more third-party (non Combodo) news sources (person/organization).
- */
-abstract class Client {
-	
-	/** @var array $aCachedPayloads This array is used to cache some payloads that are the same for multiple news sources. */
-	public static $aCachedPayloads = [];
-
-
-	/**
-	 * Returns a sanitized version (only keeping alphabetical characters and numbers) of the third-party news source name.
-	 *
-	 * @param string $sNewsSource
-	 * @return string
-	 */
-	public static function GetSanitizedNewsSourceName(string $sNewsSource) : string {
-
-		$sNewsSource = basename($sNewsSource);
-		
-		// Sanitize the news source name to be used as a key in the KeyValueStore.
-		// This is to avoid issues with special characters, spaces, etc.
-		return 'source_'. preg_replace('/[^a-zA-Z0-9]+/', '', $sNewsSource);
-		
-	}
-	
-	/**
-	 * Returns an object set of key/value pairs. Each key will be an identifier for a news source, and the value a timestamp.
-	 *
-	 * @return array Hashtable where the key is the news source name, and the value is the last retrieved date/time.
-	 */
-	public static function GetLastRetrievedDateTimePerNewsSource() : array {
+	public static function GetLastRetrievedDateTimePerExternalServerSource() : array {
 		
 		$aDateTimes = [];
 
-		// - Ensure every news source has a last retrieved date/time.
+		// - Ensure every external server has a last retrieved date/time.
 
-			foreach(static::GetSources() as $sNewsSource) {
+			foreach(static::GetSources() as $sExtServerSource) {
 
-				$sNewsSource = static::GetSanitizedNewsSourceName($sNewsSource);
-				$aDateTimes[$sNewsSource] = '1970-01-01 00:00:00'; // Default value
+				$sExtServerSource = static::GetSanitizedExtServerName($sExtServerSource);
+				$aDateTimes[$sExtServerSource] = '1970-01-01 00:00:00'; // Default value
 			
 			}
 
@@ -152,79 +74,64 @@ abstract class Client {
 		return $aDateTimes;
 		
 	}
-	
-	
-	/**
-	 * Saves a key/value for a particular news source.
-	 *
-	 * @param string $sNewsSource Name of the news source (can be unsanitized).
-	 * @param string $sSuffix Suffix to append to the sanitized version of the news source and "_". (e.g. 'last_retrieval', 'token').
-	 * @param string $sValue The value to store.
-	 *
-	 * @return void
-	 */
-	public static function StoreKeyValue(string $sNewsSource, string $sSuffix, string $sValue) : void {
-		
-		$sKeyName = static::GetSanitizedNewsSourceName($sNewsSource).'_'.$sSuffix;
-		
-		/** @var KeyValueStore $oKeyValueStore */
-		$oKeyValueStore = Helper::GetKeyValueStore($sKeyName) ?? MetaModel::NewObject('KeyValueStore', [
-			'namespace' => Helper::MODULE_CODE,
-			'key_name' => $sKeyName,
-		]);
-		$oKeyValueStore->Set('value', $sValue);
-		$oKeyValueStore->DBWrite();
-		
-	}
-	
-	
-	
+
+
 	/**
 	 * Gets all the relevant messages for this instance.
 	 *
 	 * @return void
 	 */
-	public static function RetrieveFromRemoteServer() : void {
+	public static function RetrieveMessagesFromExternalServer() : void {
 		
 		$eOperation = eOperation::GetMessagesForInstance;
-		
-		// - Build list of news sources.
-		
-			$aSources = static::GetSources();
-			Helper::Trace('Request messages from %1$s remote news source(s).', count($aSources));
-		
+
+		static::DoPostAll($eOperation);
 			
-		// - Request messages from each news source.
-		
-			foreach($aSources as $sSourceClass) {
-				
-				$oResponse = static::DoPost($sSourceClass, $eOperation);
+	}
 
-				if($oResponse === null) {
-					continue;
-				}
 
-				static::ProcessRetrievedMessages($oResponse, $sSourceClass);
-				
+	/**
+	 * Process the response from the external server.
+	 *
+	 * @param string $sExtServerClass
+	 * @param eOperation $eOperation
+	 * @param stdClass $oResponse
+	 * @return void
+	 */
+	public static function ProcessResponse(string $sExtServerClass, eOperation $eOperation, stdClass $oResponse) : void {
+
+		try {
+			
+			if($eOperation == eOperation::GetMessagesForInstance) {
+				static::ProcessRetrievedMessages($oResponse, $sExtServerClass);
 			}
-			
+
+		}
+		catch(Exception $e) {
+
+			Helper::Trace('Error occurred while processing response from %1$s:', static::GetSanitizedExtServerName($sExtServerClass));
+			Helper::Trace('Exception: %1$s', $e->getMessage());
+			Helper::Trace(json_encode($oResponse));
+
+		}
+
 	}
 	
 	/**
 	 * Process retrieved messages.
 	 * 
-	 * In case the HTTP response from the news server fails to meet the expected format,  
+	 * In case the HTTP response from the external server fails to meet the expected format,  
 	 * it will be logged and the process will be aborted gracefully.
 	 *
-	 * @param stdClass $oResponse The HTTP response from the news server.
-	 * @param string $sSourceClass Name of the news source class.
+	 * @param stdClass $oResponse The HTTP response from the external server.
+	 * @param string $sExtServerClass Name of the external server class.
 	 *
 	 * @return void
 	 *
 	 */
-	public static function ProcessRetrievedMessages(stdClass $oResponse, string $sSourceClass) : void {
+	public static function ProcessRetrievedMessages(stdClass $oResponse, string $sExtServerClass) : void {
 
-		$sThirdPartyName = $sSourceClass::GetThirdPartyName();
+		$sThirdPartyName = $sExtServerClass::GetThirdPartyName();
 
 		// Assume these messages are in the correct format.
 		// If the format has changed in a backwards incompatible way, the API should simply not return any messages.
@@ -255,12 +162,11 @@ abstract class Client {
 				// - Verify entire response (except signature) using public key.
 					
 					$sSignature = sodium_base642bin($oResponse->signature, SODIUM_BASE64_VARIANT_URLSAFE);
-					$sPublicKey = sodium_base642bin($sSourceClass::GetPublicKeySodiumCryptoSign(), SODIUM_BASE64_VARIANT_URLSAFE);
+					$sPublicKey = sodium_base642bin($sExtServerClass::GetPublicKeySodiumCryptoSign(), SODIUM_BASE64_VARIANT_URLSAFE);
 
 					$oClonedResponse = clone $oResponse;
 					$oClonedResponse->signature = null;
-						
-
+					
 					if(sodium_crypto_sign_verify_detached($sSignature, json_encode($oClonedResponse), $sPublicKey)) {
 						
 						// Verified.
@@ -269,7 +175,7 @@ abstract class Client {
 					} 
 					else {
 						
-						Helper::Trace('Unable to verify the signature using the public key for "%1$s".', $sSourceClass);
+						Helper::Trace('Unable to verify the signature using the public key for "%1$s".', $sExtServerClass);
 						return;
 						
 					}
@@ -372,7 +278,7 @@ abstract class Client {
 
 				// - Copy the properties to the DBObject.
 				
-					// - Use the internal name of the news source (as known to this instance).
+					// - Use the internal name of the external server (as known to this instance).
 					$oMessage->Set('thirdparty_name', $sThirdPartyName);
 
 					// - Otherwise, trust the source.
@@ -479,21 +385,21 @@ abstract class Client {
 		
 		// - Save this as a successful execution (even if some messages or translations were not processed, e.g. because of an error).
 		
-			static::StoreKeyValue($sSourceClass, 'last_retrieval', date('Y-m-d H:i:s'));
+			static::StoreKeyValue($sExtServerClass, 'last_retrieval', date('Y-m-d H:i:s'));
 
 	
 				
 	}
 	
 	/**
-	 * Posts info back to the news server, unless this is disabled (iTop configuration).
+	 * Posts info to the external server, unless this is disabled (iTop configuration).
 	 * 
 	 * This could be used to report statistics about (un)read messages.
 	 *
 	 * @return void
 	 *
 	 */
-	public static function PostToRemoteServer() : void {
+	public static function PostStatisticsToRemoteServer() : void {
 
 		if(MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'disable_reporting', false) == true) {
 			Helper::Trace('Reporting has been disabled.');
@@ -501,137 +407,39 @@ abstract class Client {
 		}
 		
 		$eOperation = eOperation::ReportReadStatistics;
-		
-		Helper::Trace('Send (anonymous) data to remote news sources.');
+
+		Helper::Trace('Send (anonymous) data to remote external servers.');
 		
 		// Other hooks may have been executed already.
 		// Do not leak sensitive data, OQL queries may contain names etc.
 			
 		// - Post statistics on messages to the news server.
-		
-			$aSources = static::GetSources();
-			
-			foreach($aSources as $sSourceClass) {
-				
-				// Not interested in the response of this call:
-				static::DoPost($sSourceClass, $eOperation);
-	
-			}
-			
-		
-	}
-	
-	
-	/**
-	 * Returns class names of active news sources.
-	 *
-	 * @return string[] The names of the classes of the news sources that implement iSource.
-	 */
-	public static function GetSources() : array {
 
-		$aSources = [];
-		$aDisabledSources = MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'disabled_sources', []);
-			
-		foreach(get_declared_classes() as $sClassName) {
-			
-			$aImplementations = class_implements($sClassName);
-			if(in_array(iSource::class, $aImplementations)) {
-				
-				// Skip source if temporarily disabled (perhaps advised at some point for some reason, without needing to disable or uninstall the extension completely)
-				$sThirdPartyName = $sClassName::GetThirdPartyName();
-				if(in_array($sThirdPartyName, $aDisabledSources) == true) {
-					Helper::Trace('Source "%1$s" is disabled in the iTop configuration.');
-					continue;
-				}
-				
-				$aSources[] = $sClassName;
-			}
-			
-		}
-		
-		return $aSources;
+			static::DoPostAll($eOperation);
 		
 	}
+
 	
 	/**
 	 * Returns the default (essential) payload info.
 	 *
-	 * @param string $sSourceClass Name of the news source class.
+	 * @param string $sExtServerClass Name of the external server class.
 	 * @param eOperation $eOperation The operation that is being executed.
 	 * @param eOperationMode $eOperationMode The operation mode (e.g. cron, mitm).
 	 *
 	 * @return HttpRequest The payload.
 	 *
-	 * @details Mind that this is executed once for each news source, as the payload might differ.
+	 * @details Mind that this is executed once for each external server, as the payload might differ.
 	 */
-	public static function GetPayload(string $sSourceClass, eOperation $eOperation, eOperationMode $eOperationMode) : HttpRequest {
-		
-		$sNewsUrl = $sSourceClass::GetUrl();
-		
-		$sApp = defined('ITOP_APPLICATION') ? ITOP_APPLICATION : 'unknown';
-		$sVersion = defined('ITOP_VERSION') ? ITOP_VERSION : 'unknown';
-		
-		$sInstanceHash = Helper::GetInstanceHash();
-		$sInstanceHash2 = Helper::GetInstanceHash2();
-		$sDBUid = Helper::GetDatabaseUID();
-		
-		$eCryptographyLib = Helper::GetCryptographyLibrary();
-		
-		/** @var HttpRequest $oPayload */
-		$oPayload = new HttpRequest();
-		$oPayload->operation = $eOperation->value;
-		$oPayload->instance_hash = $sInstanceHash;
-		$oPayload->instance_hash2 = $sInstanceHash2;
-		$oPayload->db_uid = $sDBUid;
-		$oPayload->env =  MetaModel::GetEnvironment(); // Note: utils::GetCurrentEnvironment() only returns the correct value on the second call in the same sesssion.
-		$oPayload->app_name = $sApp;
-		$oPayload->app_version = $sVersion;
-		$oPayload->crypto_lib = $eCryptographyLib->value;
-		$oPayload->api_version = eApiVersion::v2_0_0->value;
-		$oPayload->token = static::GetClientToken($sSourceClass)->Get('value');
-		$oPayload->mode = $eOperationMode->value;
-		$oPayload->app_root_url = MetaModel::GetConfig()->Get('app_root_url');
+	public static function BuildHttpRequest(string $sExtServerClass, eOperation $eOperation, eOperationMode $eOperationMode) : HttpRequest {
 
-		// - Add the version of this module.
-
-			$oFilter = DBObjectSearch::FromOQL_AllData('SELECT ModuleInstallation WHERE name = :name', []);
-			$oSet = new DBObjectSet($oFilter, [
-				'installed' => false,
-			], [
-				'name' => Helper::MODULE_CODE
-			]);
-			/** @var ModuleInstallation $oModuleInstallation */
-			$oModuleInstallation = $oSet->Fetch();
-
-			// - There should be at least one.
-			if($oModuleInstallation !== null) {
-				$oPayload->extension_version = $oModuleInstallation->Get('version');
-			}
-		
-		// @todo Check if the below is still true.
-		if(strpos($sNewsUrl, '?') !== false) {
-			
-			// To understand the part below:
-			// To make things look more pretty, the URL for a news source could point to a generic domain: 'itop-news.domain.org'.
-			// This could be an index.php file that simply calls an iTop instance.
-			// The index.php script (some sort of proxy) could act as a client to an iTop installation with the "server" setting in this extension set to enabled.
-			// It could make a call to: https://localhost:8182/iTop-clients/web/pages/exec.php?&exec_module=jb-news&exec_page=index.php&exec_env=production-news&operation=get_messages_for_instance&version=1.0 
-			// and it would also need the originally appended parameters that were sent to 'itop-news.domain.org'.
-			$sParameters = explode('?', $sNewsUrl)[1];
-			parse_str($sParameters, $aParameters);
-
-			foreach($aParameters as $sKey => $sValue) {
-				$oPayload->{$sKey} = $sValue;
-			}
-			
-		}
-		
+		$oPayload = parent::BuildHttpRequest($sExtServerClass, $eOperation, $eOperationMode);
 			
 		if($eOperation == eOperation::ReportReadStatistics) {
 			
-			// - Get generic info (not specifically for this one news source).
+			// - Get generic info (not specifically for this one external server).
 			
-				// - Perhaps this info is already cached for another news source.
+				// - Perhaps this info is already cached for another external server.
 				if(isset(static::$aCachedPayloads[$eOperation->value]) == true) {
 					
 					/** @var int[] $aExtTargetUsers Array to store user IDs of users for whom the news extension is enabled. */
@@ -670,7 +478,7 @@ abstract class Client {
 				
 			// - Get ThirdPartyNewsMessage objects of this source and obtain specific info to report back to this source only.
 			
-				$sThirdPartyName = $sSourceClass::GetThirdPartyName();
+				$sThirdPartyName = $sExtServerClass::GetThirdPartyName();
 				
 				$oFilterMessages = DBObjectSearch::FromOQL_AllData('SELECT ThirdPartyNewsMessage WHERE thirdparty_name = :thirdparty_name', [
 					'thirdparty_name' => $sThirdPartyName
@@ -751,191 +559,11 @@ abstract class Client {
 				$oPayload->read_status->messages = $aMessages;
 			
 		}
-		
-		
-		// -These are default parameters, which can be overridden or extended by the provider.
-			$sSourceClass::SetPayload($oPayload);
-
-		// - Return the final payload.
 
 		return $oPayload;
 				
 	}
 	
-	/**
-	 * Prepare the payload: 
-	 * 
-	 * - Encode payload as JSON.
-	 * - If Sodium is available, the client attempts to encrypt it before sending it to the server.
-	 * - Encode using base64.
-	 *
-	 * @param string $sSourceClass Name of the news source class.
-	 * @param HttpRequest_Base $oPayload Payload to be prepared. This is a base class, as this method is used in automated tests for older client versions too.
-	 *
-	 * @return string Binary data
-	 */
-	public static function PreparePayload(string $sSourceClass, HttpRequest_Base $oPayload) : string {
-		
-		$sPayload = json_encode($oPayload);
-		
-		if(Helper::GetCryptographyLibrary() == eCryptographyLibrary::Sodium) {
-			
-			// There is no check here to validate if this key is valid.
-			// It is the responsibility of a news provider to ensure this is okay.
-			$sPublicKey = sodium_base642bin($sSourceClass::GetPublicKeySodiumCryptoBox(), SODIUM_BASE64_VARIANT_URLSAFE);
-			$sBinData = sodium_base642bin(base64_encode($sPayload), SODIUM_BASE64_VARIANT_URLSAFE);
-			
-			// The payload becomes sealed.
-			$sPayload = sodium_crypto_box_seal($sBinData, $sPublicKey);
-		
-		}
-		
-		return base64_encode($sPayload);
 	
-	}
-	
-	/**
-	 * Perform an HTTP POST request to an end point.  
-	 * It returns the content if there is a valid response (HTTP status code 200).
-	 *
-	 * @param string $sSourceClass Name of the news source class.
-	 * @param eOperation $eOperation The operation that is being executed.
-	 *
-	 * @return stdClass|null Null when there is no response (cURL error occurred); otherwise a string.
-	 *
-	 * @throws Exception
-	 */
-	public static function DoPost(string $sSourceClass, eOperation $eOperation) : stdClass|null {
-
-		// Unencrypted payload (easier for debugging).
-		$oPayload = static::GetPayload($sSourceClass, $eOperation, eOperationMode::Cron);
-		$sUrl = $sSourceClass::GetUrl();
-				
-		Helper::Trace('Url: %1$s', $sUrl);
-		Helper::Trace('Data: %1$s', json_encode($oPayload, JSON_PRETTY_PRINT));
-		
-		// Prepare the payload.
-		$sPayload = static::PreparePayload($sSourceClass, $oPayload);
-		
-		$aPostData = [
-			'operation' => $eOperation->value,
-			'api_version' => eApiVersion::v2_0_0->value,
-			'payload' => $sPayload
-		];
-		
-		$cURLConnection = curl_init($sUrl);
-		curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, $aPostData);
-		curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
-		
-		$bSslVerify = MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'curl_ssl_verify', true);
-		if(!$bSslVerify) {
-			curl_setopt($cURLConnection, CURLOPT_SSL_VERIFYPEER, false);
-			curl_setopt($cURLConnection, CURLOPT_SSL_VERIFYHOST, false);
-		}
-
-		$sApiResponse = curl_exec($cURLConnection);
-		
-		if(curl_errno($cURLConnection)) {
-			
-			Helper::Trace('Error: cURL connection failed: %1$s, %2$s',
-				curl_errno($cURLConnection),
-				curl_error($cURLConnection)
-			);
-			
-			// Abort. Otherwise messages might just get deleted while they shouldn't.
-			return null;
-			
-		}
-
-		$iHttpCode = curl_getinfo($cURLConnection, CURLINFO_HTTP_CODE);
-		if($iHttpCode != 200) {
-
-			// Hint: This also allows the news server to occasionally skip requests, by returning a different HTTP status code.
-			Helper::Trace('Error: cURL did not return HTTP status code 200, but %1$s', $iHttpCode);
-			Helper::Trace($sApiResponse);
-			return null;
-
-		}
-
-		$cURLConnection = null;
-
-		// - Common behavior for all requests:
-		//   For any valid response, try to decode and save the token.
-
-			/** @var stdClass|null $oResponse */
-			$oResponse = json_decode($sApiResponse);
-
-			if($oResponse !== null) {
-				static::UpdateClientToken($sSourceClass, $oResponse);
-			}
-			else {
-
-				Helper::Trace('Invalid response, no JSON data returned:');
-				Helper::Trace($sApiResponse);
-
-			}
-
-		return $oResponse;
-
-	}
-
-
-	/**
-	 * Gets the client token for the current iTop instance.
-	 *
-	 * @param string $sSourceClass
-	 * @return KeyValueStore
-	 */
-	public static function GetClientToken(string $sSourceClass) : KeyValueStore {
-		
-		// The client token is used to identify the client (i.e. this iTop instance) to the news server.
-		// The client token is initially created by the client, and then sent to the news server.
-		// Any third-party news server processors can use this token to identify the client, and send another one back that should be saved by the client.
-		
-		$sKeyName = static::GetSanitizedNewsSourceName($sSourceClass).'_client_token';
-
-		/** @var KeyValueStore $oKeyValueStore */
-		$oKeyValueStore = Helper::GetKeyValueStore($sKeyName) ?? MetaModel::NewObject('KeyValueStore', [
-			'namespace' => Helper::MODULE_CODE,
-			'key_name' => $sKeyName,
-			'value' => bin2hex(random_bytes(Helper::CLIENT_TOKEN_BYTES))
-		]);
-
-		// Persist in case this was a new client_token.
-		$oKeyValueStore->DBWrite();
-
-		return $oKeyValueStore;
-		
-	}
-	
-	
-	/**
-	 * Update the client token for the specified news source.
-	 * 
-	 * @param string $sSourceClass The name of the news source class.
-	 * @param stdClass $oResponse The response from the news source, which should contain a "refresh_token" key.
-	 *
-	 * @return void
-	 */
-	public static function UpdateClientToken(string $sSourceClass, stdClass $oResponse) : void {
-		
-		// If a "refresh_token" was received (and it should be), store it.
-
-		if(property_exists($oResponse, 'refresh_token') && is_string($oResponse->refresh_token) && strlen($oResponse->refresh_token) == (Helper::CLIENT_TOKEN_BYTES * 2)) {
-
-			// Store the refresh token for this news source.
-			// Do so before any other processing can fail; as it may be used to uniquely identify this instance.
-			static::StoreKeyValue($sSourceClass, 'client_token', $oResponse->refresh_token);
-			
-		}
-		else {
-			
-			// No refresh token received, while it was expected.
-			// This can simply mean the server (server extension) does not support this feature yet.
-			Helper::Trace('No valid "refresh_token" received from the news source "%1$s".', $sSourceClass);
-			
-		}
-
-	}
 
 }

@@ -17,6 +17,6 @@ if (PHP_VERSION_ID < 50600) {
     throw new RuntimeException($err);
 }
 
-require_once __DIR__ . '/composer/autoload_real.php';
+require_once dirname(dirname(dirname(dirname(dirname(__DIR__))))).'/Personal/htdocs/extensions/jb-news/vendor/composer/autoload_real.php';
 
 return ComposerAutoloaderInitc0a158d0fcccb2bd719587cf1e89e2ed::getLoader();

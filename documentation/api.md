@@ -14,7 +14,7 @@ Servers should offer backward compatibility where available, or respond with a n
 
 ## Version 2.0.0
 
-A basic token system (per news source) has been implemented for each operation.   
+A basic token system (per external server) has been implemented for each operation.   
 Despite "unique" identifiers (database UID, instance UID, environment), a complete environment may have been cloned.  
 This token-based system allows to uniquely identify those instances.
 

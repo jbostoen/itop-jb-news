@@ -3,12 +3,12 @@
 /**
  * @copyright   Copyright (c) 2019-2025 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.250909
+ * @version     3.2.251212
  */
 
 namespace JeffreyBostoenExtensions\News\Base;
 
-use JeffreyBostoenExtensions\News\Helper;
+use JeffreyBostoenExtensions\ServerCommunication\Helper;
 
 // iTop internals.
 use MetaModel;

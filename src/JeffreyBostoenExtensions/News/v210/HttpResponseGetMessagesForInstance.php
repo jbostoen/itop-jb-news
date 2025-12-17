@@ -6,10 +6,10 @@
  * @version     3.2.251212
  */
 
-namespace JeffreyBostoenExtensions\News\v200;
+namespace JeffreyBostoenExtensions\News\v210;
 
-use JeffreyBostoenExtensions\ServerCommunication\v200\HttpResponse;
-
+use JeffreyBostoenExtensions\ServerCommunication\v210\HttpResponse;
+use JeffreyBostoenExtensions\News\v200\MessagesTrait;
 
 /**
 * Class HttpResponseGetMessagesForInstance. A base class for HTTP responses for getting messages for an instance.

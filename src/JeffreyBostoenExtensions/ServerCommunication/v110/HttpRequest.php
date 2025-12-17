@@ -3,13 +3,16 @@
 /**
  * @copyright   Copyright (c) 2019-2025 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.250909
+ * @version     3.2.251212
  */
 
-namespace JeffreyBostoenExtensions\News\v110;
+namespace JeffreyBostoenExtensions\ServerCommunication\v110;
 
-use JeffreyBostoenExtensions\News\Base\HttpRequest as Base;
-use JeffreyBostoenExtensions\News\eCryptographyLibrary;
+use JeffreyBostoenExtensions\ServerCommunication\{
+    eCryptographyLibrary,
+    eOperationMode,
+    Base\HttpRequest as Base,
+};
 
 // Generic.
 use stdClass;
@@ -29,20 +32,6 @@ class HttpRequest extends Base {
      * */
     public string $app_root_url;
 
-
-    /**
-     * Returns a HttpRequestPayload built from the connected client.
-     *
-     * @return HttpRequest
-     */
-    public static function BuildFromConnectedClient() : HttpRequest {
-
-        $oRequest = new HttpRequest();
-        $oRequest->ReadUserProvidedValues();
-        
-        return $oRequest;
-
-    }
 
     /**
      * @inheritDoc
@@ -71,6 +60,16 @@ class HttpRequest extends Base {
     public function GetCryptoLib() : eCryptographyLibrary|null {
 
         return eCryptographyLibrary::tryFrom(strtolower($this->encryption_library));
+
+    }
+
+    
+    /**
+     * @inheritDoc
+     */
+    public function GetOperationMode(): ?eOperationMode {
+
+        return (isset($_POST['operation']) ? eOperationMode::Cron : eOperationMode::Mitm);
 
     }
 

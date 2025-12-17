@@ -54,7 +54,7 @@
         <mxCell id="ZC8OoPljzns8-YZzOIFs-27" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="ZC8OoPljzns8-YZzOIFs-24" target="ZC8OoPljzns8-YZzOIFs-26" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="ZC8OoPljzns8-YZzOIFs-24" value="Call news source endpoint (JSONP)" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
+        <mxCell id="ZC8OoPljzns8-YZzOIFs-24" value="Call external server source endpoint (JSONP)" style="whiteSpace=wrap;html=1;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="300" y="520" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="ZC8OoPljzns8-YZzOIFs-29" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="ZC8OoPljzns8-YZzOIFs-26" target="ZC8OoPljzns8-YZzOIFs-28" edge="1">
@@ -92,13 +92,13 @@
         <mxCell id="OZhyUquxvkUG8-gDUHAd-61" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="OZhyUquxvkUG8-gDUHAd-0" target="OZhyUquxvkUG8-gDUHAd-60" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="OZhyUquxvkUG8-gDUHAd-0" value="List news sources (servers)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fontStyle=1" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+        <mxCell id="OZhyUquxvkUG8-gDUHAd-0" value="List external server sources (servers)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fontStyle=1" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="420" y="20" width="120" height="40" as="geometry" />
         </mxCell>
         <mxCell id="zZ94O031rmLX_5PtTF2R-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="OZhyUquxvkUG8-gDUHAd-4" target="zZ94O031rmLX_5PtTF2R-0" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="OZhyUquxvkUG8-gDUHAd-4" value="&lt;b&gt;Prepare POST payload &lt;br&gt;to send to news server&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;p align=&quot;center&quot;&gt;The data always contains 2 instance hashes, database UID, iTop &lt;br&gt;environment, (iTop) application name and version, encryption library to &lt;br&gt;use, API version (in order to retrieve a response in this format)&lt;br&gt;&lt;/p&gt;&lt;div align=&quot;center&quot;&gt;News source implementations may add additional data here.&lt;br&gt;&lt;br&gt;Final payload contains operation, API version &lt;br&gt;and a base64 encoded version of the data above.&lt;br&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+        <mxCell id="OZhyUquxvkUG8-gDUHAd-4" value="&lt;b&gt;Prepare POST payload &lt;br&gt;to send to news server&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;p align=&quot;center&quot;&gt;The data always contains 2 instance hashes, database UID, iTop &lt;br&gt;environment, (iTop) application name and version, encryption library to &lt;br&gt;use, API version (in order to retrieve a response in this format)&lt;br&gt;&lt;/p&gt;&lt;div align=&quot;center&quot;&gt;external server source implementations may add additional data here.&lt;br&gt;&lt;br&gt;Final payload contains operation, API version &lt;br&gt;and a base64 encoded version of the data above.&lt;br&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="630" y="30" width="430" height="180" as="geometry" />
         </mxCell>
         <mxCell id="OZhyUquxvkUG8-gDUHAd-13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="OZhyUquxvkUG8-gDUHAd-5" target="OZhyUquxvkUG8-gDUHAd-12" edge="1">
@@ -119,7 +119,7 @@
         <mxCell id="OZhyUquxvkUG8-gDUHAd-54" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" source="OZhyUquxvkUG8-gDUHAd-16" target="OZhyUquxvkUG8-gDUHAd-53" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="OZhyUquxvkUG8-gDUHAd-16" value="Stop processing&lt;br&gt;this news source" style="whiteSpace=wrap;html=1;rounded=1;glass=0;strokeWidth=1;shadow=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
+        <mxCell id="OZhyUquxvkUG8-gDUHAd-16" value="Stop processing&lt;br&gt;this external server source" style="whiteSpace=wrap;html=1;rounded=1;glass=0;strokeWidth=1;shadow=0;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
           <mxGeometry x="420" y="750" width="120" height="90" as="geometry" />
         </mxCell>
         <mxCell id="OZhyUquxvkUG8-gDUHAd-40" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="WIyWlLk6GJQsqaUBKTNV-1" edge="1">
@@ -251,13 +251,13 @@
         <mxCell id="C4-Ehp32IlHd3BaQ6FqO-6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="C4-Ehp32IlHd3BaQ6FqO-1" source="C4-Ehp32IlHd3BaQ6FqO-7" target="C4-Ehp32IlHd3BaQ6FqO-39" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="C4-Ehp32IlHd3BaQ6FqO-7" value="List news sources (servers)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fontStyle=1" parent="C4-Ehp32IlHd3BaQ6FqO-1" vertex="1">
+        <mxCell id="C4-Ehp32IlHd3BaQ6FqO-7" value="List external server sources (servers)" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;fontStyle=1" parent="C4-Ehp32IlHd3BaQ6FqO-1" vertex="1">
           <mxGeometry x="420" y="20" width="120" height="40" as="geometry" />
         </mxCell>
         <mxCell id="C4-Ehp32IlHd3BaQ6FqO-8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="C4-Ehp32IlHd3BaQ6FqO-1" source="C4-Ehp32IlHd3BaQ6FqO-9" target="C4-Ehp32IlHd3BaQ6FqO-45" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="C4-Ehp32IlHd3BaQ6FqO-9" value="&lt;b&gt;Prepare POST payload &lt;br&gt;to send to news server&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;p align=&quot;center&quot;&gt;The data always contains 2 instance hashes, database UID, iTop &lt;br&gt;environment, (iTop) application name and version, encryption library to &lt;br&gt;use, API version (in order to retrieve a response in this format)&lt;br&gt;&lt;/p&gt;&lt;div align=&quot;center&quot;&gt;News source implementations may add additional data here.&lt;br&gt;&lt;br&gt;Final payload contains operation, API version &lt;br&gt;and a base64 encoded version of the data above.&lt;br&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;" parent="C4-Ehp32IlHd3BaQ6FqO-1" vertex="1">
+        <mxCell id="C4-Ehp32IlHd3BaQ6FqO-9" value="&lt;b&gt;Prepare POST payload &lt;br&gt;to send to news server&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;p align=&quot;center&quot;&gt;The data always contains 2 instance hashes, database UID, iTop &lt;br&gt;environment, (iTop) application name and version, encryption library to &lt;br&gt;use, API version (in order to retrieve a response in this format)&lt;br&gt;&lt;/p&gt;&lt;div align=&quot;center&quot;&gt;external server source implementations may add additional data here.&lt;br&gt;&lt;br&gt;Final payload contains operation, API version &lt;br&gt;and a base64 encoded version of the data above.&lt;br&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;" parent="C4-Ehp32IlHd3BaQ6FqO-1" vertex="1">
           <mxGeometry x="630" y="30" width="430" height="180" as="geometry" />
         </mxCell>
         <mxCell id="C4-Ehp32IlHd3BaQ6FqO-10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="C4-Ehp32IlHd3BaQ6FqO-1" source="lK_6k5JVga7S2xhUOpL3-2" target="C4-Ehp32IlHd3BaQ6FqO-14" edge="1">
@@ -268,7 +268,7 @@
         <mxCell id="lK_6k5JVga7S2xhUOpL3-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="C4-Ehp32IlHd3BaQ6FqO-1" source="C4-Ehp32IlHd3BaQ6FqO-11" target="lK_6k5JVga7S2xhUOpL3-0" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="C4-Ehp32IlHd3BaQ6FqO-11" value="Add JSONP call in back office&lt;br&gt;( so user calls news source endpoint )" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;" parent="C4-Ehp32IlHd3BaQ6FqO-1" vertex="1">
+        <mxCell id="C4-Ehp32IlHd3BaQ6FqO-11" value="Add JSONP call in back office&lt;br&gt;( so user calls external server source endpoint )" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;glass=0;strokeWidth=1;shadow=0;" parent="C4-Ehp32IlHd3BaQ6FqO-1" vertex="1">
           <mxGeometry x="1115" y="310" width="240" height="60" as="geometry" />
         </mxCell>
         <mxCell id="C4-Ehp32IlHd3BaQ6FqO-12" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="C4-Ehp32IlHd3BaQ6FqO-1" source="C4-Ehp32IlHd3BaQ6FqO-14" target="C4-Ehp32IlHd3BaQ6FqO-16" edge="1">
@@ -283,7 +283,7 @@
         <mxCell id="C4-Ehp32IlHd3BaQ6FqO-15" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="C4-Ehp32IlHd3BaQ6FqO-1" source="C4-Ehp32IlHd3BaQ6FqO-16" target="C4-Ehp32IlHd3BaQ6FqO-37" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="C4-Ehp32IlHd3BaQ6FqO-16" value="Stop processing&lt;br&gt;this news source" style="whiteSpace=wrap;html=1;rounded=1;glass=0;strokeWidth=1;shadow=0;" parent="C4-Ehp32IlHd3BaQ6FqO-1" vertex="1">
+        <mxCell id="C4-Ehp32IlHd3BaQ6FqO-16" value="Stop processing&lt;br&gt;this external server source" style="whiteSpace=wrap;html=1;rounded=1;glass=0;strokeWidth=1;shadow=0;" parent="C4-Ehp32IlHd3BaQ6FqO-1" vertex="1">
           <mxGeometry x="420" y="750" width="120" height="90" as="geometry" />
         </mxCell>
         <mxCell id="C4-Ehp32IlHd3BaQ6FqO-19" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="C4-Ehp32IlHd3BaQ6FqO-1" source="C4-Ehp32IlHd3BaQ6FqO-21" target="C4-Ehp32IlHd3BaQ6FqO-30" edge="1">

@@ -3,11 +3,16 @@
 /**
  * @copyright   Copyright (c) 2019-2025 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.250909
+ * @version     3.2.251212
  *
  */
 
 namespace JeffreyBostoenExtensions\News;
+
+use JeffreyBostoenExtensions\ServerCommunication\{
+	eOperation,
+	eOperationMode
+};
 
 // iTop internals.
 use iBackofficeReadyScriptExtension;
@@ -31,18 +36,18 @@ class FrontEndReadyScripts implements iBackofficeReadyScriptExtension {
 		$eOperation = eOperation::GetMessagesForInstance;
 		$sOperation = $eOperation->value;
 		
-		// - Build list of news sources & check last retrieval date.
+		// - Build list of external servers & check last retrieval date.
 
-			$aSources = Client::GetSources();
-			$aLastRetrieved = Client::GetLastRetrievedDateTimePerNewsSource();
+			$aSources = Client::GetSources($eOperation);
+			$aLastRetrieved = Client::GetLastRetrievedDateTimePerExternalServerSource();
 		
-		// - Request messages from each news source (if needed).
+		// - Request messages from each external server (if needed).
 		
 			foreach($aSources as $sSourceClass) {
 				
-				// - Check if it's necessary to add the script to poll the news source.
+				// - Check if it's necessary to add the script to poll the external server.
 					
-					$sKeyName = Client::GetSanitizedNewsSourceName($sSourceClass);
+					$sKeyName = Client::GetSanitizedExtServerName($sSourceClass);
 					$sLastRetrieved = $aLastRetrieved[$sKeyName];
 					
 					// The cron job runs every X minutes.
@@ -63,15 +68,15 @@ class FrontEndReadyScripts implements iBackofficeReadyScriptExtension {
 						continue; // Skip and process next source.
 					}
 				
-				// - Build request to external news source.
+				// - Build request to external external server.
 				
-					$oPayload = Client::GetPayload($sSourceClass, $eOperation, eOperationMode::Mitm);
+					$oPayload = Client::BuildHttpRequest($sSourceClass, $eOperation, eOperationMode::Mitm);
 					$sPayload = Client::PreparePayload($sSourceClass, $oPayload);
 					
 					$sServerUrl = $sSourceClass::GetUrl();
 					$sApiVersion = eApiVersion::v2_0_0->value;
 					
-					// - Prepare data to send to the news source.
+					// - Prepare data to send to the external server.
 					$oData = new stdClass();
 					$oData->operation = $sOperation;
 					$oData->api_version = $sApiVersion;;
@@ -80,11 +85,11 @@ class FrontEndReadyScripts implements iBackofficeReadyScriptExtension {
 					
 					$sData = json_encode($oData);
 				
-				// - Add HTTP request to external news source.
+				// - Add HTTP request to external external server.
 				// - Add callback method to current iTop environment. Make sure the call back function exists.
 										
 					// @todo Could become more compact in the future. 
-					// But assuming there are not many news sources using this extension at this point, not a priority.
+					// But assuming there are not many external servers using this extension at this point, not a priority.
 				
 					$sClientUrl = utils::GetAbsoluteUrlExecPage().'?'.
 						'&exec_module='.Helper::MODULE_CODE.
@@ -112,7 +117,7 @@ class FrontEndReadyScripts implements iBackofficeReadyScriptExtension {
 								
 								console.log('Retrieved data from {$sThirdPartyName}');
 								
-								// Post response from news source to iTop
+								// Post response from external server to iTop
 								$.ajax({
 										async: true,
 										url: '{$sClientUrl}',
@@ -130,7 +135,7 @@ class FrontEndReadyScripts implements iBackofficeReadyScriptExtension {
 												return;
 											}
 											
-											// Send statistics from iTop to news source (just try, it may fail if the Request-URI becomes too long).
+											// Send statistics from iTop to external server (just try, it may fail if the Request-URI becomes too long).
 											$.ajax({
 												url: '{$sServerUrl}',
 												dataType: 'jsonp',
@@ -156,7 +161,7 @@ class FrontEndReadyScripts implements iBackofficeReadyScriptExtension {
 								
 							},
 							error: function (xhr, status, error) {
-								console.log(`Result for news source {$sThirdPartyName}: \${status} \${error} \${xhr.status} \${xhr.statusText}`);
+								console.log(`Result for external server {$sThirdPartyName}: \${status} \${error} \${xhr.status} \${xhr.statusText}`);
 							}
 						});
 

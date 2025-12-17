@@ -3,19 +3,19 @@
 /**
  * @copyright   Copyright (c) 2019-2025 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.250909
+ * @version     3.2.251212
  */
 
-namespace JeffreyBostoenExtensions\News;
+namespace JeffreyBostoenExtensions\ServerCommunication;
 
-use JeffreyBostoenExtensions\News\v200\HttpRequest;
+use JeffreyBostoenExtensions\ServerCommunication\v210\HttpRequest;
 
 // iTop internals.
 
 /**
- * Class SourceJeffreyBostoen. A news source.
+ * Class SourceJeffreyBostoen. A external server.
  */
-abstract class SourceJeffreyBostoen implements iSource {
+abstract class SourceJeffreyBostoen implements iExternalServer {
 	
 	/**
 	 * @inheritDoc
@@ -26,21 +26,26 @@ abstract class SourceJeffreyBostoen implements iSource {
 		
 	}
 	
+
 	/**
 	 * @inheritDoc
 	 */
-	public static function SetPayload(HttpRequest $oRequest) : void {
+	public static function ModifyHttpRequest(HttpRequest $oRequest) : void {
 
 		// A custom property.
 		// $oRequest->example = 'custom info';
 		
 	}
 	
+
 	/**
 	 * @inheritDoc
 	 */
 	public static function GetUrl() : string {
 
+		return 'https://test.jeffreybostoen.be';
+
+		// @todo Update this!
 		return 'https://itop-news.jeffreybostoen.be';
 	
 	}
@@ -64,6 +69,7 @@ abstract class SourceJeffreyBostoen implements iSource {
 		
 	}
 
+
 	/**
 	 * @inheritDoc
 	 */
@@ -81,6 +87,19 @@ abstract class SourceJeffreyBostoen implements iSource {
 			</g>
 		</svg>
 		SVGXML);
+
+	}
+
+
+	/**
+	 * @inheritDoc
+	 */
+	public static function GetSupportedOperations() : array {
+
+		return [
+			eOperation::GetMessagesForInstance,
+			eOperation::ReportReadStatistics
+		];
 
 	}
 

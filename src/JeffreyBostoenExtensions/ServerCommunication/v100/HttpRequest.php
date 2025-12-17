@@ -3,14 +3,16 @@
 /**
  * @copyright   Copyright (c) 2019-2025 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.250909
+ * @version     3.2.251212
  */
 
-namespace JeffreyBostoenExtensions\News\v100;
+namespace JeffreyBostoenExtensions\ServerCommunication\v100;
 
-use JeffreyBostoenExtensions\News\Base\HttpRequest as Base;
-use JeffreyBostoenExtensions\News\eCryptographyLibrary;
-
+use JeffreyBostoenExtensions\News\eOperation;
+use JeffreyBostoenExtensions\ServerCommunication\Base\HttpRequest as Base;
+use JeffreyBostoenExtensions\ServerCommunication\eCryptographyLibrary;
+use JeffreyBostoenExtensions\ServerCommunication\eOperationMode;
+use JeffreyBostoenExtensions\ServerCommunication\ServerWorker;
 // iTop internals.
 use utils;
 
@@ -25,11 +27,17 @@ class HttpRequest extends Base {
     public string $encryption_library;
 
     /**
-     * Returns a HttpRequestPayload built from the connected client.
+     * @inheritDoc
+     * 
+     * Sets everything based on the info provided in parameters by the connected client.  
+     * Purely for legacy purposes.
      *
      * @return HttpRequestPayload
      */
-    public static function BuildFromConnectedClient() : HttpRequest {
+
+    public function __construct(?ServerWorker $oWorker = null) {
+
+        parent::__construct($oWorker);
 
         // Unlike API 1.1.0 onwards, API 1.0.0 does not have a separate payload object.
         $oRequest = new HttpRequest();
@@ -50,13 +58,21 @@ class HttpRequest extends Base {
 
     
     /**
-     * Returns the requested cryptography library.
-     *
-     * @return eCryptographyLibrary|null
+     * @inheritDoc
      */
-    public function GetCryptoLib() : eCryptographyLibrary|null {
+    public function GetCryptoLib() : ?eCryptographyLibrary {
 
         return eCryptographyLibrary::tryFrom(strtolower($this->encryption_library));
+
+    }
+
+    
+    /**
+     * @inheritDoc
+     */
+    public function GetOperationMode(): ?eOperationMode {
+
+        return (isset($_POST['operation']) ? eOperationMode::Cron : eOperationMode::Mitm);
 
     }
 

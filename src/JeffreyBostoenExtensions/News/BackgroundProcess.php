@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2025 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.250909
+ * @version     3.2.251212
  *
  */
 
@@ -17,7 +17,7 @@ use MetaModel;
 use Exception;
 
 /**
- * Class BackgroundProcess. A background process that pulls news messages from third-party news sources.
+ * Class BackgroundProcess. A background process that pulls news messages from third-party external servers.
  */
 class BackgroundProcess implements iBackgroundProcess {
 	
@@ -42,12 +42,12 @@ class BackgroundProcess implements iBackgroundProcess {
 		}
 		
 		
-		Helper::Trace('Executing background task: Fetch messages from news sources.');
+		Helper::Trace('Executing background task: Fetch messages from external servers.');
 		
 		try {
 			
-			Client::RetrieveFromRemoteServer();
-			Client::PostToRemoteServer();
+			Client::RetrieveMessagesFromExternalServer();
+			Client::PostStatisticsToRemoteServer();
 			
 		}
 		catch(Exception $e) {
