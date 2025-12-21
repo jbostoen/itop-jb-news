@@ -9,6 +9,10 @@
 
 namespace JeffreyBostoenExtensions\News;
 
+use JeffreyBostoenExtensions\ServerCommunication\eOperationMode;
+
+use JeffreyBostoenExtensions\News\Client\Base as Client;
+
 // iTop internals.
 use iBackgroundProcess;
 use MetaModel;
@@ -17,7 +21,7 @@ use MetaModel;
 use Exception;
 
 /**
- * Class BackgroundProcess. A background process that pulls news messages from third-party external servers.
+ * Class BackgroundProcess. A background process that pulls news messages from third-party remote servers.
  */
 class BackgroundProcess implements iBackgroundProcess {
 	
@@ -40,14 +44,20 @@ class BackgroundProcess implements iBackgroundProcess {
 			// The extension is not enabled, so don't do anything.
 			return;
 		}
+		if(MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'client', false) == false) {
+			// The client is not enabled, so don't do anything.
+			return;
+		}
 		
 		
-		Helper::Trace('Executing background task: Fetch messages from external servers.');
+		Helper::Trace('Executing background task: Fetch messages from remote servers.');
 		
 		try {
 			
-			Client::RetrieveMessagesFromExternalServer();
-			Client::PostStatisticsToRemoteServer();
+			$oClient = new Client(eOperationMode::Cron);
+			$oClient->GetMessagesForInstance();
+			$oClient->ReportReadStatistics();
+
 			
 		}
 		catch(Exception $e) {

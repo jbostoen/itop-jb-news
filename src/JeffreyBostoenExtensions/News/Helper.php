@@ -27,6 +27,25 @@ use utils;
 use ThirdPartyNewsMessage;
 use ThirdPartyNewsMessageTranslation;
 
+
+
+/**
+ * Enum eUserOperation. Defines the operations that can be requested/triggered by a user.
+ */
+enum eUserOperation : string {
+
+	case FetchMessages = 'fetch';
+	case GetAllMessages = 'get_all_messages';
+	case MarkAllAsRead = 'mark_all_as_read';
+	case MarkMessageAsRead = 'mark_message_as_read';
+	// case PostMessagesToInstance = 'post_messages_to_instance';
+	case Redirect = 'redirect';
+	case ViewAll = 'view_all';
+
+}
+
+
+
 /**
  * Class Helper. Contains a lot of functions to assist in various requests.
  */

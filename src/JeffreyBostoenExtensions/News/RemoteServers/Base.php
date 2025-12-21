@@ -1,0 +1,502 @@
+<?php
+
+/**
+ * @copyright   Copyright (c) 2019-2025 Jeffrey Bostoen
+ * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
+ * @version     3.2.251212
+ */
+
+namespace JeffreyBostoenExtensions\ServerCommunication\RemoteServers;
+
+use JeffreyBostoenExtensions\News\Helper;
+
+use JeffreyBostoenExtensions\ServerCommunication\{
+	eApiVersion,
+	eOperation,
+	eOperationMode,
+};
+use JeffreyBostoenExtensions\ServerCommunication\RemoteServers\Base as BaseRemoteServer;
+use JeffreyBostoenExtensions\ServerCommunication\Client\Base as Client;
+
+// iTop internals.
+use DBObjectSearch;
+use DBObjectSet;
+use MetaModel;
+use ormDocument;
+
+// iTop classes.
+use ThirdPartyNewsMessage;
+use ThirdPartyMessageReadStatus;
+use User;
+
+// Generic.
+use Exception;
+use stdClass;
+
+/**
+ * Class JeffreyBostoenNews. A remote server.  
+ * 
+ * Note: Also the short name of this class must be unique!
+ */
+class Base extends BaseRemoteServer {
+
+
+	/**
+	 * @inheritDoc
+	 */
+	public function GetSupportedApiVersions(): array {
+
+		return [
+			eApiVersion::v2_1_0,
+		];
+
+	}
+
+
+	/**
+	 * @inheritDoc
+	 */
+	public function GetSupportedOperationModes() : array {
+
+		return [
+			eOperationMode::Cron,
+			eOperationMode::Mitm,
+		];
+
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function OnSendDataToExternalServer(): void {
+		
+		/** @var Client $oClient */
+		$oClient = $this->GetClient();
+		$eOperation = $oClient->GetCurrentOperation();
+
+		if($eOperation == eOperation::GetMessagesForInstance) {
+			
+			$this->SetHttpRequestInstanceInfo();
+
+		}
+		elseif($eOperation == eOperation::ReportReadStatistics) {
+
+			
+			$this->SetHttpRequestReportStatistics();
+
+		}
+		
+
+
+	}
+
+	/**
+	 * @inheritDoc
+	 * @todo
+	 */
+	public function SetHttpRequestReportStatistics() : void {
+
+		/** @var Client $oClient */
+		$oClient = $this->GetClient();
+
+		/** @var HttpRequest $oRequest */
+		$oRequest = $oClient->GetCurrentHttpRequest();
+
+
+			
+			// - Get generic info (not specifically for this one remote server).
+			
+				// - Perhaps this info is already cached for another remote server.
+				if(isset(static::$aCachedPayloads[$eOperation->value]) == true) {
+					
+					/** @var int[] $aExtTargetUsers Array to store user IDs of users for whom the news extension is enabled. */
+					$aExtTargetUsers = static::$aCachedPayloads[$eOperation->value]['target_users'];
+					
+					/** @var DBObjectSet[] $oSetStatuses Object set of ThirdPartyMessageUserStatus. */
+					$oSetStatuses = static::$aCachedPayloads[$eOperation->value]['read_states'];
+					
+				}
+				else {
+					
+					// - Build list of target users (news extension).
+						
+						$sOQL = MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'oql_target_users', 'SELECT User');
+						$oFilterUsers = DBObjectSearch::FromOQL_AllData($sOQL);
+						$oSetUsers = new DBObjectSet($oFilterUsers);
+						
+						$aExtTargetUsers = [];
+						
+						while($oUser = $oSetUsers->Fetch()) {
+							
+							// By default, there is no 'last login' data unfortunately, unless explicitly stated.
+							$aExtTargetUsers[] = $oUser->GetKey();
+							
+						}
+						
+						static::$aCachedPayloads[$eOperation->value]['target_users'] = $aExtTargetUsers;
+						
+					// - Get set of ThirdPartyMessageUserStatus (will be used to loop over each time).
+						
+						$oFilterStatuses = DBObjectSearch::FromOQL_AllData('SELECT ThirdPartyMessageUserStatus');
+						$oSetStatuses = new DBObjectSet($oFilterStatuses);
+						static::$aCachedPayloads[$eOperation->value]['read_states'] = $oSetStatuses;
+						
+				}
+				
+			// - Get ThirdPartyNewsMessage objects belonging to the current remote server,
+			//   and obtain specific info to report back to this source only.
+			
+				$sThirdPartyName = $this->GetThirdPartyName();
+				
+				$oFilterMessages = DBObjectSearch::FromOQL_AllData('
+					SELECT ThirdPartyNewsMessage 
+					WHERE 
+						thirdparty_name = :thirdparty_name
+				', [
+					'thirdparty_name' => $sThirdPartyName
+				]);
+				$oSetMessages = new DBObjectSet($oFilterMessages);
+		
+				$aMessages = [];
+				
+				while($oMessage = $oSetMessages->Fetch()) {
+					
+					// Determine users targeted specifically by the newsroom message.
+					// ( Based on "oql" attribute, but might *also* be restricted because of the global "oql_target_users" setting.)
+					
+						try {
+								
+							$oFilterTargetUsers = DBObjectSearch::FromOQL_AllData($oMessage->Get('oql'));
+							if($oFilterTargetUsers === null) {
+								throw new Exception();
+							}
+							
+							$oSetUsers = new DBObjectSet($oFilterTargetUsers);
+
+						}
+						catch(Exception $e) {
+
+							// Scenarios where a failure could occur: 
+							// - Upon failure - likely when upgrading from an old version where "OQL" is not supported (API version 1.0 - deprecated).
+							// - Could also happen when an OQL query turns out to be invalid.
+							$oAttDef = MetaModel::GetAttributeDef('ThirdPartyNewsMessage', 'oql');
+							$oFilterTargetUsers = DBObjectSearch::FromOQL_AllData($oAttDef->GetDefaultValue());
+							$oSetUsers = new DBObjectSet($oFilterTargetUsers);
+
+						}
+						
+						
+						$aTargetUsers = [];
+						
+						/** @var User $oUser An iTop user */
+						while($oUser = $oSetUsers->Fetch()) {
+							
+							$aTargetUsers[] = $oUser->GetKey();
+							
+						}
+						
+						$aMessages[(String)$oMessage->Get('thirdparty_message_id')] = [
+							'target_users' => $aTargetUsers,
+							'users' => [], // Each user who actually marked the message as "read".
+							'read_date' => [], // See users above - This is the read date for each user.
+							'first_shown_date' => [], // See users above - This is the first shown date for each user.
+							'last_shown_date' => [], // See users above - This is the last shown date for each user.
+						];
+					
+					// Report when messages were read (users stay anonymous to the provider, only IDs are shared).
+					
+					$oSetStatuses->Rewind();
+					while($oStatus = $oSetStatuses->Fetch()) {
+						
+						if($oStatus->Get('message_id') == $oMessage->GetKey()) {
+					
+							$aMessages[(String)$oMessage->Get('thirdparty_message_id')]['users'][] = $oStatus->Get('user_id');
+
+							foreach(['first_shown_date', 'last_shown_date', 'read_date'] as $sAttCode) {
+								$aMessages[(String)$oMessage->Get('thirdparty_message_id')][$sAttCode][] = $oStatus->Get($sAttCode);
+							}
+							
+						}
+					
+					}
+					
+				}
+				
+
+			// - Add this info to the payload.
+			
+				// @todo Check: extend HttpRequestPayload instead?
+				$oRequest->read_status =  new stdClass();
+				$oRequest->read_status->target_oql_users = $aExtTargetUsers;
+				$oRequest->read_status->messages = $aMessages;
+			
+		
+				
+	}
+	
+
+	/**
+	 * @inheritDoc
+	 */
+	public function GetMitmRequests(): array {
+
+		// - Check if too long ago.
+
+		$aRequests = [];
+
+		/** @var Client $oClient */
+		$oClient = $this->GetClient();
+
+		// @todo Finish this properly.
+
+		return $aRequests;
+
+	}
+
+
+	/**
+	 * @inheritDoc
+	 */
+	public function OnReceiveDataFromExternalServer(): void {
+
+		/** @var Client $oClient */
+		$oClient = $this->GetClient();
+
+		if($eOperation = $oClient->GetCurrentOperation() == eOperation::GetMessagesForInstance) {
+			
+			$this->ProcessReceivedMessages();
+
+		}
+
+	}
+
+
+	/**
+	 * Processes the received messages.
+	 *
+	 * @return void
+	 */
+	public function ProcessReceivedMessages() : void {
+
+		/** @var Client $oClient */
+		$oClient = $this->GetClient();
+
+		/** @var stdClass $oResponse */
+		$oResponse = $oClient->GetCurrentHttpResponse();
+	
+		$sThirdPartyName = $this->GetThirdPartyName();
+
+		// Assume these messages are in the correct format.
+		// If the format has changed in a backwards incompatible way, the API should simply not return any messages.
+		// (except perhaps for one to recommend to upgrade the extension)
+			
+		// - Check if a valid data structure is in place (API 1.1.0 specification).
+		
+			if(!property_exists($oResponse, 'messages')) {
+
+				Helper::Trace('No messages found.');
+				return;
+
+			}
+
+		/** @var Message[] $aMessages */
+		$aMessages = $oResponse->messages;
+		
+		// For easy reference, map the messages by their ID.
+		$aRetrievedMessageIds = array_map(
+			function($oMessage) {
+				return $oMessage->thirdparty_message_id;
+			},
+			$aMessages
+		);
+		$aMessages = array_combine(
+			$aRetrievedMessageIds,
+			$aMessages
+		);
+		
+		// - Pre-processing (common things for both insert, update).
+
+			/** @var stdClass $oJsonMessage */
+			foreach($aMessages as $oJsonMessage) {
+				
+				/** @var string|null $sIconRef */
+				$sIconRef = $oJsonMessage->icon;
+				
+				/** @var ormDocument|null $oIcon The specific icon for the news message. */
+				
+				if($sIconRef !== null) {
+
+					$oIconData = $oResponse->icons->{$sIconRef};					
+					$oIcon = new ormDocument(base64_decode($oIconData->data), $oIconData->mimetype, $oIconData->filename);
+					$oJsonMessage->icon = $oIcon;
+
+				}
+
+			}
+
+
+		// - Get messages currently in database for this third party source.
+			
+			$oFilterMessages = new DBObjectSearch('ThirdPartyNewsMessage');
+			$oFilterMessages->AddCondition('thirdparty_name', $sThirdPartyName, '=');
+			$oSetMessages = new DBObjectSet($oFilterMessages);
+
+		
+		// - Loop through the messages that are already in the database.
+			
+			/** @var ThirdPartyNewsMessage $oMessage */
+			while($oMessage = $oSetMessages->Fetch()) {
+
+				// - Do not intervene if the message on the current iTop instance was created manually.
+				//   If it was manually created, assume this is the news provider, not the news client.
+				//   A news provider may have messages in the database that are not visible to news clients yet (thus missing in the HTTP response).
+				if($oMessage->Get('manually_created') == 'yes') {
+					// This message should not be processed further on either!
+					// Theoretically speaking, it could be assumed that all messages in this set will be manually created (coming from the same source).
+					Helper::Trace('Skipping ThirdPartyNewsMessage object for message ID "%1$s" (manually created on this instance).', $oJsonMessage->thirdparty_message_id);
+					unset($aMessages[$oMessage->Get('thirdparty_message_id')]);
+					continue;
+				}
+				
+				// - If the message is not in the retrieved messages (e.g. retracted), it should be deleted from the database as well.
+				if(in_array($oMessage->Get('thirdparty_message_id'), $aRetrievedMessageIds) == false) {
+					$oMessage->DBDelete();
+				}
+
+				$aMessages[$oMessage->Get('thirdparty_message_id')]->DBObject = $oMessage;
+				
+			}
+
+		// - Loop through the messages received in the HTTP response to create ThirdPartyNewsMessage objects.
+
+			/** @var stdClass $oJsonMessage */
+			foreach($aMessages as $oJsonMessage) {
+				
+				// - For the ones without a DBObject, create a new one.
+
+					if(!property_exists($oJsonMessage, 'DBObject')) {
+						/** @var ThirdPartyNewsMessage $oMessage */
+						Helper::Trace('Create new ThirdPartyNewsMessage object for message ID "%1$s".', $oJsonMessage->thirdparty_message_id);
+						$oJsonMessage->DBObject = MetaModel::NewObject('ThirdPartyNewsMessage', []);
+					}
+					else {
+						Helper::Trace('Found existing ThirdPartyNewsMessage object for message ID "%1$s".', $oJsonMessage->thirdparty_message_id);
+					}
+					
+				// - Every message (HTTP response) has a ThirdPartyNewsMessage object associated with it now.
+
+					/** @var ThirdPartyNewsMessage $oMessage */
+					$oMessage = $oJsonMessage->DBObject;
+
+				// - Copy the properties to the DBObject.
+				
+					// - Use the internal name of the remote server (as known to this instance).
+					$oMessage->Set('thirdparty_name', $sThirdPartyName);
+
+					// - Otherwise, trust the source.
+					$oMessage->Set('thirdparty_message_id', $oJsonMessage->thirdparty_message_id);
+					$oMessage->Set('title', $oJsonMessage->title);
+					$oMessage->Set('start_date', $oJsonMessage->start_date);
+					$oMessage->Set('end_date', $oJsonMessage->end_date ?? '');
+					$oMessage->Set('priority', $oJsonMessage->priority);
+					$oMessage->Set('manually_created', 'no'); 
+					
+					// - Icon.
+						
+						$oMessage->Set('icon', $oJsonMessage->icon);
+
+				// - Save.
+
+					$oMessage->AllowWrite(true);
+					$oMessage->DBWrite();
+					
+			}
+
+		// - Now process the translations.
+
+		// - Fetch the existing translations.
+		
+			$aMessageIds = array_map(
+				function(stdClass $oJsonMessage) {
+					return $oJsonMessage->DBObject->GetKey();
+				},
+				$aMessages
+			);
+			$oFilterTranslations = new DBObjectSearch('ThirdPartyNewsMessageTranslation');
+			$oFilterTranslations->AddCondition('message_id', $aMessageIds, 'IN');
+			$oSetTranslations = new DBObjectSet($oFilterTranslations);
+
+		// - Index the existing translations.
+
+			/**
+			 * @var array $aExistingTranslations An array in which ThirdPartyNewsMessageTranslation will be stored.  
+			 * First level = internal message ID,  
+			 * second level = language code,  
+			 * third level = ThirdPartyNewsMessageTranslation object
+			 */
+			$aExistingTranslations = [];
+
+			while($oTranslation = $oSetTranslations->Fetch()) {
+
+				$sKey = $oTranslation->Get('language').'_'.$oTranslation->Get('message_id');
+				$aExistingTranslations[$sKey] = $oTranslation;
+
+			}
+				
+		// - Process all the translations of every message.
+
+			foreach($aMessages as $oJsonMessage) {
+
+				// - Process each translation.
+				/** @var stdClass $oJsonTranslation */
+				foreach($oJsonMessage->translations_list as $oJsonTranslation) {
+
+					try {
+							
+						// Check if this translation already exists.
+						$sKey = $oJsonTranslation->language.'_'.$oJsonMessage->DBObject->GetKey();
+
+						if(!array_key_exists($sKey, $aExistingTranslations)) {
+
+							/** @var ThirdPartyNewsMessageTranslation $oTranslation */
+							$oTranslation = MetaModel::NewObject('ThirdPartyNewsMessageTranslation', [
+								'message_id' => $oJsonMessage->DBObject->GetKey(), // Remap
+								'language' => $oJsonTranslation->language,
+							]);
+
+						}
+						else {
+
+							/** @var ThirdPartyNewsMessageTranslation $oTranslation */
+							$oTranslation = $aExistingTranslations[$sKey];
+
+						}
+
+						$oTranslation->Set('title', $oJsonTranslation->title);
+						$oTranslation->Set('text', $oJsonTranslation->text);
+						$oTranslation->Set('url', $oJsonTranslation->url);
+						$oTranslation->AllowWrite(true);
+						$oTranslation->DBWrite();
+					
+					}
+					catch(Exception $e) {
+
+						// Fail silently.
+						// Could be a 'non supported language' issue?
+						Helper::Trace('Failed to process translation for message ID "%1$s" and language "%2$s": %3$s', 
+							$oJsonMessage->DBObject->GetKey(), 
+							$oJsonTranslation->language, 
+							$e->getMessage()
+						);
+
+					}
+				
+				}
+
+			}	
+		
+	}
+
+}
+
+

@@ -8,7 +8,12 @@
 
 namespace JeffreyBostoenExtensions\News\v200;
 
-use JeffreyBostoenExtensions\ServerCommunication\v200\HttpResponse;
+use JeffreyBostoenExtensions\ServerCommunication\{
+	eCryptographyKeyType,
+	eCryptographyLibrary,
+	Helper,
+	v200\HttpResponse,
+};
 
 
 /**
@@ -17,6 +22,25 @@ use JeffreyBostoenExtensions\ServerCommunication\v200\HttpResponse;
 class HttpResponseGetMessagesForInstance extends HttpResponse {
 
 	use MessagesTrait;
+
+
+	/**
+	 * @inheritDoc
+	 */
+	public function Sign() : void {
+
+		/** @var eCryptographyLibrary $eCryptoLib */
+		$eCryptoLib = $this->GetHttpRequest()->GetCryptoLib();
+
+        $this->encryption_library = $eCryptoLib->value;
+        
+		if($eCryptoLib == eCryptographyLibrary::Sodium) {
+			
+			$this->signature = Helper::SignWithSodium(json_encode($this->messages));
+
+		}
+
+	}
 
 	
 }

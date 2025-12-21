@@ -19,6 +19,7 @@ SetupWebPage::AddModule(
 		//
 		'dependencies' => array(
 			'itop-structure/3.2.0',
+			'jb-server-communication/3.2.0',
 		),
 		'mandatory' => true,
 		'visible' => true,
@@ -37,31 +38,22 @@ SetupWebPage::AddModule(
 			'src/JeffreyBostoenExtensions/News/FrontEndReadyScripts.php',
 			'src/JeffreyBostoenExtensions/News/Helper.php',
 			'src/JeffreyBostoenExtensions/News/Provider.php',
-			'src/JeffreyBostoenExtensions/News/JsonPage.php',
-			'src/JeffreyBostoenExtensions/News/Page.php',
-			'src/JeffreyBostoenExtensions/News/ServerWorker.php',
-			'src/JeffreyBostoenExtensions/News/SourceJeffreyBostoen.php',
+			'src/JeffreyBostoenExtensions/News/ServerExtension.php',
 			// API Base.
-			'src/JeffreyBostoenExtensions/News/Base/HttpRequest.php',
-			'src/JeffreyBostoenExtensions/News/Base/HttpResponse.php',
-			'src/JeffreyBostoenExtensions/News/Base/HttpResponseGetMessagesForInstance.php',
 			'src/JeffreyBostoenExtensions/News/Base/Icon.php',
+			'src/JeffreyBostoenExtensions/News/Base/Message.php',
 			'src/JeffreyBostoenExtensions/News/Base/Translation.php',
 			// 1.0.0
-			'src/JeffreyBostoenExtensions/News/v100/HttpRequest.php',
-			'src/JeffreyBostoenExtensions/News/v100/HttpResponse.php',
 			'src/JeffreyBostoenExtensions/News/v100/HttpResponseGetMessagesForInstance.php',
 			'src/JeffreyBostoenExtensions/News/v100/Message.php',
+			'src/JeffreyBostoenExtensions/News/v100/MessagesTrait.php',
 			// 1.1.0
-			'src/JeffreyBostoenExtensions/News/v110/HttpRequest.php',
-			'src/JeffreyBostoenExtensions/News/v110/HttpResponse.php',
 			'src/JeffreyBostoenExtensions/News/v110/HttpResponseGetMessagesForInstance.php',
 			'src/JeffreyBostoenExtensions/News/v110/Message.php',
 			// 2.0.0
-			'src/JeffreyBostoenExtensions/News/v200/HttpRequest.php',
-			'src/JeffreyBostoenExtensions/News/v200/HttpResponse.php',
 			'src/JeffreyBostoenExtensions/News/v200/HttpResponseGetMessagesForInstance.php',
 			'src/JeffreyBostoenExtensions/News/v200/Message.php',
+			'src/JeffreyBostoenExtensions/News/v200/MessagesTrait.php',
 			
 		),
 		'webservice' => array(),
@@ -81,16 +73,9 @@ SetupWebPage::AddModule(
 			// Module specific settings go here, if any
 			'trace_log' => false,
 			'enabled' => true,
-			'client' => true,
 			'frequency' => 60,
-			'server' => false,
 			'ttl' => 3600,
 			'oql_target_users' => 'SELECT User',
-			'sodium' => [
-				'private_key_crypto_sign' => '/somepath/sodium_sign_priv.key',
-				'private_key_crypto_box' => '/somepath/sodium_box_priv.key',
-				'public_key_crypto_box' => '/somepath/sodium_box_pub.key',
-			]
 		),
 	)
 );

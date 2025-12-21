@@ -7,31 +7,38 @@
  *
  */
 
-namespace JeffreyBostoenExtensions\News;
+namespace JeffreyBostoenExtensions\News\LocalServer;
 
 use JeffreyBostoenExtensions\ServerCommunication\{
 	eApiVersion,
+	eOperation,
 	Helper,
 	ServerWorker,
 	ServerWorkerTrait,
 	Extensions\ServerExtension as BaseServerExtension,
+	Base\HttpResponse,
 	v100\HttpRequest as Request_v100,
 	v110\HttpRequest as Request_v110,
 	v200\HttpRequest as Request_v200,
 	v210\HttpRequest as Request_v210,
+	v210\HttpResponse as Response_v210,
 };
 
 use JeffreyBostoenExtensions\News\{
 	v100\HttpResponseGetMessagesForInstance as Response_v100,
 	v110\HttpResponseGetMessagesForInstance as Response_v110,
 	v200\HttpResponseGetMessagesForInstance as Response_v200,
-	v210\HttpResponseGetMessagesForInstance as Response_v210,
+	v200\Message as Message,
 };
 
 
 // iTop internals.
 use DBObjectSearch;
 use DBObjectSet;
+use ThirdPartyNewsMessage;
+
+// Generic.
+use stdClass;
 
 /**
  * Class ServerExtension. Defines custom news server actions.
@@ -75,38 +82,33 @@ class ServerExtension extends BaseServerExtension {
 		/** @var ServerWorker $oWorker */
 		$oWorker = $this->GetWorker();
 
-		// - The news extension has no specific HttpRequest format.
-			
-			$oRequest = match($oWorker->GetClientApiVersion()) {
-				eApiVersion::v1_0_0 => new Request_v100($oWorker),
-				eApiVersion::v1_1_0 => new Request_v110($oWorker),
-				eApiVersion::v2_0_0 => new Request_v200($oWorker),
-				eApiVersion::v2_1_0 => new Request_v210($oWorker),
-			};
-
-			$oWorker->SetHttpRequest($oRequest);
-		
-		// - Read values, validate.
-
-			$oRequest->ReadUserProvidedValues();
-            $oRequest->Validate();
 
 		// - Build response.
 
-			$oResponse = null;
-
 			if($oWorker->GetClientOperation() == eOperation::GetMessagesForInstance) {
 					
-				$oSet = $this->GetThirdPartyNewsMessagesForInstance();
-
 				$oResponse = match($oWorker->GetClientApiVersion()) {
 					eApiVersion::v1_0_0 => new Response_v100($oWorker),
 					eApiVersion::v1_1_0 => new Response_v110($oWorker),
 					eApiVersion::v2_0_0 => new Response_v200($oWorker),
-					eApiVersion::v2_1_0 => new Response_v210($oWorker),
+					// From here onward:
+					default => $oWorker->GetHttpResponse(),
 				};
 
-				$oResponse->AddMessages($oSet);
+				// Legacy:
+				if(version_compare($oWorker->GetClientApiVersion()->value, '2.0.0', '<=')) {
+
+					$oSet = $this->GetThirdPartyNewsMessagesForInstance();
+	
+					/** @var Response_v100|Response_v110|Response_v200 $oResponse */
+					$oResponse->AddMessages($oSet);
+
+				}
+				else {
+
+					$this->AddMessages($oResponse);
+
+				}
 
 			}
 			else {
@@ -145,5 +147,51 @@ class ServerExtension extends BaseServerExtension {
 		return $oSetMessages;
 
     }
+
+	
+	/**
+	 * Sets the messages.
+	 * 
+	 * Note that since splitting server communication and the news bits,
+	 * the structure of the messages/icons hasn't changed yet.
+	 * 
+	 * @param HttpResponse $oResponse
+	 */
+    public function AddMessages(HttpResponse $oResponse) : void {
+        
+		$oSet = $this->GetThirdPartyNewsMessagesForInstance();
+
+		// Ensures this is present in the JSON structure.
+		$oResponse->messages = [];
+
+		/** @var ThirdPartyNewsMessage $oMessage */
+		while($oMessage = $oSet->Fetch()) {
+			$oResponse->messages[] = Message::FromThirdPartyNewsMessage($oMessage);
+		}
+		
+		$oIconLib = new stdClass();
+
+		/** @var ThirdPartyNewsMessage $oObj */
+		while($oObj = $oSet->Fetch()) {
+
+			$oMessage = Message::FromThirdPartyNewsMessage($oObj);
+			$oResponse->messages[] = $oMessage;
+
+			$oIcon = $oMessage->GetIcon();
+
+			if($oIcon !== null) {
+				
+				$sIconRef = $oIcon->GetRef();
+				$oIconLib->$sIconRef = $oIcon;
+
+			}
+
+
+		}
+
+		$oResponse->icons = $oIconLib;
+
+
+	}
 
 }

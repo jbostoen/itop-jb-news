@@ -14,6 +14,7 @@
 @include_once('../../../approot.inc.php');
 
 use JeffreyBostoenExtensions\News\{
+	eUserOperation,
 	Client,
 	Helper as NewsHelper
 };
@@ -22,7 +23,6 @@ use JeffreyBostoenExtensions\ServerCommunication\{
     eApiVersion,
 	eOperation,
 	eOperationMode,
-    eUserOperation,
     Helper,
 	JsonPage,
 	Page
@@ -158,40 +158,6 @@ try {
 				
 				break;
 
-			case eUserOperation::PostMessagesToInstance:
-				
-				$oPage = new JsonPage();
-
-				$sSourceClass = utils::ReadParam('sourceClass', '', false, 'raw_data');
-				
-				// - Validate if this is a known third-party name.
-					
-					if(class_exists($sSourceClass) === false) {
-						
-						$oPage->output(json_encode([
-							'error' => 'External server source does not exist.'
-						]));
-						break;
-						
-					}
-				
-				// - Process response.
-			
-					$sApiResponse = utils::ReadParam('data', '', false, 'raw_data');
-					$oApiResponse = json_decode($sApiResponse);
-					if($oApiResponse !== null) {
-						Client::ProcessRetrievedMessages($oApiResponse, $sSourceClass);
-					}
-
-				// - Return data to post to external server source ('report_read_statistics').
-				
-					$oPayload = Client::BuildHttpRequest($sSourceClass, eOperation::ReportReadStatistics, eOperationMode::Mitm);
-					$sPayload = Client::PreparePayload($sSourceClass, $oPayload);
-				
-				$oPage->output(json_encode([
-					'payload' => $sPayload
-				]));
-				break;
 				
 			default:
 

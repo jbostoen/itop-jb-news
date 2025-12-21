@@ -6,21 +6,56 @@
  * @version     3.2.251212
  */
 
-namespace JeffreyBostoenExtensions\ServerCommunication;
+namespace JeffreyBostoenExtensions\ServerCommunication\RemoteServers;
 
-use JeffreyBostoenExtensions\ServerCommunication\v210\HttpRequest;
+use JeffreyBostoenExtensions\ServerCommunication\{
+	eApiVersion,
+	eOperation,
+	eOperationMode,
+};
+use JeffreyBostoenExtensions\ServerCommunication\Base\HttpRequest;
+use JeffreyBostoenExtensions\News\Client\Base as Client;
 
-// iTop internals.
 
 /**
- * Class SourceJeffreyBostoen. A external server.
+ * Class JeffreyBostoenNews. A remote server.  
+ * 
+ * Note: Also the short name of this class must be unique!
  */
-abstract class SourceJeffreyBostoen implements iExternalServer {
-	
+class JeffreyBostoenNews extends Base {
+
+
 	/**
 	 * @inheritDoc
 	 */
-	public static function GetThirdPartyName() : string {
+	public function GetSupportedApiVersions(): array {
+
+		return [
+			eApiVersion::v2_1_0,
+		];
+
+	}
+
+
+	/**
+	 * @inheritDoc
+	 */
+	public function GetSupportedOperationModes() : array {
+
+		return [
+			eOperationMode::Cron,
+			eOperationMode::Mitm,
+		];
+
+	}
+
+
+
+
+	/**
+	 * @inheritDoc
+	 */
+	public function GetThirdPartyName() : string {
 		
 		return 'Jeffrey Bostoen';
 		
@@ -30,18 +65,7 @@ abstract class SourceJeffreyBostoen implements iExternalServer {
 	/**
 	 * @inheritDoc
 	 */
-	public static function ModifyHttpRequest(HttpRequest $oRequest) : void {
-
-		// A custom property.
-		// $oRequest->example = 'custom info';
-		
-	}
-	
-
-	/**
-	 * @inheritDoc
-	 */
-	public static function GetUrl() : string {
+	public function GetUrl() : string {
 
 		return 'https://test.jeffreybostoen.be';
 
@@ -54,7 +78,7 @@ abstract class SourceJeffreyBostoen implements iExternalServer {
 	/**
 	 * @inheritDoc
 	 */
-	public static function GetPublicKeySodiumCryptoBox() : string {
+	public function GetPublicKeySodiumCryptoBox() : string {
 		
 		return '_MFByYo4dIpQ-Z8j9jy8cwxU4EH5vVXj5HqhVo02PD4=';
 		
@@ -63,7 +87,7 @@ abstract class SourceJeffreyBostoen implements iExternalServer {
 	/**
 	 * @inheritDoc
 	 */
-	public static function GetPublicKeySodiumCryptoSign() : string {
+	public function GetPublicKeySodiumCryptoSign() : string {
 		
 		return 'SafJHvlxp3ktweQDbRnkwvm6ih4dru2H3ydvVaA0xSI=';
 		
@@ -73,7 +97,7 @@ abstract class SourceJeffreyBostoen implements iExternalServer {
 	/**
 	 * @inheritDoc
 	 */
-	public static function GetLogoSVG(): string {
+	public function GetLogoSVG(): string {
 		
 		return trim(<<<SVGXML
 		<svg xmlns="http://www.w3.org/2000/svg" version="1.0" preserveAspectRatio="xMidYMid meet" viewBox="194.09 199.18 634.78 633.64">
@@ -91,17 +115,6 @@ abstract class SourceJeffreyBostoen implements iExternalServer {
 	}
 
 
-	/**
-	 * @inheritDoc
-	 */
-	public static function GetSupportedOperations() : array {
-
-		return [
-			eOperation::GetMessagesForInstance,
-			eOperation::ReportReadStatistics
-		];
-
-	}
 
 }
 
