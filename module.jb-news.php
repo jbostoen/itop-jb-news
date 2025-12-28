@@ -73,6 +73,8 @@ SetupWebPage::AddModule(
 			// Module specific settings go here, if any
 			'trace_log' => false,
 			'enabled' => true,
+			'client' => true,
+			'server' => false,
 			'frequency' => 60,
 			'ttl' => 3600,
 			'oql_target_users' => 'SELECT User',

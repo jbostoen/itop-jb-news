@@ -15,14 +15,11 @@
 
 use JeffreyBostoenExtensions\News\{
 	eUserOperation,
-	Client,
 	Helper as NewsHelper
 };
 
 use JeffreyBostoenExtensions\ServerCommunication\{
     eApiVersion,
-	eOperation,
-	eOperationMode,
     Helper,
 	JsonPage,
 	Page
@@ -119,10 +116,9 @@ try {
 			case eUserOperation::MarkAllAsRead:
 			
 				// Mark messages as read.
-				$iMessageCount = NewsHelper::MarkAllMessagesAsReadForUser();
+				NewsHelper::MarkAllMessagesAsReadForUser();
 				$sMessageCountJSON = json_encode(array(
-					'counter' => $iMessageCount,
-					'message' => $iMessageCount.' message(s) marked as read',
+					'code' => 0,
 				));
 
 				// Prepare response
@@ -143,7 +139,7 @@ try {
 			case eUserOperation::Redirect:
 			
 				// Mark message as read when the user requested to see the details.
-				$bMarked = NewsHelper::MarkMessageAsReadForUser($iMessageId);
+				NewsHelper::MarkMessageAsReadForUser($iMessageId);
 
 				// Redirect to final URL
 				/** @var ThirdPartyNewsMessage $oMessage */

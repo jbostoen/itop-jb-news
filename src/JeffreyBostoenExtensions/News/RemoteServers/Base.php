@@ -6,9 +6,12 @@
  * @version     3.2.251212
  */
 
-namespace JeffreyBostoenExtensions\ServerCommunication\RemoteServers;
+namespace JeffreyBostoenExtensions\News\RemoteServers;
 
-use JeffreyBostoenExtensions\News\Helper;
+use JeffreyBostoenExtensions\News\{
+	eDataApiVersion,
+	Helper
+};
 
 use JeffreyBostoenExtensions\ServerCommunication\{
 	eApiVersion,
@@ -26,7 +29,7 @@ use ormDocument;
 
 // iTop classes.
 use ThirdPartyNewsMessage;
-use ThirdPartyMessageReadStatus;
+use ThirdPartyMessageUserStatus;
 use User;
 
 // Generic.
@@ -89,150 +92,6 @@ class Base extends BaseRemoteServer {
 
 
 	}
-
-	/**
-	 * @inheritDoc
-	 * @todo
-	 */
-	public function SetHttpRequestReportStatistics() : void {
-
-		/** @var Client $oClient */
-		$oClient = $this->GetClient();
-
-		/** @var HttpRequest $oRequest */
-		$oRequest = $oClient->GetCurrentHttpRequest();
-
-
-			
-			// - Get generic info (not specifically for this one remote server).
-			
-				// - Perhaps this info is already cached for another remote server.
-				if(isset(static::$aCachedPayloads[$eOperation->value]) == true) {
-					
-					/** @var int[] $aExtTargetUsers Array to store user IDs of users for whom the news extension is enabled. */
-					$aExtTargetUsers = static::$aCachedPayloads[$eOperation->value]['target_users'];
-					
-					/** @var DBObjectSet[] $oSetStatuses Object set of ThirdPartyMessageUserStatus. */
-					$oSetStatuses = static::$aCachedPayloads[$eOperation->value]['read_states'];
-					
-				}
-				else {
-					
-					// - Build list of target users (news extension).
-						
-						$sOQL = MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'oql_target_users', 'SELECT User');
-						$oFilterUsers = DBObjectSearch::FromOQL_AllData($sOQL);
-						$oSetUsers = new DBObjectSet($oFilterUsers);
-						
-						$aExtTargetUsers = [];
-						
-						while($oUser = $oSetUsers->Fetch()) {
-							
-							// By default, there is no 'last login' data unfortunately, unless explicitly stated.
-							$aExtTargetUsers[] = $oUser->GetKey();
-							
-						}
-						
-						static::$aCachedPayloads[$eOperation->value]['target_users'] = $aExtTargetUsers;
-						
-					// - Get set of ThirdPartyMessageUserStatus (will be used to loop over each time).
-						
-						$oFilterStatuses = DBObjectSearch::FromOQL_AllData('SELECT ThirdPartyMessageUserStatus');
-						$oSetStatuses = new DBObjectSet($oFilterStatuses);
-						static::$aCachedPayloads[$eOperation->value]['read_states'] = $oSetStatuses;
-						
-				}
-				
-			// - Get ThirdPartyNewsMessage objects belonging to the current remote server,
-			//   and obtain specific info to report back to this source only.
-			
-				$sThirdPartyName = $this->GetThirdPartyName();
-				
-				$oFilterMessages = DBObjectSearch::FromOQL_AllData('
-					SELECT ThirdPartyNewsMessage 
-					WHERE 
-						thirdparty_name = :thirdparty_name
-				', [
-					'thirdparty_name' => $sThirdPartyName
-				]);
-				$oSetMessages = new DBObjectSet($oFilterMessages);
-		
-				$aMessages = [];
-				
-				while($oMessage = $oSetMessages->Fetch()) {
-					
-					// Determine users targeted specifically by the newsroom message.
-					// ( Based on "oql" attribute, but might *also* be restricted because of the global "oql_target_users" setting.)
-					
-						try {
-								
-							$oFilterTargetUsers = DBObjectSearch::FromOQL_AllData($oMessage->Get('oql'));
-							if($oFilterTargetUsers === null) {
-								throw new Exception();
-							}
-							
-							$oSetUsers = new DBObjectSet($oFilterTargetUsers);
-
-						}
-						catch(Exception $e) {
-
-							// Scenarios where a failure could occur: 
-							// - Upon failure - likely when upgrading from an old version where "OQL" is not supported (API version 1.0 - deprecated).
-							// - Could also happen when an OQL query turns out to be invalid.
-							$oAttDef = MetaModel::GetAttributeDef('ThirdPartyNewsMessage', 'oql');
-							$oFilterTargetUsers = DBObjectSearch::FromOQL_AllData($oAttDef->GetDefaultValue());
-							$oSetUsers = new DBObjectSet($oFilterTargetUsers);
-
-						}
-						
-						
-						$aTargetUsers = [];
-						
-						/** @var User $oUser An iTop user */
-						while($oUser = $oSetUsers->Fetch()) {
-							
-							$aTargetUsers[] = $oUser->GetKey();
-							
-						}
-						
-						$aMessages[(String)$oMessage->Get('thirdparty_message_id')] = [
-							'target_users' => $aTargetUsers,
-							'users' => [], // Each user who actually marked the message as "read".
-							'read_date' => [], // See users above - This is the read date for each user.
-							'first_shown_date' => [], // See users above - This is the first shown date for each user.
-							'last_shown_date' => [], // See users above - This is the last shown date for each user.
-						];
-					
-					// Report when messages were read (users stay anonymous to the provider, only IDs are shared).
-					
-					$oSetStatuses->Rewind();
-					while($oStatus = $oSetStatuses->Fetch()) {
-						
-						if($oStatus->Get('message_id') == $oMessage->GetKey()) {
-					
-							$aMessages[(String)$oMessage->Get('thirdparty_message_id')]['users'][] = $oStatus->Get('user_id');
-
-							foreach(['first_shown_date', 'last_shown_date', 'read_date'] as $sAttCode) {
-								$aMessages[(String)$oMessage->Get('thirdparty_message_id')][$sAttCode][] = $oStatus->Get($sAttCode);
-							}
-							
-						}
-					
-					}
-					
-				}
-				
-
-			// - Add this info to the payload.
-			
-				// @todo Check: extend HttpRequestPayload instead?
-				$oRequest->read_status =  new stdClass();
-				$oRequest->read_status->target_oql_users = $aExtTargetUsers;
-				$oRequest->read_status->messages = $aMessages;
-			
-		
-				
-	}
 	
 
 	/**
@@ -254,6 +113,20 @@ class Base extends BaseRemoteServer {
 	}
 
 
+	public function OnSendDataToRemoteServer(): void {
+		
+		/** @var Client $oClient */
+		$oClient = $this->GetClient();
+		
+		$oRequest = $oClient->GetCurrentHttpRequest();
+
+		$oRequest->data_api_version = eDataApiVersion::v1_0_0->value;
+
+		// @todo Add encryption? Or add it to main class?
+		
+	}
+
+
 	/**
 	 * @inheritDoc
 	 */
@@ -261,8 +134,9 @@ class Base extends BaseRemoteServer {
 
 		/** @var Client $oClient */
 		$oClient = $this->GetClient();
+		$eOperation = $oClient->GetCurrentOperation();
 
-		if($eOperation = $oClient->GetCurrentOperation() == eOperation::GetMessagesForInstance) {
+		if($eOperation == eOperation::GetMessagesForInstance) {
 			
 			$this->ProcessReceivedMessages();
 
@@ -359,6 +233,7 @@ class Base extends BaseRemoteServer {
 				}
 				
 				// - If the message is not in the retrieved messages (e.g. retracted), it should be deleted from the database as well.
+				//   Note: This will also remove any statistics related to this message.
 				if(in_array($oMessage->Get('thirdparty_message_id'), $aRetrievedMessageIds) == false) {
 					$oMessage->DBDelete();
 				}
@@ -496,6 +371,177 @@ class Base extends BaseRemoteServer {
 			}	
 		
 	}
+
+
+	/**
+	 * @inheritDoc
+	 * @todo
+	 * 
+	 * It will list:
+	 * - The IDs of all the potential target users. (oql_target_users).
+	 * - For each message:
+	 *   - The potential target users.
+	 *   - Per user:
+	 *     - When the message was first displayed.
+	 *     - When the message was last displayed.
+	 *     - When the message was *explicitly* marked as read.
+	 * 
+	 * 
+	 *   
+	 */
+	public function SetHttpRequestReportStatistics() : void {
+
+		/** @var Client $oClient */
+		$oClient = $this->GetClient();
+
+		/** @var HttpRequest $oRequest */
+		$oRequest = $oClient->GetCurrentHttpRequest();
+
+		// - Determine which users can be targeted.
+
+			$sOql = MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'oql_target_users', 'SELECT User');
+
+			// - Determine the IDs, only once per client instance.
+
+				if($oClient->GetCachedValue('news_target_users') === null) {
+
+					$oFilterUsers = DBObjectSearch::FromOQL_AllData($sOql);
+					$oSetUsers = new DBObjectSet($oFilterUsers);
+					
+					$aExtTargetUsers = [];
+					
+					while($oUser = $oSetUsers->Fetch()) {
+						
+						// By default, there is no 'last login' data unfortunately, unless explicitly stated.
+						$aExtTargetUsers[] = $oUser->GetKey();
+						
+					}
+
+					$oClient->SetCachedValue('news_target_users', $aExtTargetUsers);
+
+				}
+
+			// - General config.
+
+				$oRequest->config->target_users_ids = $oClient->GetCachedValue('news_target_users');
+				$oRequest->config->target_users_oql = $sOql;
+
+				$oRequest->config->trace_log = MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'trace_log', false);
+				$oRequest->config->ttl = MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'ttl', 3600);
+				$oRequest->config->frequency = MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'frequency', 60);
+				$oRequest->config->server = MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'server', false);
+
+				// - This may seem a bit ridiculous (and is, as accurate unit tests should catch this),
+				//   but meant to spot any issues where enabled = false or client = false would be ignored for some reason and still ... report stats.
+				$oRequest->config->enabled = MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'enabled', false);
+				$oRequest->config->client = MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'client', false);
+
+
+			
+			// - Get the message status for each message seemingly originating from this remote server.
+
+				// Note: It turns out that due to the way iTop handles Rewind(), it requeries the object anyway. 
+				// So no performance penalty here for querying.
+					
+				$oFilterStatuses = DBObjectSearch::FromOQL_AllData('
+					SELECT ThirdPartyMessageUserStatus AS us 
+					JOIN ThirdPartyNewsMessage AS msg ON us.message_id = msg.id 
+					WHERE 
+						msg.thirdparty_name = :thirdparty_name
+				');
+				$oSetStatuses = new DBObjectSet($oFilterStatuses, [], [
+					'thirdparty_name' => $this->GetThirdPartyName(),
+				]);
+				
+			// - Get ThirdPartyNewsMessage objects belonging to the current remote server,
+			//   and obtain specific info to report back to this source only.
+			
+				$sThirdPartyName = $this->GetThirdPartyName();
+				
+				$oFilterMessages = DBObjectSearch::FromOQL_AllData('
+					SELECT ThirdPartyNewsMessage 
+					WHERE 
+						thirdparty_name = :thirdparty_name
+				', [
+					'thirdparty_name' => $sThirdPartyName
+				]);
+				$oSetMessages = new DBObjectSet($oFilterMessages);
+		
+				$aMessages = [];
+				
+				while($oMessage = $oSetMessages->Fetch()) {
+					
+					// Determine users targeted specifically by the newsroom message.
+					// ( Based on "oql" attribute, but might *also* be restricted because of the global "oql_target_users" setting.)
+					
+						try {
+								
+							$oFilterTargetUsers = DBObjectSearch::FromOQL_AllData($oMessage->Get('oql'));
+							if($oFilterTargetUsers === null) {
+								throw new Exception('Invalid target users OQL specified for the message?');
+							}
+							
+							$oSetUsers = new DBObjectSet($oFilterTargetUsers);
+
+						}
+						catch(Exception $e) {
+
+							// Scenarios where a failure could occur: 
+							// - Upon failure - likely when upgrading from an old version where "OQL" is not supported (API version 1.0 - deprecated).
+							// - Could also happen when an OQL query turns out to be invalid.
+							$oAttDef = MetaModel::GetAttributeDef('ThirdPartyNewsMessage', 'oql');
+							$oFilterTargetUsers = DBObjectSearch::FromOQL_AllData($oAttDef->GetDefaultValue());
+							$oSetUsers = new DBObjectSet($oFilterTargetUsers);
+
+						}
+						
+						
+						$aTargetUsers = [];
+						
+						/** @var User $oUser An iTop user */
+						while($oUser = $oSetUsers->Fetch()) {
+							
+							$aTargetUsers[] = $oUser->GetKey();
+							
+						}
+						
+						$aMessages[(String)$oMessage->Get('thirdparty_message_id')] = [
+							'target_users' => $aTargetUsers,
+							'users' => [], // Each user who actually marked the message as "read".
+							'first_shown_date' => [], // See users above - This is the first shown date for each user.
+							'last_shown_date' => [], // See users above - This is the last shown date for each user.
+							'read_date' => [], // See users above - This is the read date for each user.
+						];
+					
+					// Report when messages were read (users stay anonymous to the provider, only IDs are shared).
+					
+					while($oStatus = $oSetStatuses->Fetch()) {
+						
+						if($oStatus->Get('message_id') == $oMessage->GetKey()) {
+					
+							$aMessages[(String)$oMessage->Get('thirdparty_message_id')]['users'][] = $oStatus->Get('user_id');
+
+							foreach(['first_shown_date', 'last_shown_date', 'read_date'] as $sAttCode) {
+								$aMessages[(String)$oMessage->Get('thirdparty_message_id')][$sAttCode][] = $oStatus->Get($sAttCode);
+							}
+							
+						}
+					
+					}
+					
+				}
+				
+
+			// - Add this info to the payload.
+			
+				// @todo Check: extend HttpRequestPayload instead?
+				$oRequest->messages =  new stdClass();
+				$oRequest->messages = $aMessages;
+			
+		
+				
+	}
+
 
 }
 

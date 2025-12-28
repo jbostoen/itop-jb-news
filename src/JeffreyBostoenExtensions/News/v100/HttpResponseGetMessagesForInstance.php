@@ -13,7 +13,7 @@ use JeffreyBostoenExtensions\ServerCommunication\{
 	eCryptographyLibrary
 };
 
-use JeffreyBostoenExtensions\ServerCommunication\Base\HttpResponse as Base;
+use JeffreyBostoenExtensions\ServerCommunication\Protocol\Base\HttpResponse as Base;
 
 /**
 * Class HttpResponseGetMessagesForInstance. A base class for HTTP responses for getting messages for an instance.

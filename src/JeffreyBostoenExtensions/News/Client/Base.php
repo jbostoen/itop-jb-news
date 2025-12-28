@@ -11,7 +11,6 @@ namespace JeffreyBostoenExtensions\News\Client;
 
 use JeffreyBostoenExtensions\News\{
 	Helper,
-	Message
 };
 
 use JeffreyBostoenExtensions\ServerCommunication\{

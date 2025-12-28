@@ -9,10 +9,9 @@
 namespace JeffreyBostoenExtensions\News\v200;
 
 use JeffreyBostoenExtensions\ServerCommunication\{
-	eCryptographyKeyType,
 	eCryptographyLibrary,
-	Helper,
-	v200\HttpResponse,
+	Protocol\v200\HttpResponse,
+	LocalServer\SodiumHelper,
 };
 
 
@@ -36,7 +35,7 @@ class HttpResponseGetMessagesForInstance extends HttpResponse {
         
 		if($eCryptoLib == eCryptographyLibrary::Sodium) {
 			
-			$this->signature = Helper::SignWithSodium(json_encode($this->messages));
+			$this->signature = SodiumHelper::Sign(json_encode($this->messages));
 
 		}
 

@@ -27,6 +27,14 @@ use utils;
 use ThirdPartyNewsMessage;
 use ThirdPartyNewsMessageTranslation;
 
+/**
+ * Enum eDataApiVersion. Defines the data API versions.
+ */
+enum eDataApiVersion : string {
+
+	case v1_0_0 = '1.0.0';
+
+}
 
 
 /**
@@ -52,9 +60,121 @@ enum eUserOperation : string {
 abstract class Helper {
 	
 	/** @var string MODULE_CODE The name of this extension. */
-	/** @todo Alter this. */
 	const MODULE_CODE = 'jb-news';
-	
+
+
+	/**
+	 * Creates user status objects for all messages in the given set that don't have one yet for the current user.  
+	 * 
+	 * Note: This will automatically set first_shown_date, last_shown_date .
+	 * It does not set the read_date.
+	 *
+	 * @param DBObjectSet $oSet
+	 * 
+	 * @return void
+	 */
+	protected function CreateUserStatusIfNeededForMessageSet(DBObjectSet $oSet) : void {
+
+		// - Fetch the existing message status objects for the current user.
+
+			$oStatusFilter = DBObjectSearch::FromOQL_AllData('
+				
+				SELECT ThirdPartyMessageUserStatus AS s
+				WHERE 
+					s.user_id = :user_id
+
+			');
+			$oStatusSet = new DBObjectSet($oStatusFilter, [], [
+				'user_id' => UserRights::GetUserId()
+			]);
+			
+			$aMessageIds = [];
+
+			/** @var ThirdPartyMessageStatus $oStatus */
+			while($oStatus = $oStatusSet->Fetch()) {
+				$aMessageIds[] = $oStatus->Get('message_id');
+			}
+
+		// - Loop through the given message set.
+
+			$oSet->Rewind();
+
+			/** @var ThirdPartyNewsMessage $oMessage */
+			while($oMessage = $oSet->Fetch()) {
+
+				if(!in_array($oMessage->GetKey(), $aMessageIds)) {
+
+					// Create a new status object for this message and the current user.
+					$oStatus = MetaModel::NewObject('ThirdPartyMessageUserStatus', [
+						'message_id' => $oMessage->GetKey(),
+						'user_id' => UserRights::GetUserId(),
+					]);
+					$oStatus->AllowWrite(true);
+					$oStatus->DBInsert();
+
+				}
+
+			}
+
+		
+	}
+
+
+	/**
+	 * Updates user status objects for all messages in the given set.
+	 *
+	 * @param DBObjectSet $oMessageSet
+	 * @param string $sAttCode The attribute code to update with the current date. Should be "last_shown_date", or "read_date".
+	 * 
+	 * @return void
+	 */
+	protected function UpdateUserStatus(DBObjectSet $oMessageSet, string $sAttCode) : void {
+
+		// - Get the message IDs.
+
+			$aMessageIds = [];
+			$oMessageSet->Rewind();
+
+			/** @var ThirdPartyNewsMessage $oMessage */
+			while($oMessage = $oMessageSet->Fetch()) {
+				$aMessageIds[] = $oMessage->GetKey();
+			}
+
+		// - Get the user status objects.
+
+			$oStatusFilter = DBObjectSearch::FromOQL_AllData('
+				
+				SELECT ThirdPartyMessageUserStatus AS s
+				WHERE 
+					s.user_id = :user_id AND 
+					s.message_id IN (:message_ids)
+
+			');
+			$oStatusSet = new DBObjectSet($oStatusFilter, [], [
+				'user_id' => UserRights::GetUserId(),
+				'message_ids' => $aMessageIds
+			]);
+
+		// - Loop over this set to update the value.
+
+			/** @var ThirdPartyMessageStatus $oStatus */
+			while($oStatus = $oStatusSet->Fetch()) {
+
+				if($sAttCode == 'read_date') {
+					$oStatus->SetCurrentDateIfNull($sAttCode);
+				}
+				else {
+					$oStatus->SetCurrentDate($sAttCode);
+				}
+				
+				$oStatus->AllowWrite(true);
+				$oStatus->DBUpdate();
+
+			}
+
+
+	}
+
 
 	/**
 	 * Returns all messages that have been published so far where the current user is a target.  
@@ -99,14 +219,19 @@ abstract class Helper {
 			}
 			
 		}
+
+		static::CreateUserStatusIfNeededForMessageSet($oFilteredSet);
 		
 		return $oFilteredSet;
 		
 	}
 
 
+
 	/**
 	 * Returns an array of ThirdPartyNewsMessage data, prepared for the webservice.
+	 * 
+	 * This also triggers the creation of user status objects for all messages.
 	 *
 	 * @return array
 	 *
@@ -128,7 +253,8 @@ abstract class Helper {
 					SELECT ThirdPartyNewsMessage AS M2 
 					JOIN ThirdPartyMessageUserStatus AS UserStatus ON UserStatus.message_id = M2.id 
 					WHERE 
-						UserStatus.user_id = :user_id
+						UserStatus.user_id = :user_id AND 
+						ISNULL(UserStatus.read_date) = 0
 				) 
 				AND M.start_date <= NOW() 
 				AND (
@@ -140,12 +266,10 @@ abstract class Helper {
 		]);
 		$oSet = new DBObjectSet($oSearch);
 
-		// Limit messages count to avoid server crash (inspired by Combodo, not sure if it's necessary).
-		// Either way, a user is unlikely to scroll through that many new messages with great interest anyway.
-		$oSet->SetLimit(50);
-
 		$aMessages = [];
 		$aApplicableMessageIds = [];
+
+		$oUnreadSet = DBObjectSet::FromScratch('ThirdPartyNewsMessage');
 		
 		/** @var ThirdPartyNewsMessage $oMessage */
 		while($oMessage = $oSet->Fetch()) {
@@ -154,6 +278,8 @@ abstract class Helper {
 				// Current user should not see this message
 				continue;
 			}
+
+			$oUnreadSet->AddObject($oMessage);
 			
 			$sIconUrl = static::GetIconUrl($oMessage);
 
@@ -188,58 +314,19 @@ abstract class Helper {
 			
 		}
 
-		// The fact that this method is executed,
-		// implies the message will be shown to the user.
+		// - Since the messages are being queried; assume these will be at least shown to the user.
 
-			if(count($aApplicableMessageIds) > 0) {
-				
-				$oFilter = DBObjectSearch::FromOQL_AllData('
-					SELECT ThirdPartyMessageUserStatus AS UserStatus 
-					WHERE 
-						UserStatus.user_id = :user_id AND 
-						UserStatus.message_id IN (:message_ids)
-				');
-				$oSet = new DBObjectSet($oFilter, [], [
-					'user_id' => $oUser->GetKey(),
-					'message_ids' => array_keys($aApplicableMessageIds)
-				]);
-
-				// - Update the "last shown" date for all messages that are applicable for the user.
-
-					while($oMessageStatus = $oSet->Fetch()) {
-						
-						// Update the "last shown" date.
-						$oMessageStatus->Set('last_shown_date', date('Y-m-d H:i:s'));
-						$oMessageStatus->DBUpdate();
-
-						unset($aApplicableMessageIds[$oMessageStatus->Get('message_id')]);
-						
-					}
-
-				// - For the messages that weren't seen: Create a new status object.
-
-					foreach(array_keys($aApplicableMessageIds) as $iMessageId) {
-
-						$oMessageStatus = MetaModel::NewObject('ThirdPartyMessageUserStatus', [
-							'message_id' => $iMessageId,
-							'user_id' => $oUser->GetKey(),
-							'first_shown_date' => date('Y-m-d H:i:s'),
-							'last_shown_date' => date('Y-m-d H:i:s')
-						]);
-						$oMessageStatus->DBInsert();
-
-					}
-
-			}
+			static::CreateUserStatusIfNeededForMessageSet($oUnreadSet);
+			static::UpdateUserStatus($oUnreadSet, 'last_shown_date');
 
 		return $aMessages;
 	}
 
 
 	/**
-	 * Marks messages as read for the current user.
+	 * Marks all the messages that were at least shown (queried) once, as" read" for the current user.
 	 *
-	 * @return int The number of messages that has been successfully marked as read.
+	 * @return void
 	 *
 	 * @throws CoreException
 	 * @throws CoreUnexpectedValue
@@ -247,111 +334,74 @@ abstract class Helper {
 	 * @throws MySQLException
 	 * @throws OQLException
 	 */
-	public static function MarkAllMessagesAsReadForUser() : int {
+	public static function MarkAllMessagesAsReadForUser() : void {
 
-		// @todo Review this. "Mark all" : Really mark all, or just what was shown?
+		// - Select the messages (as this is required to pass on to the generic method)
+		//   for which a user status was already created.
 
-		// - Note: Something weird is going on; but the below OQL can not be a subquery in the next OQL?
 			$oFilter = DBObjectSearch::FromOQL_AllData('
 			
-					SELECT ThirdPartyNewsMessage AS M2 
-					JOIN ThirdPartyMessageUserStatus AS UserStatus ON UserStatus.message_id = M2.id 
+					SELECT ThirdPartyMessage AS m 
+					JOIN ThirdPartyMessageUserStatus AS s ON s.message_id = m.id
 					WHERE 
-						UserStatus.user_id = :user_id
+						s.user_id = :user_id AND 
+						ISNULL(s.read_date)
 			
 			');
 			$oSet = new DBObjectSet($oFilter, [], [
 				'user_id' => UserRights::GetUserId()
 			]);
-			$aExcludedIds = [ -1 ];
-			while($oMessage = $oSet->Fetch()) {
-				$aExcludedIds[] = $oMessage->GetKey();
-			}
 		
-		// Find the messages that were not yet marked as read.
-		// Mind that a regular user by default has no access, so make sure to allow all data.
-			$oFilter = DBObjectSearch::FromOQL_AllData('
-				SELECT ThirdPartyNewsMessage AS M 
-				WHERE 
-					M.id NOT IN (:excluded_ids)
-					AND M.start_date <= NOW() 
-					AND (
-						ISNULL(M.end_date)  OR 
-						M.end_date >= NOW()
-					)
-			');
+		Helper::Trace('Mark %1$s messages (previously unread, but already shown) as read for user ID "%2$s".', $oSet->Count(), UserRights::GetUserId());
 
-			$oSetMessages = new DBObjectSet($oFilter, [], [
-				'excluded_ids' => $aExcludedIds
-			]);
+		// - Update the read status of those messages.
 
-		$iCount = 0;
+			static::UpdateUserStatus($oSet, 'read_date');
 		
-		Helper::Trace('Mark %1$s messages (previously unread) as read for user ID "%2$s".', $oSetMessages->Count(), UserRights::GetUserId());
-
-		/** @var ThirdPartyNewsMessage $oMessage */
-		while($oMessage = $oSetMessages->Fetch()) {
-			
-			try {
-				
-				$oUserStatus = MetaModel::NewObject('ThirdPartyMessageUserStatus', [
-					'message_id' => $oMessage->GetKey(),
-					'user_id' => UserRights::GetUserId(),
-					'read_date' => date('Y-m-d H:i:s')
-				]);
-			
-				$oUserStatus->DBInsert();
-			
-				$iCount += 1;
-				
-			}
-			catch(Exception $e) {
-				Helper::Trace($e->getMessage());
-			}
-			
-		}
-
-		Helper::Trace('Marked.');
-
-		return $iCount;
 	}
 
 
 	/**
-	 * Marks the specified message as read for the current user.
+	 * Marks only the specified message as read for the current user.
 	 *
 	 * @param int $iMessageId The internal ID (iTop) of the message.
 	 *
-	 * @return bool True if the message was successfully marked as read, false otherwise (e.g. already marked as read before).
-	 *
-	 * @return bool
+	 * @return void 
+	 * 
 	 * @throws CoreException
 	 * @throws CoreUnexpectedValue
 	 * @throws DeleteException
 	 * @throws MySQLException
 	 * @throws OQLException
 	 */
-	public static function MarkMessageAsReadForUser(int $iMessageId) : bool {
-
+	public static function MarkMessageAsReadForUser(int $iMessageId) : void {
+		
+		Helper::Trace('Mark message ID %1$s (previously unread, but already shown) as read for user ID "%2$s".', $iMessageId, UserRights::GetUserId());
+		
 		try {
-			
-			/** @var ThirdPartyMessageUserStatus $oUserStatus */
-			$oUserStatus = MetaModel::NewObject('ThirdPartyMessageUserStatus', [
-				'message_id' => $iMessageId,
+
+			$oObj = MetaModel::GetObjectFromOQL('
+					
+				SELECT ThirdPartyMessageUserStatus AS s
+				WHERE 
+					s.user_id = :user_id AND 
+					s.message_id = :message_id AND 
+					ISNULL(s.read_date)
+
+			', [
 				'user_id' => UserRights::GetUserId(),
-				'read_date' => date('Y-m-d H:i:s')
-			]);
-		
-			$oUserStatus->DBInsert();
-		
-			return true;
+				'message_id' => $iMessageId
+			], true);
 			
+			$oObj->SetCurrentDate('read_date');
+			$oObj->DBUpdate();
+
 		}
 		catch(Exception $e) {
-			// Probably too late / duplicate
+			Helper::Trace('Error (object nto found?): %1$s, %2$s.', $e::class, $e->getMessage());
 		}
-		
-		return false;
+
+		Helper::Trace('Done.');
 		
 	}
 
@@ -575,7 +625,7 @@ JS
 
 		static::Trace('Check if user ID %1$s is allowed to see message ID %2$s.', $oUser->GetKey(), $oMessage->GetKey());
 		
-		// - Restriction by iTop administrator.
+		// - Global restriction configured by the iTop administrator.
 			
 			// The OQL for the target users is stored in the module settings.
 			// This is how an iTop administrator determines which users can even see messages at all.
@@ -589,7 +639,7 @@ JS
 
 			}
 		
-		// - Restriction by the news provider (per message).
+		// - Restriction on the message object.
 		
 			// Don't make it too complicated: just use the "oql" value of ThirdPartyNewsMessage; and add a condition to make sure the user ID is also in the subquery.
 			
@@ -685,21 +735,23 @@ JS
 			$oFilterUsers = DBObjectSearch::FromOQL_AllData($sOQL);
 			$oFilterUsers->AllowAllData();
 
-			// Enforce: If the admin specified an invalid OQL query, every user can see messages.
-			if(MetaModel::GetRootClass($oFilterUsers->GetClass()) != 'User') {
-				throw new Exception('Invalid OQL filter, wrong object class.');
-			}
+			// - Enforce: If the admin specified an invalid OQL query, every user can see messages.
+				
+				if(MetaModel::GetRootClass($oFilterUsers->GetClass()) != 'User') {
+					throw new Exception('Invalid OQL filter, wrong object class.');
+				}
 
-			$oFilterUsers->AddCondition('id', $oUser->GetKey(), '=');
-			$oSetUsers = new DBObjectSet($oFilterUsers);
+				$oFilterUsers->AddCondition('id', $oUser->GetKey(), '=');
+				$oSetUsers = new DBObjectSet($oFilterUsers);
 
 		}
 		catch(Exception $e) {
 
-			// Could occur when the admin specified an invalid OQL query.
-			$oFilterUsers = DBObjectSearch::FromOQL_AllData('SELECT User');
-			$oFilterUsers->AddCondition('id', $oUser->GetKey(), '=');
-			$oSetUsers = new DBObjectSet($oFilterUsers);
+			// - If an admnin specified an invalid OQL query, that OQL filter will be ignored.
+
+				$oFilterUsers = DBObjectSearch::FromOQL_AllData('SELECT User');
+				$oFilterUsers->AddCondition('id', $oUser->GetKey(), '=');
+				$oSetUsers = new DBObjectSet($oFilterUsers);
 
 		}
 

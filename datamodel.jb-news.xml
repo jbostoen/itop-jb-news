@@ -93,12 +93,12 @@
 				<field id="oql" xsi:type="AttributeOQL">
 					<sql>oql</sql>
 					<default_value><![CDATA[
-						SELECT User AS u 
-						JOIN URP_UserProfile AS up ON up.userid = u.id 
-						JOIN Person AS p ON u.contactid = p.id 
-						WHERE 
-							up.profileid_friendlyname = 'Administrator' AND 
-							p.status = 'active' AND u.status = 'enabled'
+SELECT User AS u 
+JOIN URP_UserProfile AS up ON up.userid = u.id 
+JOIN Person AS p ON u.contactid = p.id 
+WHERE 
+	up.profileid_friendlyname = 'Administrator' AND 
+	p.status = 'active' AND u.status = 'enabled'
 					]]></default_value>
 					<is_null_allowed>false</is_null_allowed>
 				</field>
@@ -409,6 +409,7 @@
 					<is_null_allowed>true</is_null_allowed>
 					<tracking_level>none</tracking_level>
 				</field>
+				<!-- Note: This is set when the  user lasts *explicitly* checks for new messages. The instance may have a caching (TTL) enabled! -->
 				<field id="last_shown_date" xsi:type="AttributeDateTime">
 					<sql>last_shown_date</sql>
 					<default_value/>
@@ -423,6 +424,27 @@
 				</field>
 			</fields>
 			<methods/>
+			<event_listeners>
+				<event_listener id="SetDefaultValues">
+					<event>EVENT_DB_BEFORE_WRITE</event>
+					<rank>0</rank>
+					<code><![CDATA[
+				
+					function(Combodo\iTop\Service\Events\EventData $oEventData) {
+
+						if(!$oEventData->Get('is_new')) {
+							return;
+						}
+						
+						/** @var ThirdPartyMessageUserStatus $oStatus */
+						$oStatus = $oEventData->Get('object');
+						$oStatus->SetCurrentDateIfNull('first_shown_date');
+						$oStatus->SetCurrentDateIfNull('last_shown_date');
+					}
+				
+				]]></code>
+				</event_listener>
+			</event_listeners>
 			<presentation>
 				<details>
 					<items>

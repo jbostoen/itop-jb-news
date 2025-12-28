@@ -6,15 +6,12 @@
  * @version     3.2.251212
  */
 
-namespace JeffreyBostoenExtensions\ServerCommunication\RemoteServers;
+namespace JeffreyBostoenExtensions\News\RemoteServers;
 
 use JeffreyBostoenExtensions\ServerCommunication\{
 	eApiVersion,
-	eOperation,
 	eOperationMode,
 };
-use JeffreyBostoenExtensions\ServerCommunication\Base\HttpRequest;
-use JeffreyBostoenExtensions\News\Client\Base as Client;
 
 
 /**

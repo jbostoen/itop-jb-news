@@ -33,7 +33,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Class:ThirdPartyNewsMessage/Attribute:oql' => 'OQL',
 	'Class:ThirdPartyNewsMessage/Attribute:oql+' => 'The OQL that specifies which users should see this message.',
 	'Class:ThirdPartyNewsMessage/Attribute:manually_created' => 'Is publisher',
-	'Class:ThirdPartyNewsMessage/Attribute:manually_created+' => 'Whether this instance is the actual publisher of the original message (and should not be deleted by the background task).',
+	'Class:ThirdPartyNewsMessage/Attribute:manually_created+' => 'Whether this instance is the actual publisher of this message (and should not be deleted by the background task).',
 	'Class:ThirdPartyNewsMessage/Attribute:manually_created/Value:yes' => 'Yes',
 	'Class:ThirdPartyNewsMessage/Attribute:manually_created/Value:no' => 'No',
 	'Class:ThirdPartyNewsMessage/Check:OQLMustReturnUser' => 'The OQL must return User objects, currently it returns %1$s objects.',
@@ -52,7 +52,7 @@ Dict::Add('EN US', 'English', 'English', array(
 	'Class:ThirdPartyNewsMessageTranslation/Attribute:language+' => 'Targeted user language',
 	'Class:ThirdPartyNewsMessageTranslation/UniquenessRule:unique_language' => 'Language for this translation must be unique for each message.',
 	
-	'Class:ThirdPartyMessageUserStatus' => 'Link Third party Newsroom Message to User',
+	'Class:ThirdPartyMessageUserStatus' => 'Link Third party Newsroom Message / User',
 	'Class:ThirdPartyMessageUserStatus/Attribute:user_id' => 'User ID',
 	'Class:ThirdPartyMessageUserStatus/Attribute:message_id' => 'Message ID',
 	'Class:ThirdPartyMessageUserStatus/Attribute:read_date' => 'Marked as read',

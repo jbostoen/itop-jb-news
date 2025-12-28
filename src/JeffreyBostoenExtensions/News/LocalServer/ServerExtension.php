@@ -13,15 +13,12 @@ use JeffreyBostoenExtensions\ServerCommunication\{
 	eApiVersion,
 	eOperation,
 	Helper,
+	LocalServer\Extensions\Base as LocalServerExtension,
+	Protocol\Base\HttpResponse,
+};
+use JeffreyBostoenExtensions\ServerCommunication\LocalServer\{
 	ServerWorker,
 	ServerWorkerTrait,
-	Extensions\ServerExtension as BaseServerExtension,
-	Base\HttpResponse,
-	v100\HttpRequest as Request_v100,
-	v110\HttpRequest as Request_v110,
-	v200\HttpRequest as Request_v200,
-	v210\HttpRequest as Request_v210,
-	v210\HttpResponse as Response_v210,
 };
 
 use JeffreyBostoenExtensions\News\{
@@ -41,9 +38,10 @@ use ThirdPartyNewsMessage;
 use stdClass;
 
 /**
- * Class ServerExtension. Defines custom news server actions.
+ * Class ServerExtension. Defines custom news server actions.  
+ * Create a non-abstract sub class for your specific implementation.
  */
-class ServerExtension extends BaseServerExtension {
+abstract class ServerExtension extends LocalServerExtension {
 
 	use ServerWorkerTrait;
 
@@ -72,15 +70,15 @@ class ServerExtension extends BaseServerExtension {
 	 * @inheritDoc
 	 */ 
 	public function Process() : void {
+		
+		/** @var ServerWorker $oWorker */
+		$oWorker = $this->GetWorker();
 
-		if($this->GetHttpResponse() !== null) {
+		if($oWorker->GetHttpResponse() !== null) {
 			// This allows easy subclassing (where the subclass can just get a lower rank).
 			Helper::Trace('A response was already created by another extension. Skip.');
 			return;
 		}
-		
-		/** @var ServerWorker $oWorker */
-		$oWorker = $this->GetWorker();
 
 
 		// - Build response.

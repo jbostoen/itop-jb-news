@@ -12,10 +12,9 @@ use JeffreyBostoenExtensions\News\v100\MessagesTrait;
 	
 use JeffreyBostoenExtensions\ServerCommunication\{
 	eApiVersion,
-	eCryptographyKeyType,
 	eCryptographyLibrary,
-	Helper,
-	v110\HttpResponse,
+	Protocol\v110\HttpResponse,
+	LocalServer\SodiumHelper,
 };
 
 
@@ -67,7 +66,7 @@ class HttpResponseGetMessagesForInstance extends HttpResponse {
         
 		if($eCryptoLib == eCryptographyLibrary::Sodium) {
 			
-			$this->signature = Helper::SignWithSodium(json_encode($this->messages));
+			$this->signature = SodiumHelper::Sign(json_encode($this->messages));
 
 		}
 
