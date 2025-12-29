@@ -76,29 +76,35 @@ abstract class ServerExtension extends LocalServerExtension {
 
 		// - Build response.
 
+			// Note: The "news" API version matches the "communication" API version until 2.0.0.
+			// After that, server communication API 2.1.0 is used with (news) data communication API 1.0.0.
+
 			if($oWorker->GetClientOperation() == eOperation::GetMessagesForInstance) {
 					
-				$oResponse = match($oWorker->GetClientApiVersion()) {
-					eApiVersion::v1_0_0 => new Response_v100($oWorker),
-					eApiVersion::v1_1_0 => new Response_v110($oWorker),
-					eApiVersion::v2_0_0 => new Response_v200($oWorker),
-					// From here onward:
-					default => $oWorker->GetHttpResponse(),
-				};
+				
+				if(version_compare($oWorker->GetClientApiVersion()->value, '2.0.0', '>')) {
 
-				// Legacy:
-				if(version_compare($oWorker->GetClientApiVersion()->value, '2.0.0', '<=')) {
-
-					$oSet = $this->GetThirdPartyNewsMessagesForInstance();
-					Helper::Trace('Found %1$s messages for instance.', $oSet->Count());
-	
-					/** @var Response_v100|Response_v110|Response_v200 $oResponse */
-					$oResponse->AddMessages($oSet);
+					$this->AddMessages();
 
 				}
 				else {
+					
+					// - Legacy.
+						
+						$oResponse = match($oWorker->GetClientApiVersion()) {
+							eApiVersion::v1_0_0 => new Response_v100($oWorker),
+							eApiVersion::v1_1_0 => new Response_v110($oWorker),
+							eApiVersion::v2_0_0 => new Response_v200($oWorker),
+						};
 
-					$this->AddMessages($oResponse);
+						$oSet = $this->GetThirdPartyNewsMessagesForInstance();
+						Helper::Trace('Found %1$s messages for instance.', $oSet->Count());
+		
+						/** @var Response_v100|Response_v110|Response_v200 $oResponse */
+						$oResponse->AddMessages($oSet);
+
+						// Override the previous (default) response.
+						$oWorker->SetHttpResponse($oResponse);
 
 				}
 
@@ -147,9 +153,10 @@ abstract class ServerExtension extends LocalServerExtension {
 	 * Note that since splitting server communication and the news bits,
 	 * the structure of the messages/icons hasn't changed yet.
 	 * 
-	 * @param HttpResponse $oResponse
 	 */
-    public function AddMessages(HttpResponse $oResponse) : void {
+    public function AddMessages() : void {
+
+		$oResponse = $this->GetHttpResponse();
         
 		$oSet = $this->GetThirdPartyNewsMessagesForInstance();
 
@@ -157,11 +164,6 @@ abstract class ServerExtension extends LocalServerExtension {
 
 		// Ensures this is present in the JSON structure.
 		$oResponse->messages = [];
-
-		/** @var ThirdPartyNewsMessage $oMessage */
-		while($oMessage = $oSet->Fetch()) {
-			$oResponse->messages[] = Message::FromThirdPartyNewsMessage($oMessage);
-		}
 		
 		$oIconLib = new stdClass();
 
@@ -177,7 +179,11 @@ abstract class ServerExtension extends LocalServerExtension {
 				
 				$sIconRef = $oIcon->GetRef();
 				$oIconLib->$sIconRef = $oIcon;
+				Helper::Trace('Icon ref %1$s', $sIconRef);
 
+			}
+			else {
+				Helper::Trace('No icon');
 			}
 
 

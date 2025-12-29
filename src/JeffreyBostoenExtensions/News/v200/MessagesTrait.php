@@ -61,14 +61,7 @@ trait MessagesTrait {
 			if($oIcon !== null) {
 				
 				$sIconRef = $oIcon->GetRef();
-				
-				Helper::Trace('Add icon with ref %1$s to icon library.', $sIconRef);
 				$oIconLib->$sIconRef = $oIcon;
-
-			}
-			else {
-
-				Helper::Trace('Icon is null?');
 
 			}
 
