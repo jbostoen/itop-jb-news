@@ -31,9 +31,9 @@ class HttpResponseGetMessagesForInstance extends Base {
 		$oRequest = $this->GetHttpRequest();
 		$oResponse = $this->GetHttpResponse();
 		
+		
 		if(
-			$oRequest->GetCryptoLib() == eCryptographyLibrary::None &&
-			($oRequest->GetApiVersion() == eApiVersion::v1_0_0 || $oRequest->GetApiVersion() == eApiVersion::v1_1_0)
+			$oRequest->GetCryptoLib() == eCryptographyLibrary::None
 		) {
 			
 			return json_encode($oResponse->messages);

@@ -8,6 +8,8 @@
 
 namespace JeffreyBostoenExtensions\News\v200;
 
+use JeffreyBostoenExtensions\ServerCommunication\Helper;
+
 // iTop internals.
 use DBObjectSet;
 
@@ -46,18 +48,7 @@ trait MessagesTrait {
         
 		$oSet->Rewind();
 
-		// The structure of the "message" changed over time.
-		// Each version namespace must have its own Message class.
-		// Get the full class name and return everything before the last backslash
-        $sNamespace = substr(get_class($this), 0, strrpos(get_class($this), '\\'));
-		$sMsgClass = $sNamespace.'\\Message';
-
-		/** @var ThirdPartyNewsMessage $oMessage */
-		while($oMessage = $oSet->Fetch()) {
-			$this->messages[] = $sMsgClass::FromThirdPartyNewsMessage($oMessage);
-		}
-		
-		$oIconLib = new stdClass;
+		$oIconLib = new stdClass();
 
 		/** @var ThirdPartyNewsMessage $oObj */
 		while($oObj = $oSet->Fetch()) {
@@ -70,7 +61,14 @@ trait MessagesTrait {
 			if($oIcon !== null) {
 				
 				$sIconRef = $oIcon->GetRef();
+				
+				Helper::Trace('Add icon with ref %1$s to icon library.', $sIconRef);
 				$oIconLib->$sIconRef = $oIcon;
+
+			}
+			else {
+
+				Helper::Trace('Icon is null?');
 
 			}
 

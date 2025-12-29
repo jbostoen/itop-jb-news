@@ -28,10 +28,12 @@ class HttpResponseGetMessagesForInstance extends HttpResponse {
 	 */
 	public function Sign() : void {
 
+		// Note: API v2.0.0 only signed the "messages" property.
+
 		/** @var eCryptographyLibrary $eCryptoLib */
 		$eCryptoLib = $this->GetHttpRequest()->GetCryptoLib();
 
-        $this->encryption_library = $eCryptoLib->value;
+        $this->crypto_lib = $eCryptoLib->value;
         
 		if($eCryptoLib == eCryptographyLibrary::Sodium) {
 			

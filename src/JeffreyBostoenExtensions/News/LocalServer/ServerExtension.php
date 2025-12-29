@@ -74,13 +74,6 @@ abstract class ServerExtension extends LocalServerExtension {
 		/** @var ServerWorker $oWorker */
 		$oWorker = $this->GetWorker();
 
-		if($oWorker->GetHttpResponse() !== null) {
-			// This allows easy subclassing (where the subclass can just get a lower rank).
-			Helper::Trace('A response was already created by another extension. Skip.');
-			return;
-		}
-
-
 		// - Build response.
 
 			if($oWorker->GetClientOperation() == eOperation::GetMessagesForInstance) {
@@ -97,6 +90,7 @@ abstract class ServerExtension extends LocalServerExtension {
 				if(version_compare($oWorker->GetClientApiVersion()->value, '2.0.0', '<=')) {
 
 					$oSet = $this->GetThirdPartyNewsMessagesForInstance();
+					Helper::Trace('Found %1$s messages for instance.', $oSet->Count());
 	
 					/** @var Response_v100|Response_v110|Response_v200 $oResponse */
 					$oResponse->AddMessages($oSet);
@@ -158,6 +152,8 @@ abstract class ServerExtension extends LocalServerExtension {
     public function AddMessages(HttpResponse $oResponse) : void {
         
 		$oSet = $this->GetThirdPartyNewsMessagesForInstance();
+
+		Helper::Trace('Found %1$s messages for instance.', $oSet->Count());
 
 		// Ensures this is present in the JSON structure.
 		$oResponse->messages = [];

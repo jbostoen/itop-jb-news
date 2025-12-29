@@ -8,7 +8,10 @@
 
 namespace JeffreyBostoenExtensions\News\v100;
 
-use JeffreyBostoenExtensions\News\Base\Message as Base;
+use JeffreyBostoenExtensions\News\Base\{
+    Icon,
+    Message as Base
+};
 
 // iTop internals.
 use ThirdPartyNewsMessage;
@@ -40,7 +43,7 @@ class Message extends Base {
         $oMsg = parent::FromThirdPartyNewsMessage($oMessage);
 
         $oMsg->target_profiles = 'Administrator'; // "Administrators" were always targeted in the messages that were published.
-        $oMsg->icon = $oMsg->GetIcon()->GetRef();
+        $oMsg->icon = $oMsg->GetIcon();
 
         return $oMsg;
 
