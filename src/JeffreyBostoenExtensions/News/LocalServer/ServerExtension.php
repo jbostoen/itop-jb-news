@@ -109,13 +109,6 @@ abstract class ServerExtension extends LocalServerExtension {
 				}
 
 			}
-			else {
-
-				// Do nothing.
-
-			}
-
-			$oWorker->SetHttpResponse($oResponse);
 
 	}
 
@@ -179,11 +172,7 @@ abstract class ServerExtension extends LocalServerExtension {
 				
 				$sIconRef = $oIcon->GetRef();
 				$oIconLib->$sIconRef = $oIcon;
-				Helper::Trace('Icon ref %1$s', $sIconRef);
 
-			}
-			else {
-				Helper::Trace('No icon');
 			}
 
 

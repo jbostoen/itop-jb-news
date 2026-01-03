@@ -8,7 +8,10 @@
 
 namespace JeffreyBostoenExtensions\News;
 
-use JeffreyBostoenExtensions\ServerCommunication\Page;
+use JeffreyBostoenExtensions\ServerCommunication\{
+	Helper as SCHelper,
+	Page
+};
 
 // Generic.
 use Exception;
@@ -352,7 +355,7 @@ abstract class Helper {
 				'user_id' => UserRights::GetUserId()
 			]);
 		
-		Helper::Trace('Mark %1$s messages (previously unread, but already shown) as read for user ID "%2$s".', $oSet->Count(), UserRights::GetUserId());
+		SCHelper::Trace('Mark %1$s messages (previously unread, but already shown) as read for user ID "%2$s".', $oSet->Count(), UserRights::GetUserId());
 
 		// - Update the read status of those messages.
 
@@ -376,7 +379,7 @@ abstract class Helper {
 	 */
 	public static function MarkMessageAsReadForUser(int $iMessageId) : void {
 		
-		Helper::Trace('Mark message ID %1$s (previously unread, but already shown) as read for user ID "%2$s".', $iMessageId, UserRights::GetUserId());
+		SCHelper::Trace('Mark message ID %1$s (previously unread, but already shown) as read for user ID "%2$s".', $iMessageId, UserRights::GetUserId());
 		
 		try {
 
@@ -398,10 +401,10 @@ abstract class Helper {
 
 		}
 		catch(Exception $e) {
-			Helper::Trace('Error (object nto found?): %1$s, %2$s.', $e::class, $e->getMessage());
+			SCHelper::Trace('Error (object nto found?): %1$s, %2$s.', $e::class, $e->getMessage());
 		}
 
-		Helper::Trace('Done.');
+		SCHelper::Trace('Done.');
 		
 	}
 
@@ -586,7 +589,7 @@ JS
 			}
 			else {
 
-				Helper::Trace('Unable to find translation for message ID %1$s.', $oMessage->GetKey());
+				SCHelper::Trace('Unable to find translation for message ID %1$s.', $oMessage->GetKey());
 
 			}
 		

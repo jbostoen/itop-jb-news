@@ -34,11 +34,15 @@ SetupWebPage::AddModule(
 			'vendor/autoload.php',
 			// iTop doesn't handle autoloading very well sometimes (e.g. interfaces).
 			'src/JeffreyBostoenExtensions/News/BackgroundProcess.php',
-			'src/JeffreyBostoenExtensions/News/Client.php',
-			'src/JeffreyBostoenExtensions/News/FrontEndReadyScripts.php',
 			'src/JeffreyBostoenExtensions/News/Helper.php',
 			'src/JeffreyBostoenExtensions/News/Provider.php',
-			'src/JeffreyBostoenExtensions/News/ServerExtension.php',
+			// Client.
+			'src/JeffreyBostoenExtensions/News/Client/Base.php',
+			// Local server.
+			'src/JeffreyBostoenExtensions/News/LocalServer/ServerExtension.php',
+			// Remote servers.
+			'src/JeffreyBostoenExtensions/News/RemoteServers/Base.php',
+			'src/JeffreyBostoenExtensions/News/RemoteServers/JeffreyBostoenNews.php',
 			// API Base.
 			'src/JeffreyBostoenExtensions/News/Base/Icon.php',
 			'src/JeffreyBostoenExtensions/News/Base/Message.php',

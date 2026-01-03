@@ -15,6 +15,7 @@ use JeffreyBostoenExtensions\News\{
 
 use JeffreyBostoenExtensions\ServerCommunication\{
 	Client\Base as BaseClient,
+	Helper as SCHelper,
 	RemoteServers\Base as BaseRemoteServer,
 	eOperation,
 };
@@ -34,60 +35,10 @@ class Base extends BaseClient {
 	 */
 	public function GetRemoteServers(): array {
 		
-		return parent::GetRemoteServers();
-		
-		$aSources = parent::GetRemoteServers();
-		$aLastRetrieved = static::GetLastRetrievedDateTimePerRemoteServersource();
-
-		return array_filter($aSources, function(BaseRemoteServer $oExternalServer) use ($aLastRetrieved) {
-				
-			// - Check if it's necessary to add the script to poll the remote server.
-				
-			$sKeyName = $oExternalServer->GetSanitizedName();
-			$sLastRetrieved = $aLastRetrieved[$sKeyName];
-			
-			// The cron job runs every X minutes.
-			$iFrequency = (int)(MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'frequency', 60) * 60);
-
-			// Add some extra leniency, as the cron job is preferred.
-			// It should be within X, where X = (frequency + 15 mins)
-			$iMinTime = strtotime('-'.$iFrequency.' minutes -15 minutes');
-
-			Helper::Trace('Source: %1$s - Last retrieved: %2$s - Frequency (minutes): %3$s - Invoke if last requested before: %4$s',
-				$sKeyName,
-				$sLastRetrieved,
-				$iFrequency,
-				date('Y-m-d H:i:s', $iMinTime)
-			);
-
-			// Only keep if the last retrieval date is too long ago.
-			return (strtotime($sLastRetrieved) < $iMinTime);
-
-		});
-
-	}
-	
-
-	/**
-	 * Returns an object set of key/value pairs. Each key will be an identifier for a remote server, and the value a timestamp.
-	 *
-	 * @return array Hashtable where the key is the remote server name, and the value is the last retrieved date/time.
-	 */
-	public function GetLastRetrievedDateTimePerRemoteServersource() : array {
-		
+		/** @var array $aDateTimes Key: name of news server, value: last retrieval date */
 		$aDateTimes = [];
 
-		// - Ensure every remote server has a last retrieved date/time.
-
-			/** @var BaseRemoteServer $oExternalServer */
-			foreach(static::GetRemoteServers() as $oExternalServer) {
-
-				$sExtServerSource = $oExternalServer->GetSanitizedName();
-				$aDateTimes[$sExtServerSource] = '1970-01-01 00:00:00'; // Default value
-			
-			}
-
-		// - Where available, get the real timestamp.
+		// - Get the real timestamp for each remote server with one OQL query.
 
 			$oFilter = DBObjectSearch::FromOQL_AllData('
 				SELECT KeyValueStore 
@@ -106,12 +57,37 @@ class Base extends BaseClient {
 
 			}
 
-		Helper::Trace('Last retrieved timestamps: %1$s', json_encode($aDateTimes, JSON_PRETTY_PRINT));
 
-		return $aDateTimes;
-		
+		$aRemoteServers = parent::GetRemoteServers();
+
+		return array_filter($aRemoteServers, function(BaseRemoteServer $oExternalServer) use ($aDateTimes) {
+				
+			// - Check if it's necessary to add the script to poll the remote server.
+				
+			$sKeyName = $oExternalServer->GetSanitizedName();
+			$sLastRetrieved = array_key_exists($sKeyName, $aDateTimes) ? $aDateTimes[$sKeyName] : '1970-01-01 00:00:00';
+			
+			// The cron job runs every X minutes.
+			$iFrequency = (int)(MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'frequency', 60) * 60);
+
+			// Add some extra leniency, as the cron job is preferred.
+			// It should be within X, where X = (frequency + 15 mins)
+			$iMinTime = strtotime('-'.$iFrequency.' minutes -15 minutes');
+
+			SCHelper::Trace('Source: %1$s - Last retrieved: %2$s - Frequency (minutes): %3$s - Invoke if last requested before: %4$s',
+				$sKeyName,
+				$sLastRetrieved,
+				$iFrequency,
+				date('Y-m-d H:i:s', $iMinTime)
+			);
+
+			// Only keep if the last retrieval date is too long ago.
+			return (strtotime($sLastRetrieved) < $iMinTime);
+
+		});
+
 	}
-
+	
 
 	/**
 	 * Gets all the relevant messages for this instance.
@@ -120,6 +96,7 @@ class Base extends BaseClient {
 	 */
 	public function GetMessagesForInstance() : void {
 		
+		SCHelper::Trace('Check for new messages from remote server(s).');
 		$eOperation = eOperation::GetMessagesForInstance;
 		$this->SetCurrentOperation($eOperation);
 		static::DoPostAll();
@@ -138,14 +115,16 @@ class Base extends BaseClient {
 	public function ReportReadStatistics() : void {
 
 		if(MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'disable_reporting', false) == true) {
-			Helper::Trace('Reporting has been disabled.');
+			SCHelper::Trace('Reporting has been disabled.');
 			return;
 		}
+
+		SCHelper::Trace('Report statistics to remote server(s).');
 		
 		$eOperation = eOperation::ReportReadStatistics;
 		$this->SetCurrentOperation($eOperation);
 
-		Helper::Trace('Send (anonymous) data to remote remote servers.');
+		SCHelper::Trace('Send (anonymous) data to remote remote servers.');
 		
 		// Other hooks may have been executed already.
 		// Do not leak sensitive data, OQL queries may contain names etc.

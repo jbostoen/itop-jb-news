@@ -10,9 +10,9 @@ namespace JeffreyBostoenExtensions\News\RemoteServers;
 
 use JeffreyBostoenExtensions\ServerCommunication\{
 	eApiVersion,
+	eOperation,
 	eOperationMode,
 };
-
 
 /**
  * Class JeffreyBostoenNews. A remote server.  
@@ -21,32 +21,45 @@ use JeffreyBostoenExtensions\ServerCommunication\{
  */
 class JeffreyBostoenNews extends Base {
 
+	/**
+	 * @inheritDoc
+	 */
+	public function SupportsApiVersion(eApiVersion $eApiVersion): bool {
+
+		return match($eApiVersion) {
+			eApiVersion::v2_1_0 => true,
+			default => false,
+		};
+		
+	}
+	
 
 	/**
 	 * @inheritDoc
 	 */
-	public function GetSupportedApiVersions(): array {
+	public function SupportsOperationMode(eOperationMode $eOperationMode): bool {
 
-		return [
-			eApiVersion::v2_1_0,
-		];
-
+		return match($eOperationMode) {
+			eOperationMode::Cron => true,
+			eOperationMode::Mitm => true,
+			default => false,
+		};
+		
 	}
 
 
 	/**
 	 * @inheritDoc
 	 */
-	public function GetSupportedOperationModes() : array {
+	public function SupportsOperation(eOperation $eOperation): bool {
 
-		return [
-			eOperationMode::Cron,
-			eOperationMode::Mitm,
-		];
-
+		return match($eOperation) {
+			eOperation::GetMessagesForInstance => true,
+			eOperation::ReportReadStatistics => true,
+			default => false,
+		};
+		
 	}
-
-
 
 
 	/**
@@ -64,7 +77,10 @@ class JeffreyBostoenNews extends Base {
 	 */
 	public function GetUrl() : string {
 
-		return 'https://test.jeffreybostoen.be';
+		return 'https://localhost:8182/iTop3.2/web/env-at-news/jb-server-communication/server.php?&exec_module=jb-server-communication'.
+			'&exec_page=index.php'.
+			'&exec_env=at-news'.
+			'&switch_env=at-news';
 
 		// @todo Update this!
 		return 'https://itop-news.jeffreybostoen.be';

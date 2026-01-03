@@ -9,7 +9,10 @@
 
 namespace JeffreyBostoenExtensions\News;
 
-use JeffreyBostoenExtensions\ServerCommunication\eOperationMode;
+use JeffreyBostoenExtensions\ServerCommunication\{
+	Helper as SCHelper,
+	eOperationMode
+};
 
 use JeffreyBostoenExtensions\News\Client\Base as Client;
 
@@ -50,7 +53,7 @@ class BackgroundProcess implements iBackgroundProcess {
 		}
 		
 		
-		Helper::Trace('Executing background task: Fetch messages from remote servers.');
+		SCHelper::Trace('Executing background task: Connect to news servers.');
 		
 		try {
 			
@@ -61,10 +64,10 @@ class BackgroundProcess implements iBackgroundProcess {
 			
 		}
 		catch(Exception $e) {
-			Helper::Trace($e->GetMessage());
+			SCHelper::Trace($e->GetMessage());
 		}
 		
-		Helper::Trace('Finished background task.');
+		SCHelper::Trace('Finished background task.');
 		
 	}
 	

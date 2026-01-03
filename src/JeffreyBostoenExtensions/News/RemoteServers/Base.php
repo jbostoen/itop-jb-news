@@ -17,6 +17,7 @@ use JeffreyBostoenExtensions\ServerCommunication\{
 	eApiVersion,
 	eOperation,
 	eOperationMode,
+	Helper as SCHelper,
 };
 use JeffreyBostoenExtensions\ServerCommunication\RemoteServers\Base as BaseRemoteServer;
 use JeffreyBostoenExtensions\ServerCommunication\Client\Base as Client;
@@ -29,7 +30,6 @@ use ormDocument;
 
 // iTop classes.
 use ThirdPartyNewsMessage;
-use ThirdPartyMessageUserStatus;
 use User;
 
 // Generic.
@@ -41,41 +41,18 @@ use stdClass;
  * 
  * Note: Also the short name of this class must be unique!
  */
-class Base extends BaseRemoteServer {
+abstract class Base extends BaseRemoteServer {
 
 
 	/**
 	 * @inheritDoc
 	 */
-	public function GetSupportedApiVersions(): array {
+	public function OnSendDataToRemoteServer(): void {
 
-		return [
-			eApiVersion::v2_1_0,
-		];
+		$oRequest = $this->GetClient()->GetCurrentHttpRequest();
+		$oRequest->data_api_version = eDataApiVersion::v1_0_0->value;
 
-	}
-
-
-	/**
-	 * @inheritDoc
-	 */
-	public function GetSupportedOperationModes() : array {
-
-		return [
-			eOperationMode::Cron,
-			eOperationMode::Mitm,
-		];
-
-	}
-
-	/**
-	 * @inheritDoc
-	 */
-	public function OnSendDataToExternalServer(): void {
-		
-		/** @var Client $oClient */
-		$oClient = $this->GetClient();
-		$eOperation = $oClient->GetCurrentOperation();
+		$eOperation = $this->GetClient()->GetCurrentOperation();
 
 		if($eOperation == eOperation::GetMessagesForInstance) {
 			
@@ -84,12 +61,9 @@ class Base extends BaseRemoteServer {
 		}
 		elseif($eOperation == eOperation::ReportReadStatistics) {
 
-			
 			$this->SetHttpRequestReportStatistics();
 
 		}
-		
-
 
 	}
 	
@@ -113,28 +87,12 @@ class Base extends BaseRemoteServer {
 	}
 
 
-	public function OnSendDataToRemoteServer(): void {
-		
-		/** @var Client $oClient */
-		$oClient = $this->GetClient();
-		
-		$oRequest = $oClient->GetCurrentHttpRequest();
-
-		$oRequest->data_api_version = eDataApiVersion::v1_0_0->value;
-
-		// @todo Add encryption? Or add it to main class?
-		
-	}
-
-
 	/**
 	 * @inheritDoc
 	 */
 	public function OnReceiveDataFromExternalServer(): void {
 
-		/** @var Client $oClient */
-		$oClient = $this->GetClient();
-		$eOperation = $oClient->GetCurrentOperation();
+		$eOperation = $this->GetClient()->GetCurrentOperation();
 
 		if($eOperation == eOperation::GetMessagesForInstance) {
 			
@@ -152,11 +110,8 @@ class Base extends BaseRemoteServer {
 	 */
 	public function ProcessReceivedMessages() : void {
 
-		/** @var Client $oClient */
-		$oClient = $this->GetClient();
-
 		/** @var stdClass $oResponse */
-		$oResponse = $oClient->GetCurrentHttpResponse();
+		$oResponse = $this->GetClient()->GetCurrentHttpResponse();
 	
 		$sThirdPartyName = $this->GetThirdPartyName();
 
@@ -168,7 +123,7 @@ class Base extends BaseRemoteServer {
 		
 			if(!property_exists($oResponse, 'messages')) {
 
-				Helper::Trace('No messages found.');
+				SCHelper::Trace('No messages found.');
 				return;
 
 			}
@@ -227,7 +182,7 @@ class Base extends BaseRemoteServer {
 				if($oMessage->Get('manually_created') == 'yes') {
 					// This message should not be processed further on either!
 					// Theoretically speaking, it could be assumed that all messages in this set will be manually created (coming from the same source).
-					Helper::Trace('Skipping ThirdPartyNewsMessage object for message ID "%1$s" (manually created on this instance).', $oJsonMessage->thirdparty_message_id);
+					SCHelper::Trace('Skipping ThirdPartyNewsMessage object for message ID "%1$s" (manually created on this instance).', $oJsonMessage->thirdparty_message_id);
 					unset($aMessages[$oMessage->Get('thirdparty_message_id')]);
 					continue;
 				}
@@ -251,11 +206,11 @@ class Base extends BaseRemoteServer {
 
 					if(!property_exists($oJsonMessage, 'DBObject')) {
 						/** @var ThirdPartyNewsMessage $oMessage */
-						Helper::Trace('Create new ThirdPartyNewsMessage object for message ID "%1$s".', $oJsonMessage->thirdparty_message_id);
+						SCHelper::Trace('Create new ThirdPartyNewsMessage object for message ID "%1$s".', $oJsonMessage->thirdparty_message_id);
 						$oJsonMessage->DBObject = MetaModel::NewObject('ThirdPartyNewsMessage', []);
 					}
 					else {
-						Helper::Trace('Found existing ThirdPartyNewsMessage object for message ID "%1$s".', $oJsonMessage->thirdparty_message_id);
+						SCHelper::Trace('Found existing ThirdPartyNewsMessage object for message ID "%1$s".', $oJsonMessage->thirdparty_message_id);
 					}
 					
 				// - Every message (HTTP response) has a ThirdPartyNewsMessage object associated with it now.
@@ -358,7 +313,7 @@ class Base extends BaseRemoteServer {
 
 						// Fail silently.
 						// Could be a 'non supported language' issue?
-						Helper::Trace('Failed to process translation for message ID "%1$s" and language "%2$s": %3$s', 
+						SCHelper::Trace('Failed to process translation for message ID "%1$s" and language "%2$s": %3$s', 
 							$oJsonMessage->DBObject->GetKey(), 
 							$oJsonTranslation->language, 
 							$e->getMessage()
@@ -368,7 +323,11 @@ class Base extends BaseRemoteServer {
 				
 				}
 
-			}	
+			}
+
+		// - Finally, mark as (succesfully) retrieved.
+
+			$this->SetKeyValue('last_retrieval', date('Y-m-d H:i:s'));
 		
 	}
 
@@ -423,6 +382,7 @@ class Base extends BaseRemoteServer {
 
 			// - General config.
 
+				$oRequest->config = new stdClass();
 				$oRequest->config->target_users_ids = $oClient->GetCachedValue('news_target_users');
 				$oRequest->config->target_users_oql = $sOql;
 
@@ -467,7 +427,7 @@ class Base extends BaseRemoteServer {
 				]);
 				$oSetMessages = new DBObjectSet($oFilterMessages);
 		
-				$aMessages = [];
+				$aMessageData = [];
 				
 				while($oMessage = $oSetMessages->Fetch()) {
 					
@@ -505,7 +465,7 @@ class Base extends BaseRemoteServer {
 							
 						}
 						
-						$aMessages[(String)$oMessage->Get('thirdparty_message_id')] = [
+						$aMessageData[(String)$oMessage->Get('thirdparty_message_id')] = [
 							'target_users' => $aTargetUsers,
 							'users' => [], // Each user who actually marked the message as "read".
 							'first_shown_date' => [], // See users above - This is the first shown date for each user.
@@ -519,10 +479,10 @@ class Base extends BaseRemoteServer {
 						
 						if($oStatus->Get('message_id') == $oMessage->GetKey()) {
 					
-							$aMessages[(String)$oMessage->Get('thirdparty_message_id')]['users'][] = $oStatus->Get('user_id');
+							$aMessageData[(String)$oMessage->Get('thirdparty_message_id')]['users'][] = $oStatus->Get('user_id');
 
 							foreach(['first_shown_date', 'last_shown_date', 'read_date'] as $sAttCode) {
-								$aMessages[(String)$oMessage->Get('thirdparty_message_id')][$sAttCode][] = $oStatus->Get($sAttCode);
+								$aMessageData[(String)$oMessage->Get('thirdparty_message_id')][$sAttCode][] = $oStatus->Get($sAttCode);
 							}
 							
 						}
@@ -534,15 +494,9 @@ class Base extends BaseRemoteServer {
 
 			// - Add this info to the payload.
 			
-				// @todo Check: extend HttpRequestPayload instead?
-				$oRequest->messages =  new stdClass();
-				$oRequest->messages = $aMessages;
+				$oRequest->messageData = $aMessageData;
 			
-		
 				
 	}
 
-
 }
-
-
