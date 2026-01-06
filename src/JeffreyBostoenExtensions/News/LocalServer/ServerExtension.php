@@ -14,7 +14,6 @@ use JeffreyBostoenExtensions\ServerCommunication\{
 	eOperation,
 	Helper,
 	LocalServer\Extensions\Base as LocalServerExtension,
-	Protocol\Base\HttpResponse,
 };
 use JeffreyBostoenExtensions\ServerCommunication\LocalServer\{
 	ServerWorker,
@@ -59,8 +58,10 @@ abstract class ServerExtension extends LocalServerExtension {
 	public function GetSupportedOperations(): array {
 
 		return [
-			eOperation::GetMessagesForInstance,
-			eOperation::ReportReadStatistics
+			eOperation::NewsGetMessagesForInstance,
+			eOperation::NewsTelemetry,
+			// Legacy:
+			eOperation::NewsReportReadStatistics,
 		];
 
 	}
@@ -79,7 +80,7 @@ abstract class ServerExtension extends LocalServerExtension {
 			// Note: The "news" API version matches the "communication" API version until 2.0.0.
 			// After that, server communication API 2.1.0 is used with (news) data communication API 1.0.0.
 
-			if($oWorker->GetClientOperation() == eOperation::GetMessagesForInstance) {
+			if($oWorker->GetClientOperation() == eOperation::NewsGetMessagesForInstance) {
 					
 				
 				if(version_compare($oWorker->GetClientApiVersion()->value, '2.0.0', '>')) {

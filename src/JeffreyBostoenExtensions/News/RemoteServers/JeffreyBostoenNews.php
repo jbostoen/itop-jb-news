@@ -54,8 +54,8 @@ class JeffreyBostoenNews extends Base {
 	public function SupportsOperation(eOperation $eOperation): bool {
 
 		return match($eOperation) {
-			eOperation::GetMessagesForInstance => true,
-			eOperation::ReportReadStatistics => true,
+			eOperation::NewsGetMessagesForInstance => true,
+			eOperation::NewsTelemetry => true,
 			default => false,
 		};
 		
@@ -77,12 +77,6 @@ class JeffreyBostoenNews extends Base {
 	 */
 	public function GetUrl() : string {
 
-		return 'https://localhost:8182/iTop3.2/web/env-at-news/jb-server-communication/server.php?&exec_module=jb-server-communication'.
-			'&exec_page=index.php'.
-			'&exec_env=at-news'.
-			'&switch_env=at-news';
-
-		// @todo Update this!
 		return 'https://itop-news.jeffreybostoen.be';
 	
 	}

@@ -12,7 +12,7 @@ use JeffreyBostoenExtensions\ServerCommunication\{
 	eCryptographyLibrary,
 	Helper,
 	LocalServer\SodiumHelper,
-	Protocol\v200\HttpResponse,
+	Protocol\v210\HttpResponse,
 };
 
 

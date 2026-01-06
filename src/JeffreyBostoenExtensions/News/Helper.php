@@ -76,7 +76,7 @@ abstract class Helper {
 	 * 
 	 * @return void
 	 */
-	protected function CreateUserStatusIfNeededForMessageSet(DBObjectSet $oSet) : void {
+	protected static function CreateUserStatusIfNeededForMessageSet(DBObjectSet $oSet) : void {
 
 		// - Fetch the existing message status objects for the current user.
 
@@ -131,7 +131,7 @@ abstract class Helper {
 	 * 
 	 * @return void
 	 */
-	protected function UpdateUserStatus(DBObjectSet $oMessageSet, string $sAttCode) : void {
+	protected static function UpdateUserStatus(DBObjectSet $oMessageSet, string $sAttCode) : void {
 
 		// - Get the message IDs.
 

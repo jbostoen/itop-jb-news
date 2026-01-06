@@ -54,12 +54,12 @@ abstract class Base extends BaseRemoteServer {
 
 		$eOperation = $this->GetClient()->GetCurrentOperation();
 
-		if($eOperation == eOperation::GetMessagesForInstance) {
+		if($eOperation == eOperation::NewsGetMessagesForInstance) {
 			
 			$this->SetHttpRequestInstanceInfo();
 
 		}
-		elseif($eOperation == eOperation::ReportReadStatistics) {
+		elseif($eOperation == eOperation::NewsTelemetry || $eOperation == eOperation::NewsReportReadStatistics) {
 
 			$this->SetHttpRequestReportStatistics();
 
@@ -71,18 +71,39 @@ abstract class Base extends BaseRemoteServer {
 	/**
 	 * @inheritDoc
 	 */
-	public function GetMitmRequests(): array {
-
-		// - Check if too long ago.
-
-		$aRequests = [];
-
+	public function IsOperationReadyToExecute(): bool {
+		
 		/** @var Client $oClient */
 		$oClient = $this->GetClient();
+		$eOperation = $oClient->GetCurrentOperation();
+		$sOperation = $eOperation->value;
+		$sLastExecution = '1970-01-01';
 
-		// @todo Finish this properly.
+		if($this->GetKeyValue($sOperation.'_last_execution') !== null) {
+			$sLastExecution = $this->GetKeyValue($sOperation.'_last_execution')->Get('value');
+		}
 
-		return $aRequests;
+		// The job should run every X minutes.
+		$iFrequencyMins = (int)MetaModel::GetModuleSetting(Helper::MODULE_CODE, 'frequency', 60);
+
+		// Add some extra leniency, as the cron job is preferred.
+		// It should be within X, where X = (frequency + 15 mins)
+		$iMinTime = strtotime('-'.$iFrequencyMins.' minutes -15 minutes');
+
+		SCHelper::Trace('Source: %1$s - Last execution of %2$s: %3$s - Frequency (minutes): %4$s - Invoke if last requested before: %5$s',
+			$this->GetThirdPartyName(),
+			$sOperation,
+			$sLastExecution,
+			$iFrequencyMins,
+			date('Y-m-d H:i:s', $iMinTime)
+		);
+
+		// Only keep if the last retrieval date is too long ago.
+		if(strtotime($sLastExecution) < $iMinTime) {
+			return true;
+		}
+
+		return false;
 
 	}
 
@@ -94,11 +115,13 @@ abstract class Base extends BaseRemoteServer {
 
 		$eOperation = $this->GetClient()->GetCurrentOperation();
 
-		if($eOperation == eOperation::GetMessagesForInstance) {
+		if($eOperation == eOperation::NewsGetMessagesForInstance) {
 			
 			$this->ProcessReceivedMessages();
 
 		}
+
+		$this->SetKeyValue($eOperation->value.'_last_execution', date('Y-m-d H:i:s'));
 
 	}
 
@@ -324,17 +347,12 @@ abstract class Base extends BaseRemoteServer {
 				}
 
 			}
-
-		// - Finally, mark as (succesfully) retrieved.
-
-			$this->SetKeyValue('last_retrieval', date('Y-m-d H:i:s'));
 		
 	}
 
 
 	/**
 	 * @inheritDoc
-	 * @todo
 	 * 
 	 * It will list:
 	 * - The IDs of all the potential target users. (oql_target_users).
