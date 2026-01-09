@@ -214,10 +214,17 @@ abstract class Base extends BaseRemoteServer {
 				//   Note: This will also remove any statistics related to this message.
 				if(in_array($oMessage->Get('thirdparty_message_id'), $aRetrievedMessageIds) == false) {
 					$oMessage->DBDelete();
+					continue;
 				}
 
 				$aMessages[$oMessage->Get('thirdparty_message_id')]->DBObject = $oMessage;
 				
+			}
+
+		// - No need to continue further if there are no messages.
+			
+			if(count($aMessages) == 0) {
+				return;
 			}
 
 		// - Loop through the messages received in the HTTP response to create ThirdPartyNewsMessage objects.
@@ -275,6 +282,7 @@ abstract class Base extends BaseRemoteServer {
 				},
 				$aMessages
 			);
+
 			$oFilterTranslations = new DBObjectSearch('ThirdPartyNewsMessageTranslation');
 			$oFilterTranslations->AddCondition('message_id', $aMessageIds, 'IN');
 			$oSetTranslations = new DBObjectSet($oFilterTranslations);

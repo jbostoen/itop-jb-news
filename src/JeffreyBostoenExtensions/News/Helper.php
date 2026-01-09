@@ -135,7 +135,7 @@ abstract class Helper {
 
 		// - Get the message IDs.
 
-			$aMessageIds = [];
+			$aMessageIds = [ -1];
 			$oMessageSet->Rewind();
 
 			/** @var ThirdPartyNewsMessage $oMessage */
@@ -344,7 +344,7 @@ abstract class Helper {
 
 			$oFilter = DBObjectSearch::FromOQL_AllData('
 			
-					SELECT ThirdPartyMessage AS m 
+					SELECT ThirdPartyNewsMessage AS m 
 					JOIN ThirdPartyMessageUserStatus AS s ON s.message_id = m.id
 					WHERE 
 						s.user_id = :user_id AND 
@@ -619,14 +619,14 @@ JS
 
 		if($oUser === null) {
 
-			static::Trace('User is null. Cannot check message applicability.');
+			SCHelper::Trace('User is null. Cannot check message applicability.');
 
 			// Fail gracefully.
 			return false;
 
 		}
 
-		static::Trace('Check if user ID %1$s is allowed to see message ID %2$s.', $oUser->GetKey(), $oMessage->GetKey());
+		SCHelper::Trace('Check if user ID %1$s is allowed to see message ID %2$s.', $oUser->GetKey(), $oMessage->GetKey());
 		
 		// - Global restriction configured by the iTop administrator.
 			
@@ -637,7 +637,7 @@ JS
 			if(!$bIsTargetedUser) {
 
 				// The current user is not allowed to see any messages.
-				static::Trace('The iTop administrator has not allowed the user ID "%s" to see any messages.', $oUser->GetKey());
+				SCHelper::Trace('The iTop administrator has not allowed the user ID "%s" to see any messages.', $oUser->GetKey());
 				return false;
 
 			}
@@ -649,7 +649,7 @@ JS
 			// Shortcut: no OQL = everyone
 			if($sOQL == '') {
 				
-				static::Trace('This message has no OQL set, so it is visible to all users.');
+				SCHelper::Trace('This message has no OQL set, so it is visible to all users.');
 				return true;
 				
 			}
@@ -662,7 +662,7 @@ JS
 				if(MetaModel::GetRootClass($sOQLClass) != 'User') {
 					
 					// News providers should ensure the OQL query returns user objects.
-					static::Trace('The OQL for a ThirdPartyNewsMessage must return user objects. Specified OQL: %1$s', $sOQL);
+					SCHelper::Trace('The OQL for a ThirdPartyNewsMessage must return user objects. Specified OQL: %1$s', $sOQL);
 					return false;
 					
 				}
@@ -674,13 +674,13 @@ JS
 				// If the user belongs to the set, the message should be visible.
 				$bVisible = ($oSetUsers->Count() == 1);
 
-				static::Trace('User in message-specific OQL target group: %1$s', $bVisible ? 'yes' : 'no');
+				SCHelper::Trace('User in message-specific OQL target group: %1$s', $bVisible ? 'yes' : 'no');
 				return $bVisible;
 				
 			}
 			catch(Exception $e) {
 				
-				static::Trace('The OQL for a ThirdPartyNewsMessage must be valid. Specified OQL: %1$s,', $sOQL);
+				SCHelper::Trace('The OQL for a ThirdPartyNewsMessage must be valid. Specified OQL: %1$s,', $sOQL);
 				return false;
 				
 			}
