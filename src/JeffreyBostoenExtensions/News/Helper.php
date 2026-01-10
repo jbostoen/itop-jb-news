@@ -8,8 +8,9 @@
 
 namespace JeffreyBostoenExtensions\News;
 
+use JeffreyBostoenExtensions\News\RemoteServers\JeffreyBostoenNews;
+
 use JeffreyBostoenExtensions\ServerCommunication\{
-	Helper as SCHelper,
 	Page
 };
 
@@ -49,7 +50,6 @@ enum eUserOperation : string {
 	case GetAllMessages = 'get_all_messages';
 	case MarkAllAsRead = 'mark_all_as_read';
 	case MarkMessageAsRead = 'mark_message_as_read';
-	// case PostMessagesToInstance = 'post_messages_to_instance';
 	case Redirect = 'redirect';
 	case ViewAll = 'view_all';
 
@@ -65,6 +65,66 @@ abstract class Helper {
 	/** @var string MODULE_CODE The name of this extension. */
 	const MODULE_CODE = 'jb-news';
 
+	/** @var string|null $sTraceId Unique ID of this run. */
+	private static $sTraceId = null;
+
+    
+	/**
+	 * Returns the trace ID.
+	 *
+	 * @return string
+	 */
+	public static function GetTraceId() : string {
+
+		if(static::$sTraceId == null) {
+				
+			static::$sTraceId = bin2hex(random_bytes(10));
+			
+		}
+
+		return static::$sTraceId;
+
+	}
+
+	
+	/**
+	 * Trace function used for debugging.
+	 *
+	 * @param string $sMessage The message.
+	 * @param mixed ...$args
+	 *
+	 * @return string
+	 */
+	public static function Trace($sMessage, ...$args) : string {
+
+		$sMessage = call_user_func_array('sprintf', func_get_args());
+
+		// Store somewhere?		
+		if(MetaModel::GetModuleSetting(static::MODULE_CODE, 'trace_log', false) == true) {
+			
+			$sTraceFileName = sprintf(APPROOT.'/log/trace_servercommunication_%1$s.log', date('Ymd'));
+
+			try {
+				
+				
+				
+				// Not looking to create an error here 
+				file_put_contents($sTraceFileName, sprintf('%1$s | %2$s | %3$s'.PHP_EOL,
+					date('Y-m-d H:i:s'),
+					static::GetTraceId(),
+					$sMessage,
+				), FILE_APPEND | LOCK_EX);
+
+			}
+			catch(Exception $e) {
+				// Don't do anything
+			}
+			
+		}
+
+		return $sMessage;
+
+    }
 
 	/**
 	 * Creates user status objects for all messages in the given set that don't have one yet for the current user.  
@@ -355,7 +415,7 @@ abstract class Helper {
 				'user_id' => UserRights::GetUserId()
 			]);
 		
-		SCHelper::Trace('Mark %1$s messages (previously unread, but already shown) as read for user ID "%2$s".', $oSet->Count(), UserRights::GetUserId());
+		static::Trace('Mark %1$s messages (previously unread, but already shown) as read for user ID "%2$s".', $oSet->Count(), UserRights::GetUserId());
 
 		// - Update the read status of those messages.
 
@@ -379,7 +439,7 @@ abstract class Helper {
 	 */
 	public static function MarkMessageAsReadForUser(int $iMessageId) : void {
 		
-		SCHelper::Trace('Mark message ID %1$s (previously unread, but already shown) as read for user ID "%2$s".', $iMessageId, UserRights::GetUserId());
+		static::Trace('Mark message ID %1$s (previously unread, but already shown) as read for user ID "%2$s".', $iMessageId, UserRights::GetUserId());
 		
 		try {
 
@@ -401,10 +461,10 @@ abstract class Helper {
 
 		}
 		catch(Exception $e) {
-			SCHelper::Trace('Error (object nto found?): %1$s, %2$s.', $e::class, $e->getMessage());
+			static::Trace('Error (object nto found?): %1$s, %2$s.', $e::class, $e->getMessage());
 		}
 
-		SCHelper::Trace('Done.');
+		static::Trace('Done.');
 		
 	}
 
@@ -429,6 +489,8 @@ abstract class Helper {
 		$aJsonMessages = [];
 		$oSetMessages = static::GetAllMessagesForUser();
 		
+		$oSetMessages->Rewind();
+
 		/** @var ThirdPartyNewsMessage $oMessage */
 		while($oMessage = $oSetMessages->Fetch()) {
 			
@@ -459,10 +521,9 @@ abstract class Helper {
 		$oPage->LinkScriptFromAppRoot('js/jquery.min.js');
 		$oPage->LinkScriptFromAppRoot('js/showdown.min.js');
 
-		// Some day, this should be changed to only show a specific's new source name and logo.
-		$sSourceClass = SourceJeffreyBostoen::class;
-		$sSourceName = $sSourceClass::GetThirdPartyName();
-		$sSourceLogoSvg = $sSourceClass::GetLogoSVG();
+		$sRemoteServerClass = new JeffreyBostoenNews();
+		$sRemoteServerName = $sRemoteServerClass->GetThirdPartyName();
+		$sRemoteServerLogoSvg = $sRemoteServerClass->GetLogoSVG();
 
 		// Build markup.
 		$oPage->add(<<<HTML
@@ -470,10 +531,10 @@ abstract class Helper {
 <div class="header">
 	<div class="header-container">
 		<div class="header-logo">
-			{$sSourceLogoSvg}
+			{$sRemoteServerLogoSvg}
 		</div>
 		<div class="header-name">
-			<h1>{$sSourceName}</h1>
+			<h1>{$sRemoteServerName}</h1>
 		</div>
 	</div>
 </div>
@@ -589,7 +650,7 @@ JS
 			}
 			else {
 
-				SCHelper::Trace('Unable to find translation for message ID %1$s.', $oMessage->GetKey());
+				static::Trace('Unable to find translation for message ID %1$s.', $oMessage->GetKey());
 
 			}
 		
@@ -619,14 +680,14 @@ JS
 
 		if($oUser === null) {
 
-			SCHelper::Trace('User is null. Cannot check message applicability.');
+			static::Trace('User is null. Cannot check message applicability.');
 
 			// Fail gracefully.
 			return false;
 
 		}
 
-		SCHelper::Trace('Check if user ID %1$s is allowed to see message ID %2$s.', $oUser->GetKey(), $oMessage->GetKey());
+		static::Trace('Check if user ID %1$s is allowed to see message ID %2$s.', $oUser->GetKey(), $oMessage->GetKey());
 		
 		// - Global restriction configured by the iTop administrator.
 			
@@ -637,7 +698,7 @@ JS
 			if(!$bIsTargetedUser) {
 
 				// The current user is not allowed to see any messages.
-				SCHelper::Trace('The iTop administrator has not allowed the user ID "%s" to see any messages.', $oUser->GetKey());
+				static::Trace('The iTop administrator has not allowed the user ID "%s" to see any messages.', $oUser->GetKey());
 				return false;
 
 			}
@@ -649,7 +710,7 @@ JS
 			// Shortcut: no OQL = everyone
 			if($sOQL == '') {
 				
-				SCHelper::Trace('This message has no OQL set, so it is visible to all users.');
+				static::Trace('This message has no OQL set, so it is visible to all users.');
 				return true;
 				
 			}
@@ -662,7 +723,7 @@ JS
 				if(MetaModel::GetRootClass($sOQLClass) != 'User') {
 					
 					// News providers should ensure the OQL query returns user objects.
-					SCHelper::Trace('The OQL for a ThirdPartyNewsMessage must return user objects. Specified OQL: %1$s', $sOQL);
+					static::Trace('The OQL for a ThirdPartyNewsMessage must return user objects. Specified OQL: %1$s', $sOQL);
 					return false;
 					
 				}
@@ -674,13 +735,13 @@ JS
 				// If the user belongs to the set, the message should be visible.
 				$bVisible = ($oSetUsers->Count() == 1);
 
-				SCHelper::Trace('User in message-specific OQL target group: %1$s', $bVisible ? 'yes' : 'no');
+				static::Trace('User in message-specific OQL target group: %1$s', $bVisible ? 'yes' : 'no');
 				return $bVisible;
 				
 			}
 			catch(Exception $e) {
 				
-				SCHelper::Trace('The OQL for a ThirdPartyNewsMessage must be valid. Specified OQL: %1$s,', $sOQL);
+				static::Trace('The OQL for a ThirdPartyNewsMessage must be valid. Specified OQL: %1$s,', $sOQL);
 				return false;
 				
 			}

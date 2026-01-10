@@ -89,7 +89,6 @@ try {
 				}
 				break;
 
-			case eUserOperation::PostMessagesToInstance:
 			case eUserOperation::ViewAll:
 				
 				// Nothing needed for these.
