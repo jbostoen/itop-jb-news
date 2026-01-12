@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2026 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.260110
+ * @version     3.2.260112
  */
 
 namespace JeffreyBostoenExtensions\News\RemoteServers;
@@ -20,46 +20,6 @@ use JeffreyBostoenExtensions\ServerCommunication\{
  * Note: Also the short name of this class must be unique!
  */
 class JeffreyBostoenNews extends Base {
-
-	/**
-	 * @inheritDoc
-	 */
-	public function SupportsApiVersion(eApiVersion $eApiVersion): bool {
-
-		return match($eApiVersion) {
-			eApiVersion::v2_1_0 => true,
-			default => false,
-		};
-		
-	}
-	
-
-	/**
-	 * @inheritDoc
-	 */
-	public function SupportsOperationMode(eOperationMode $eOperationMode): bool {
-
-		return match($eOperationMode) {
-			eOperationMode::Cron => true,
-			eOperationMode::Mitm => true,
-			default => false,
-		};
-		
-	}
-
-
-	/**
-	 * @inheritDoc
-	 */
-	public function SupportsOperation(eOperation $eOperation): bool {
-
-		return match($eOperation) {
-			eOperation::NewsGetMessagesForInstance => true,
-			eOperation::NewsTelemetry => true,
-			default => false,
-		};
-		
-	}
 
 
 	/**

@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2026 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.260110
+ * @version     3.2.260112
  */
 
 namespace JeffreyBostoenExtensions\News;
@@ -64,6 +64,9 @@ abstract class Helper {
 	
 	/** @var string MODULE_CODE The name of this extension. */
 	const MODULE_CODE = 'jb-news';
+
+	/** @var string MODULE_VERSION The version of this extension. */
+	const MODULE_VERSION = '3.2.260112';
 
 	/** @var string|null $sTraceId Unique ID of this run. */
 	private static $sTraceId = null;
@@ -822,5 +825,6 @@ JS
 		return ($oSetUsers->Count() == 1);
 
 	}
+
 
 }

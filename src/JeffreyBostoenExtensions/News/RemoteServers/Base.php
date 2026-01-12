@@ -3,7 +3,7 @@
 /**
  * @copyright   Copyright (c) 2019-2026 Jeffrey Bostoen
  * @license     https://www.gnu.org/licenses/gpl-3.0.en.html
- * @version     3.2.260110
+ * @version     3.2.260112
  */
 
 namespace JeffreyBostoenExtensions\News\RemoteServers;
@@ -37,7 +37,7 @@ use Exception;
 use stdClass;
 
 /**
- * Class JeffreyBostoenNews. A remote server.  
+ * Class Base. A remote server.  
  * 
  * Note: Also the short name of this class must be unique!
  */
@@ -47,10 +47,53 @@ abstract class Base extends BaseRemoteServer {
 	/**
 	 * @inheritDoc
 	 */
+	public function SupportsApiVersion(eApiVersion $eApiVersion): bool {
+
+		return ($eApiVersion === eApiVersion::v2_1_0);
+		
+	}
+
+
+	/**
+	 * @inheritDoc
+	 */
+	public function SupportsOperation(eOperation $eOperation): bool {
+
+		switch($eOperation) {
+			case eOperation::NewsGetMessagesForInstance:
+			case eOperation::NewsTelemetry:
+				return true;
+			default:
+				return false;
+		}
+
+	}
+
+	
+	/**
+	 * @inheritDoc
+	 */
+	public function SupportsOperationMode(eOperationMode $eOperationMode): bool {
+
+		switch($eOperationMode) {
+			case eOperationMode::Cron:
+			case eOperationMode::Mitm:
+				return true;
+			default:
+					return false;
+		}
+		
+	}
+
+
+	/**
+	 * @inheritDoc
+	 */
 	public function OnSendDataToRemoteServer(): void {
 
 		$oRequest = $this->GetClient()->GetCurrentHttpRequest();
-		$oRequest->data_api_version = eDataApiVersion::v1_0_0->value;
+		$oRequest->news_api_version = eDataApiVersion::v1_0_0->value;
+		$oRequest->news_extension_version = Helper::MODULE_VERSION;
 
 		$eOperation = $this->GetClient()->GetCurrentOperation();
 
@@ -113,6 +156,8 @@ abstract class Base extends BaseRemoteServer {
 	 */
 	public function OnReceiveDataFromExternalServer(): void {
 
+		parent::OnReceiveDataFromExternalServer();
+
 		$eOperation = $this->GetClient()->GetCurrentOperation();
 
 		if($eOperation == eOperation::NewsGetMessagesForInstance) {
@@ -120,8 +165,6 @@ abstract class Base extends BaseRemoteServer {
 			$this->ProcessReceivedMessages();
 
 		}
-
-		$this->SetKeyValue($eOperation->value.'_last_execution', date('Y-m-d H:i:s'));
 
 	}
 
